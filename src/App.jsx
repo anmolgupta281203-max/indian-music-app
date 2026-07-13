@@ -46,6 +46,8 @@ const Library = () => {
   );
 };
 
+import AuthModal from './components/AuthModal';
+
 function App() {
   return (
     <div className="app-container">
@@ -61,6 +63,7 @@ function App() {
         </div>
       </main>
       <MusicPlayer />
+      <AuthModal />
     </div>
   );
 }

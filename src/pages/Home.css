@@ -190,3 +190,26 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .home-container {
+    padding: 0 1rem 2rem 1rem;
+    gap: 1.5rem;
+  }
+  
+  .hero-banner {
+    height: 250px;
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+  
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1rem;
+  }
+}

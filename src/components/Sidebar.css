@@ -108,3 +108,36 @@
 .playlists-list::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4);
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .sidebar {
+    flex-direction: row;
+    padding: 0;
+    background-color: #121212;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 50;
+  }
+  
+  .nav-menu {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .nav-item {
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .nav-actions, .playlists-list, .divider, .mt-auto {
+    display: none !important;
+  }
+}

@@ -61,6 +61,17 @@ body {
   width: 100%;
 }
 
+@media (max-width: 768px) {
+  .app-container {
+    grid-template-areas: 
+      "main"
+      "player"
+      "sidebar";
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto 60px;
+  }
+}
+
 .main-content {
   grid-area: main;
   overflow-y: auto;
