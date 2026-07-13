@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { FiX, FiUser, FiLock } from 'react-icons/fi';
+import { X, User, Lock } from 'lucide-react';
 
 const AuthModal = () => {
   const { isAuthModalOpen, setIsAuthModalOpen, login, signup } = useContext(AuthContext);
@@ -40,7 +40,7 @@ const AuthModal = () => {
           onClick={() => setIsAuthModalOpen(false)}
           className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors"
         >
-          <FiX size={24} />
+          <X size={24} />
         </button>
 
         <h2 className="text-3xl font-bold text-center text-white mb-8">
@@ -55,7 +55,7 @@ const AuthModal = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
-            <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
               placeholder="Username"
@@ -66,7 +66,7 @@ const AuthModal = () => {
           </div>
 
           <div className="relative">
-            <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="password"
               placeholder="Password"
