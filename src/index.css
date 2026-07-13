@@ -1,0 +1,109 @@
+:root {
+  /* Spotify Theme Colors */
+  --bg-dark: #121212;
+  --bg-sidebar: #000000;
+  --bg-player: #181818;
+  --bg-card: #181818;
+  --bg-card-hover: #282828;
+  
+  --primary-color: #1ed760;
+  --primary-glow: rgba(30, 215, 96, 0.3);
+  --accent-color: #ffffff; 
+  
+  --text-main: #ffffff;
+  --text-secondary: #b3b3b3;
+
+  /* Spacing */
+  --sidebar-width: 260px;
+  --player-height: 90px;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-sidebar); /* Fallback */
+  color: var(--text-main);
+  overflow: hidden; /* Prevent body scroll */
+  height: 100vh;
+  width: 100%;
+}
+
+/* Glassmorphism utility - kept for backward compatibility if needed */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Layout */
+.app-container {
+  display: grid;
+  grid-template-areas: 
+    "sidebar main"
+    "player player";
+  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: 1fr var(--player-height);
+  height: 100vh;
+  width: 100%;
+}
+
+.main-content {
+  grid-area: main;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--bg-dark);
+  border-radius: 8px;
+  margin: 0.5rem 0.5rem 0 0;
+  position: relative;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+/* Typography styles */
+h1, h2, h3 {
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
