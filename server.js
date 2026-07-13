@@ -77,7 +77,7 @@ app.get('/audio-proxy', (req, res) => {
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Fallback for React Router (must be last)
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
