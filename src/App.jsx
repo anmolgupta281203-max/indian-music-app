@@ -8,6 +8,7 @@ import Search from './pages/Search';
 import { usePlayer } from './context/PlayerContext';
 import SongCard from './components/SongCard';
 import QueueModal from './components/QueueModal';
+import AIDjModal from './components/AIDjModal';
 import Videos from './pages/Videos';
 import AuthModal from './components/AuthModal';
 import Paywall from './components/Paywall';
@@ -28,12 +29,15 @@ const Library = () => {
         const { data: user } = await supabase.from('users').select('id, name').eq('phone_number', phone).single();
         if (user) {
           const { data: sub } = await supabase.from('subscriptions').select('*, users(name)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).single();
-          if (sub && sub.status === 'approved') {
+          if (sub) {
             setSubData(sub);
-            const expires = new Date(sub.expires_at);
-            const now = new Date();
-            const diff = expires.getTime() - now.getTime();
-            setDaysLeft(Math.max(0, Math.ceil(diff / (1000 * 3600 * 24))));
+            if (sub.status === 'approved' && sub.expires_at) {
+              const exp = new Date(sub.expires_at);
+              const now = new Date();
+              const diffTime = exp - now;
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              setDaysLeft(Math.max(0, diffDays));
+            }
           }
         }
       });
@@ -41,69 +45,37 @@ const Library = () => {
     fetchSub();
   }, []);
 
-  let currentList = [];
-  if (activeTab === 'liked') currentList = favorites;
-  if (activeTab === 'downloaded') currentList = downloadedSongs;
-
-  const handleInstallClick = async () => {
-    if (window.deferredPrompt) {
-      window.deferredPrompt.prompt();
-      const { outcome } = await window.deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        window.deferredPrompt = null;
-      }
-    } else {
-      alert("Automatic installation isn't available right now.\n\nWHY?\n1. You might have already installed the app!\n2. You are using an in-app browser (like Instagram/WhatsApp). Please open this link in Chrome or Safari.\n\nHOW TO INSTALL MANUALLY:\n- Android (Chrome): Tap the 3 dots in the top right and select 'Install app' or 'Add to Home Screen'.\n- iPhone (Safari): Tap the Share icon at the bottom and select 'Add to Home Screen'.");
-    }
-  };
+  const currentList = activeTab === 'liked' ? favorites : downloadedSongs;
 
   return (
-    <div className="animate-fade-in" style={{padding: '2rem'}}>
-      {subData && subData.status === 'approved' && (
-        <div style={{
-          backgroundColor: 'rgba(30, 215, 96, 0.1)', 
-          border: '1px solid var(--primary-color)', 
-          borderRadius: '12px', 
-          padding: '1.5rem', 
-          marginBottom: '2rem', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          flexWrap: 'wrap', 
-          gap: '1rem' 
-        }}>
-          <div>
-            <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem'}}>
-              <h3 style={{ margin: '0', color: 'var(--primary-color)' }}>Premium Profile</h3>
-            </div>
-            <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Welcome, {subData.users?.name}</p>
-          </div>
-          <div style={{
-            background: 'rgba(0,0,0,0.5)',
-            padding: '12px 20px',
-            borderRadius: '8px',
-            textAlign: 'center'
-          }}>
-            <strong style={{color: '#fff', fontSize: '1.5rem', display: 'block'}}>{daysLeft}</strong>
-            <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Days Left</span>
-          </div>
-        </div>
-      )}
+    <div style={{padding: '2rem', color: '#fff'}} className="animate-fade-in">
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem'}}>
+        <h2>Your Music Library</h2>
 
-      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h3 style={{ margin: '0 0 0.5rem 0', color: '#fff' }}>Install App</h3>
-          <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Download the app to your device for a full-screen native experience.</p>
-        </div>
-        <button 
-          onClick={handleInstallClick}
-          style={{ backgroundColor: '#fff', color: '#000', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '30px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
-        >
-          Click here to download app
-        </button>
+        {subData && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2))',
+            border: '1px solid rgba(168, 85, 247, 0.4)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span style={{width: '8px', height: '8px', borderRadius: '50%', backgroundColor: subData.status === 'approved' ? '#4ade80' : '#f59e0b'}}></span>
+            <span>Plan: <strong style={{color: '#fff', textTransform: 'capitalize'}}>{subData.plan_type}</strong></span>
+            {subData.status === 'approved' ? (
+              <span style={{color: '#4ade80', marginLeft: '4px'}}>({daysLeft} Days Left)</span>
+            ) : (
+              <span style={{color: '#f59e0b', marginLeft: '4px'}}>(Pending Approval)</span>
+            )}
+          </div>
+        )}
       </div>
 
-      <div style={{display: 'flex', gap: '1rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem'}}>
+      <div style={{display: 'flex', gap: '1rem', marginBottom: '2rem'}}>
         <button 
           className={`filter-pill ${activeTab === 'liked' ? 'active' : ''}`}
           onClick={() => setActiveTab('liked')}
@@ -114,7 +86,7 @@ const Library = () => {
           className={`filter-pill ${activeTab === 'downloaded' ? 'active' : ''}`}
           onClick={() => setActiveTab('downloaded')}
         >
-          Downloaded (Offline) ({downloadedSongs.length})
+          Downloaded Offline ({downloadedSongs.length})
         </button>
         <button 
           className="filter-pill"
@@ -143,6 +115,7 @@ function App() {
   const [hasAccess, setHasAccess] = useState(false);
   const [user, setUser] = useState(null);
   const [subscription, setSubscription] = useState(null);
+  const [isAiDjOpen, setIsAiDjOpen] = useState(false);
   
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -165,7 +138,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Sidebar />
+      <Sidebar onOpenAiDj={() => setIsAiDjOpen(true)} />
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
         <TopNav />
         <div style={{ flex: 1 }}>
@@ -179,6 +152,7 @@ function App() {
       </main>
       <MusicPlayer />
       <QueueModal />
+      <AIDjModal isOpen={isAiDjOpen} onClose={() => setIsAiDjOpen(false)} />
       <AuthModal />
     </div>
   );

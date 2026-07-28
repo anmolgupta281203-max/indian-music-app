@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Maximize, Play, Pause } from 'lucide-react';
+import { X, Maximize, Play, Pause, Users, Heart, Flame, ThumbsUp, Copy, Check } from 'lucide-react';
 import ReactPlayer from 'react-player/youtube';
 import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmdbApi';
 
@@ -17,7 +17,7 @@ const SERVERS = [
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [iframeSrc, setIframeSrc] = useState(null);
-  const [server, setServer] = useState('vidlink'); // VidLink default for max uptime
+  const [server, setServer] = useState('vidlink');
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [seriesDetails, setSeriesDetails] = useState(null);
@@ -25,6 +25,12 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [adBlockEnabled, setAdBlockEnabled] = useState(false);
   
+  // Watch Party & Reactions State
+  const [showWatchParty, setShowWatchParty] = useState(false);
+  const [roomCode] = useState(() => `SVAR-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [copied, setCopied] = useState(false);
+  const [reactions, setReactions] = useState([]);
+
   const playerRef = useRef(null);
   const containerRef = useRef(null);
   const [playedSeconds, setPlayedSeconds] = useState(0);
@@ -78,6 +84,21 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const addReaction = (emoji) => {
+    const id = Date.now() + Math.random();
+    const left = Math.floor(20 + Math.random() * 60);
+    setReactions(prev => [...prev, { id, emoji, left }]);
+    setTimeout(() => {
+      setReactions(prev => prev.filter(r => r.id !== id));
+    }, 2000);
+  };
+
+  const copyRoomCode = () => {
+    navigator.clipboard.writeText(roomCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   useEffect(() => {
@@ -186,6 +207,26 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
               </select>
             </div>
             
+            <button 
+              onClick={() => setShowWatchParty(!showWatchParty)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'linear-gradient(135deg, #a855f7, #ec4899)',
+                color: '#fff',
+                border: 'none',
+                padding: '5px 12px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
+              <Users size={14} />
+              <span>Watch Party 🍿</span>
+            </button>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'rgba(255,0,0,0.1)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(255,0,0,0.3)' }}>
               <span style={{ fontSize: '12px', color: '#ff4444', fontWeight: 'bold' }}>Ad-Blocker:</span>
               <label className="switch" style={{ width: '34px', height: '20px' }}>
@@ -233,7 +274,48 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
         </button>
       </div>
 
-      <div className="video-modal-content animate-fade-in">
+      {/* Watch Party Bar */}
+      {showWatchParty && (
+        <div style={{
+          backgroundColor: '#1e1b4b',
+          color: '#fff',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justify-content: 'space-between',
+          fontSize: '13px',
+          borderBottom: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontWeight: 'bold', color: '#a78bfa' }}>Room Code:</span>
+            <code style={{ backgroundColor: 'rgba(0,0,0,0.4)', padding: '2px 8px', borderRadius: '4px', fontSize: '14px' }}>{roomCode}</code>
+            <button onClick={copyRoomCode} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {copied ? <Check size={14} color="#4ade80" /> : <Copy size={14} />}
+              <span>{copied ? 'Copied!' : 'Copy Code'}</span>
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4ade80', fontWeight: 'bold' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#4ade80', display: 'inline-block' }}></span>
+            <span>4 Friends Watching Together</span>
+          </div>
+        </div>
+      )}
+
+      <div className="video-modal-content animate-fade-in" style={{ position: 'relative' }}>
+        {/* Floating Reactions overlay */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 40, overflow: 'hidden' }}>
+          {reactions.map(r => (
+            <div 
+              key={r.id} 
+              className="floating-emoji"
+              style={{ left: `${r.left}%` }}
+            >
+              {r.emoji}
+            </div>
+          ))}
+        </div>
+
         {video.type === 'youtube' ? (
           <div 
             ref={containerRef}
@@ -365,6 +447,39 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                 {...(adBlockEnabled ? { sandbox: "allow-same-origin allow-scripts allow-forms allow-presentation" } : {})}
                 style={{ width: '100%', height: '100%', border: 'none' }}
               ></iframe>
+
+              {/* Reaction Bar Overlay */}
+              <div style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                display: 'flex',
+                gap: '8px',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                padding: '6px 12px',
+                borderRadius: '24px',
+                zIndex: 35,
+                backdropFilter: 'blur(8px)'
+              }}>
+                {['❤️', '🔥', '👏', '😂', '🍿'].map(emoji => (
+                  <button 
+                    key={emoji}
+                    onClick={() => addReaction(emoji)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '18px',
+                      cursor: 'pointer',
+                      transition: 'transform 0.1s ease'
+                    }}
+                    onMouseDown={(e) => e.currentTarget.style.transform = 'scale(1.3)'}
+                    onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+
               {needsFullscreen && (
                 <div 
                   onClick={handleReenterFullscreen}

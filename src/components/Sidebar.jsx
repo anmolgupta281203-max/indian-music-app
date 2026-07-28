@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Search, Library, ListMusic, Heart, Film } from 'lucide-react';
+import { Home, Search, Library, ListMusic, Heart, Film, Sparkles } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ onOpenAiDj }) => {
   const navigate = useNavigate();
   const { openQueueModal, queue } = usePlayer();
 
@@ -34,6 +34,10 @@ const Sidebar = () => {
       </nav>
 
       <div className="nav-actions">
+        <button className="action-btn" onClick={onOpenAiDj} style={{ background: 'rgba(168, 85, 247, 0.15)', borderRadius: '8px', marginBottom: '6px' }}>
+          <Sparkles size={22} style={{ color: '#c084fc' }} />
+          <span style={{ color: '#c084fc', fontWeight: '700' }}>AI DJ & Mood Radio</span>
+        </button>
         <button className="action-btn" onClick={openQueueModal}>
           <ListMusic size={24} style={{ color: 'var(--primary-color)' }} />
           <span>Up Next Queue ({queue.length})</span>

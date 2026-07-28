@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchAlbumDetails, searchSongs, fetchTrending } from '../services/api';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/SongCard';
+import { Sparkles } from 'lucide-react';
 import './Home.css';
 
 const Home = () => {
@@ -38,30 +39,27 @@ const Home = () => {
       if (trendingData && trendingData.trending) {
         setTrendingSongs(trendingData.trending.songs || []);
         setTrendingAlbums(trendingData.trending.albums || []);
-        setLatestAlbums(trendingData.trending.latestAlbums || []);
+      } else if (trendingData && Array.isArray(trendingData)) {
+        setTrendingSongs(trendingData);
       }
-      
-      setHindiHits(filterDuplicates(hindi?.results || hindi));
-      setPunjabiHits(filterDuplicates(punjabi?.results || punjabi));
+
+      setHindiHits(filterDuplicates(hindi));
+      setPunjabiHits(filterDuplicates(punjabi));
       setLoading(false);
     };
-    
+
     loadData();
   }, []);
 
   const handleAlbumClick = async (albumId) => {
-    if (loadingAlbumId) return;
     setLoadingAlbumId(albumId);
     try {
-      const albumSongs = await fetchAlbumDetails(albumId);
-      if (albumSongs && albumSongs.length > 0) {
-        playSong(albumSongs[0], albumSongs);
-      } else {
-        alert("Sorry, no playable songs found for this album.");
+      const albumData = await fetchAlbumDetails(albumId);
+      if (albumData && albumData.songs && albumData.songs.length > 0) {
+        playSong(albumData.songs[0], albumData.songs);
       }
     } catch (e) {
       console.error(e);
-      alert("Error loading album.");
     } finally {
       setLoadingAlbumId(null);
     }
@@ -74,9 +72,11 @@ const Home = () => {
           <div className="hero-subtitle">NEW RELEASE</div>
           <h1 className="hero-title">Discover Premium Indian Music</h1>
           <p className="hero-desc">Stream your favorite hits across genres, eras, and regions in high fidelity.</p>
-          <button className="hero-play-btn" onClick={() => trendingSongs.length > 0 && playSong(trendingSongs[0], trendingSongs)}>
-            Start Listening
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <button className="hero-play-btn" onClick={() => trendingSongs.length > 0 && playSong(trendingSongs[0], trendingSongs)}>
+              Start Listening
+            </button>
+          </div>
         </div>
       </div>
 
@@ -121,9 +121,8 @@ const Home = () => {
             {latestAlbums.map((album) => (
               <div 
                 key={album.id} 
-                className="album-card" 
+                className="album-card"
                 onClick={() => handleAlbumClick(album.id)}
-                style={{ position: 'relative' }}
               >
                 <img src={album.image[0]?.url || 'https://via.placeholder.com/150'} alt={album.name} />
                 <h4>{album.name}</h4>
@@ -131,12 +130,12 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading latest..." : "No releases found."}</div>
+          <div className="loading-state">{loading ? "Loading latest..." : "No latest albums."}</div>
         )}
       </section>
 
       <section className="music-section">
-        <h2>Latest Hindi Hits</h2>
+        <h2>Top Hindi Hits</h2>
         {hindiHits.length > 0 ? (
           <div className="cards-grid">
             {hindiHits.map((song) => (
@@ -144,12 +143,12 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading Hindi hits..." : null}</div>
+          <div className="loading-state">{loading ? "Loading Hindi hits..." : "No Hindi songs found."}</div>
         )}
       </section>
 
       <section className="music-section">
-        <h2>Latest Punjabi Bangers</h2>
+        <h2>Top Punjabi Hits</h2>
         {punjabiHits.length > 0 ? (
           <div className="cards-grid">
             {punjabiHits.map((song) => (
@@ -157,7 +156,7 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading Punjabi hits..." : null}</div>
+          <div className="loading-state">{loading ? "Loading Punjabi hits..." : "No Punjabi songs found."}</div>
         )}
       </section>
     </div>
