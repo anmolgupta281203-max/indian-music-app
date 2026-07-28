@@ -46,11 +46,11 @@ const Sidebar = () => {
       
       <div className="divider"></div>
       
-      <div className="playlists-list scrollable">
-        <p className="playlist-item" onClick={() => handleCategoryClick('Bollywood Hits')}>Bollywood Hits</p>
-        <p className="playlist-item" onClick={() => handleCategoryClick('Punjabi Lo-Fi')}>Punjabi Lo-Fi</p>
-        <p className="playlist-item" onClick={() => handleCategoryClick('90s Classics')}>90s Classics</p>
-        <p className="playlist-item" onClick={() => handleCategoryClick('Workout Mix')}>Workout Mix</p>
+      <div className="categories-list scrollable">
+        <p className="category-item" onClick={() => handleCategoryClick('Bollywood Hits')}>Bollywood Hits</p>
+        <p className="category-item" onClick={() => handleCategoryClick('Punjabi Lo-Fi')}>Punjabi Lo-Fi</p>
+        <p className="category-item" onClick={() => handleCategoryClick('90s Classics')}>90s Classics</p>
+        <p className="category-item" onClick={() => handleCategoryClick('Workout Mix')}>Workout Mix</p>
       </div>
 
       <div className="divider"></div>

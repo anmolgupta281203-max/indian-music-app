@@ -72,17 +72,17 @@
 }
 
 .divider {
-  display: none; /* Removed in new layout */
+  display: none;
 }
 
-.playlists-list {
+.categories-list, .playlists-list {
   margin-top: 1rem;
   flex: 1;
   overflow-y: auto;
   padding: 0 1rem;
 }
 
-.playlist-item {
+.category-item, .playlist-item {
   color: var(--text-secondary);
   font-size: 0.9rem;
   padding: 0.5rem 0;
@@ -90,26 +90,24 @@
   transition: color 0.2s;
 }
 
-.playlist-item:hover {
+.category-item:hover, .playlist-item:hover {
   color: var(--text-main);
 }
 
-/* Scrollbar for playlists */
-.playlists-list::-webkit-scrollbar {
+.categories-list::-webkit-scrollbar, .playlists-list::-webkit-scrollbar {
   width: 8px;
 }
-.playlists-list::-webkit-scrollbar-track {
+.categories-list::-webkit-scrollbar-track, .playlists-list::-webkit-scrollbar-track {
   background: transparent;
 }
-.playlists-list::-webkit-scrollbar-thumb {
+.categories-list::-webkit-scrollbar-thumb, .playlists-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
 }
-.playlists-list::-webkit-scrollbar-thumb:hover {
+.categories-list::-webkit-scrollbar-thumb:hover, .playlists-list::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4);
 }
 
-/* User Profile & Login */
 .login-btn {
   width: 100%;
   display: flex;
@@ -142,7 +140,7 @@
   background: linear-gradient(135deg, #a855f7, #ec4899);
   color: white;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .user-name {
@@ -154,7 +152,6 @@
   font-size: 0.875rem;
 }
 
-/* Mobile Responsiveness */
 @media (max-width: 768px) {
   .sidebar {
     flex-direction: row;
@@ -182,7 +179,7 @@
     font-size: 0.75rem;
   }
 
-  .nav-actions, .playlists-list, .divider, .mt-auto {
+  .nav-actions, .categories-list, .playlists-list, .divider, .mt-auto {
     display: none !important;
   }
 }
