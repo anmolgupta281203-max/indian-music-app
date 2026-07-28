@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Heart, Download, Share2, ChevronDown, ListMusic } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
+  Heart, Download, Share2, ChevronDown, ListMusic, Moon, SlidersHorizontal, MoreVertical, Check
+} from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import ReactPlayer from 'react-player/youtube';
 import './MusicPlayer.css';
@@ -34,7 +37,11 @@ const MusicPlayer = () => {
     isShuffling, 
     isLooping, 
     toggleShuffle, 
-    toggleLoop 
+    toggleLoop,
+    audioQuality,
+    setAudioQuality,
+    sleepTimerMinutes,
+    setSleepTimer
   } = usePlayer();
 
   const [progress, setProgress] = useState(0);
@@ -42,7 +49,13 @@ const MusicPlayer = () => {
   const [vol, setVol] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const playerRef = React.useRef(null);
+  
+  // Popover menus state
+  const [showSleepMenu, setShowSleepMenu] = useState(false);
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+
+  const playerRef = useRef(null);
 
   useEffect(() => {
     const audio = nativeAudioRef.current;
@@ -50,7 +63,7 @@ const MusicPlayer = () => {
 
     const updateProgress = () => {
       if (!currentSong?.youtubeId) {
-        setProgress(audio.currentTime);
+        setProgress(audio.currentTime || 0);
         setDuration(audio.duration || 0);
         
         if ('mediaSession' in navigator && !isNaN(audio.duration)) {
@@ -67,14 +80,12 @@ const MusicPlayer = () => {
 
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('loadedmetadata', updateProgress);
-    audio.addEventListener('ended', playNext);
 
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('loadedmetadata', updateProgress);
-      audio.removeEventListener('ended', playNext);
     };
-  }, [currentSong, playNext, nativeAudioRef]);
+  }, [currentSong, nativeAudioRef]);
 
   useEffect(() => {
     if ('mediaSession' in navigator) {
@@ -138,22 +149,24 @@ const MusicPlayer = () => {
   if (!currentSong) return null;
 
   const imageUrl = currentSong.image ? currentSong.image[currentSong.image.length - 1].url : 'https://via.placeholder.com/60';
-  const hqImageUrl = imageUrl.replace('150x150', '500x500');
+  const hqImageUrl = imageUrl.replace('150x150', '500x500').replace('50x50', '500x500');
   const isFavorite = favorites.some(s => s.id === currentSong.id);
   const isDownloaded = downloadedSongs.some(s => s.id === currentSong.id);
+  const primaryArtist = decodeHtml(currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
+  const songTitle = decodeHtml(currentSong.name);
 
   return (
     <>
-      {/* --- Mini Player --- */}
+      {/* --- Mini Bottom Player Bar --- */}
       <div className="music-player">
         <div className="now-playing" onClick={(e) => {
           if (e.target.closest('button')) return;
           setIsFullScreen(true);
         }} style={{cursor: 'pointer'}}>
-          <img src={imageUrl} alt={currentSong.name} className="song-art" />
+          <img src={imageUrl} alt={songTitle} className="song-art" />
           <div className="song-info">
-            <h4 dangerouslySetInnerHTML={{ __html: currentSong.name }}></h4>
-            <p dangerouslySetInnerHTML={{ __html: currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist' }}></p>
+            <h4>{songTitle}</h4>
+            <p>{primaryArtist}</p>
           </div>
           <button 
             className="control-btn" 
@@ -162,14 +175,6 @@ const MusicPlayer = () => {
             title="Save to library"
           >
             <Heart size={20} fill={isFavorite ? "var(--primary-color)" : "none"} color={isFavorite ? "var(--primary-color)" : "var(--text-secondary)"} />
-          </button>
-          <button 
-            className="control-btn" 
-            style={{marginLeft: '0.5rem'}} 
-            onClick={handleShare}
-            title="Share song"
-          >
-            <Share2 size={20} color="var(--text-secondary)" />
           </button>
           <button 
             className="control-btn" 
@@ -233,79 +238,192 @@ const MusicPlayer = () => {
         </div>
       </div>
 
-      {/* --- Full Screen Player --- */}
+      {/* --- Inspired Full Screen Player (Matched to Screenshot UI) --- */}
       <div className={`fullscreen-player ${isFullScreen ? 'open' : ''}`}>
         <div className="fs-background" style={{ backgroundImage: `url(${hqImageUrl})` }}></div>
         <div className="fs-overlay"></div>
         
         <div className="fs-content">
+          {/* Header Bar */}
           <div className="fs-header">
             <button className="fs-close-btn" onClick={() => setIsFullScreen(false)}>
-              <ChevronDown size={32} />
+              <ChevronDown size={30} />
             </button>
-            <span>Now Playing</span>
-            <button className="control-btn" onClick={openQueueModal} title="View Queue">
-              <ListMusic size={24} color="var(--primary-color)" />
-            </button>
-          </div>
-
-          <div className="fs-art-container">
-            <img src={hqImageUrl} alt={currentSong.name} className="fs-art" />
-          </div>
-
-          <div className="fs-song-details">
-            <div className="fs-song-text">
-              <h2 dangerouslySetInnerHTML={{ __html: currentSong.name }}></h2>
-              <p dangerouslySetInnerHTML={{ __html: currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist' }}></p>
+            <div className="fs-header-title">
+              <span className="fs-now-playing-label">Now Playing</span>
+              <span className="fs-playlist-label">Svar Queue</span>
             </div>
-            <button className="control-btn" onClick={() => toggleFavorite(currentSong)}>
-              <Heart size={28} fill={isFavorite ? "var(--primary-color)" : "none"} color={isFavorite ? "var(--primary-color)" : "var(--text-secondary)"} />
+            <button className="control-btn" onClick={handleShare} title="Share">
+              <Share2 size={22} color="#fff" />
             </button>
           </div>
 
-          <div className="fs-progress">
+          {/* Centerpiece Artwork Card */}
+          <div className="fs-art-container">
+            <img src={hqImageUrl} alt={songTitle} className="fs-art" />
+          </div>
+
+          {/* Track Info & Quick Actions Row */}
+          <div className="fs-track-info-row">
+            <div className="fs-track-details">
+              <h2>{songTitle}</h2>
+              <p>{primaryArtist}</p>
+            </div>
+            
+            <div className="fs-quick-actions">
+              {!currentSong.youtubeId && (
+                <button 
+                  className={`fs-action-circle ${isDownloaded ? 'active' : ''}`}
+                  onClick={() => handleDownloadToggle(currentSong)}
+                  title={isDownloaded ? "Downloaded" : "Download"}
+                >
+                  <Download size={20} color={isDownloaded ? "#1ed760" : "#fff"} />
+                </button>
+              )}
+              <button 
+                className={`fs-action-circle ${isFavorite ? 'active' : ''}`}
+                onClick={() => toggleFavorite(currentSong)}
+                title={isFavorite ? "Liked" : "Like"}
+              >
+                <Heart size={20} fill={isFavorite ? "#1ed760" : "none"} color={isFavorite ? "#1ed760" : "#fff"} />
+              </button>
+            </div>
+          </div>
+
+          {/* Progress Bar & Timers */}
+          <div className="fs-progress-section">
             <input 
               type="range" 
               min="0" 
               max={duration || 100} 
               value={progress} 
               onChange={handleSeek}
-              className="progress-bar fs-progress-bar"
+              className="fs-progress-slider"
               style={{ '--progress': `${duration ? (progress / duration) * 100 : 0}%` }}
             />
-            <div className="fs-time-row">
+            <div className="fs-time-labels">
               <span>{formatTime(progress)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
 
-          <div className="fs-controls">
-            <button className="control-btn secondary" onClick={toggleShuffle}><Shuffle size={24} color={isShuffling ? "var(--primary-color)" : "currentColor"} /></button>
-            <button className="control-btn" onClick={playPrev}><SkipBack size={40} fill="currentColor" /></button>
-            <button className="fs-play-btn" onClick={togglePlay}>
-              {isPlaying ? <Pause size={40} fill="currentColor" /> : <Play size={40} fill="currentColor" style={{ marginLeft: 6 }} />}
+          {/* Main Playback Controls Row */}
+          <div className="fs-main-controls">
+            <button className="fs-nav-btn" onClick={playPrev} title="Previous Track">
+              <SkipBack size={32} fill="#fff" color="#fff" />
             </button>
-            <button className="control-btn" onClick={playNext}><SkipForward size={40} fill="currentColor" /></button>
-            <button className="control-btn secondary" onClick={toggleLoop}><Repeat size={24} color={isLooping ? "var(--primary-color)" : "currentColor"} /></button>
+
+            {/* Custom Scalloped / Starburst White Badge Play/Pause Container */}
+            <button 
+              className="fs-scallop-play-btn" 
+              onClick={togglePlay}
+              title={isPlaying ? "Pause" : "Play"}
+            >
+              <svg className="scallop-svg" viewBox="0 0 100 100" fill="#ffffff">
+                <path d="M50 0 C54 7, 62 7, 68 2 C74 8, 80 13, 87 13 C90 20, 97 26, 97 34 C99 42, 99 50, 97 58 C97 66, 90 72, 87 79 C80 79, 74 84, 68 90 C62 85, 54 85, 50 92 C46 85, 38 85, 32 90 C26 84, 20 79, 13 79 C10 72, 3 66, 3 58 C1 50, 1 42, 3 34 C3 26, 10 20, 13 13 C20 13, 26 8, 32 2 C38 7, 46 7, 50 0 Z" />
+              </svg>
+              <div className="scallop-icon-wrapper">
+                {isPlaying ? (
+                  <Pause size={30} fill="#121212" color="#121212" />
+                ) : (
+                  <Play size={30} fill="#121212" color="#121212" style={{ marginLeft: 4 }} />
+                )}
+              </div>
+            </button>
+
+            <button className="fs-nav-btn" onClick={playNext} title="Next Track">
+              <SkipForward size={32} fill="#fff" color="#fff" />
+            </button>
           </div>
-          
-          <div className="fs-bottom-actions">
-            <button className="control-btn" onClick={handleShare} title="Share">
-              <Share2 size={24} color="var(--text-secondary)" />
+
+          {/* Bottom Action Toolbar (6 Icons Matching Screenshot) */}
+          <div className="fs-toolbar-actions">
+            <button className="fs-tool-btn" onClick={openQueueModal} title="Up Next Queue">
+              <ListMusic size={22} color="#fff" />
             </button>
-            <button className="control-btn" onClick={openQueueModal} title="Up Next Queue">
-              <ListMusic size={24} color="var(--primary-color)" />
-            </button>
-            {!currentSong.youtubeId && (
-              <button className="control-btn" onClick={() => handleDownloadToggle(currentSong)} title="Download">
-                <Download size={24} color={isDownloaded ? "var(--primary-color)" : "var(--text-secondary)"} />
+
+            <div style={{ position: 'relative' }}>
+              <button 
+                className={`fs-tool-btn ${sleepTimerMinutes > 0 ? 'active' : ''}`}
+                onClick={() => { setShowSleepMenu(!showSleepMenu); setShowQualityMenu(false); setShowMoreMenu(false); }}
+                title="Sleep Timer"
+              >
+                <Moon size={22} color={sleepTimerMinutes > 0 ? "#1ed760" : "#fff"} />
+                {sleepTimerMinutes > 0 && <span className="badge-dot">{sleepTimerMinutes}m</span>}
               </button>
-            )}
+              {showSleepMenu && (
+                <div className="popover-menu">
+                  <h4>Sleep Timer</h4>
+                  {[0, 15, 30, 45, 60].map(mins => (
+                    <button 
+                      key={mins} 
+                      className={sleepTimerMinutes === mins ? 'selected' : ''}
+                      onClick={() => { setSleepTimer(mins); setShowSleepMenu(false); }}
+                    >
+                      {mins === 0 ? 'Off' : `${mins} minutes`}
+                      {sleepTimerMinutes === mins && <Check size={16} />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ position: 'relative' }}>
+              <button 
+                className="fs-tool-btn" 
+                onClick={() => { setShowQualityMenu(!showQualityMenu); setShowSleepMenu(false); setShowMoreMenu(false); }}
+                title="Audio Quality"
+              >
+                <SlidersHorizontal size={22} color="#fff" />
+              </button>
+              {showQualityMenu && (
+                <div className="popover-menu">
+                  <h4>Streaming Quality</h4>
+                  {['320kbps', '160kbps', '96kbps'].map(q => (
+                    <button 
+                      key={q} 
+                      className={audioQuality === q ? 'selected' : ''}
+                      onClick={() => { setAudioQuality(q); setShowQualityMenu(false); }}
+                    >
+                      {q === '320kbps' ? 'Very High (320kbps)' : q === '160kbps' ? 'High (160kbps)' : 'Basic (96kbps)'}
+                      {audioQuality === q && <Check size={16} />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button className="fs-tool-btn" onClick={toggleShuffle} title="Shuffle">
+              <Shuffle size={22} color={isShuffling ? "#1ed760" : "#fff"} />
+            </button>
+
+            <button className="fs-tool-btn" onClick={toggleLoop} title="Repeat">
+              <Repeat size={22} color={isLooping ? "#1ed760" : "#fff"} />
+            </button>
+
+            <div style={{ position: 'relative' }}>
+              <button 
+                className="fs-tool-btn"
+                onClick={() => { setShowMoreMenu(!showMoreMenu); setShowSleepMenu(false); setShowQualityMenu(false); }}
+                title="More Options"
+              >
+                <MoreVertical size={22} color="#fff" />
+              </button>
+              {showMoreMenu && (
+                <div className="popover-menu">
+                  <button onClick={() => { handleShare(); setShowMoreMenu(false); }}>Share Song</button>
+                  <button onClick={() => { toggleFavorite(currentSong); setShowMoreMenu(false); }}>
+                    {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+
         </div>
       </div>
 
-      {/* YouTube Fallback */}
+      {/* YouTube Stream Fallback */}
       <ReactPlayer
         ref={playerRef}
         url={(currentSong && currentSong.youtubeId && !currentUrl.startsWith('blob:')) ? currentUrl : ''}

@@ -13,6 +13,15 @@ export const PlayerProvider = ({ children }) => {
   const [isShuffling, setIsShuffling] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   
+  // Audio Quality: '320kbps', '160kbps', '96kbps'
+  const [audioQuality, setAudioQuality] = useState(() => {
+    return localStorage.getItem('svar_audio_quality') || '320kbps';
+  });
+
+  // Sleep Timer: null or target timestamp in ms
+  const [sleepTimerEnd, setSleepTimerEnd] = useState(null);
+  const [sleepTimerMinutes, setSleepTimerMinutes] = useState(0);
+
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('svar_favorites');
     return saved ? JSON.parse(saved) : [];
@@ -34,7 +43,69 @@ export const PlayerProvider = ({ children }) => {
     localStorage.setItem('svar_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  // MediaSession Action Handlers
+  useEffect(() => {
+    localStorage.setItem('svar_audio_quality', audioQuality);
+  }, [audioQuality]);
+
+  // Sleep timer countdown logic
+  useEffect(() => {
+    if (!sleepTimerEnd) return;
+    const interval = setInterval(() => {
+      const remaining = sleepTimerEnd - Date.now();
+      if (remaining <= 0) {
+        pause();
+        setSleepTimerEnd(null);
+        setSleepTimerMinutes(0);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sleepTimerEnd]);
+
+  const setSleepTimer = (mins) => {
+    if (mins === 0) {
+      setSleepTimerEnd(null);
+      setSleepTimerMinutes(0);
+    } else {
+      setSleepTimerMinutes(mins);
+      setSleepTimerEnd(Date.now() + mins * 60 * 1000);
+    }
+  };
+
+  // Setup Global Audio Event Listeners for Background Continuity & Lockscreen
+  useEffect(() => {
+    const audio = nativeAudioRef.current;
+    if (!audio) return;
+
+    const handleEnded = () => {
+      playNext();
+    };
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
+      }
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+    };
+  }, [queue, currentIndex, isShuffling, isLooping]);
+
+  // MediaSession Action Handlers for Background & Hardware Control Keys
   useEffect(() => {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => {
@@ -53,6 +124,18 @@ export const PlayerProvider = ({ children }) => {
   }, [queue, currentIndex, isShuffling, isLooping]);
 
   const playSong = (song, newQueue = null) => {
+    // 1. Immediately Stop and Reset any existing audio stream to prevent overlap
+    if (nativeAudioRef.current) {
+      const audio = nativeAudioRef.current;
+      audio.pause();
+      try {
+        audio.currentTime = 0;
+      } catch (e) {}
+      audio.removeAttribute('src');
+      audio.innerHTML = '';
+      audio.onerror = null;
+    }
+
     let targetQueue = queue;
     let targetIndex = 0;
 
@@ -85,15 +168,18 @@ export const PlayerProvider = ({ children }) => {
     let srcUrl = '';
     if (song.youtubeId) {
       srcUrl = `https://www.youtube.com/watch?v=${song.youtubeId}`;
-    } else {
-      const rawUrl = song.downloadUrl ? song.downloadUrl[song.downloadUrl.length - 1].url : '';
-      srcUrl = rawUrl;
+    } else if (song.downloadUrl && song.downloadUrl.length > 0) {
+      // Pick based on user quality setting
+      let targetObj = song.downloadUrl.find(d => d.quality === audioQuality);
+      if (!targetObj) targetObj = song.downloadUrl[song.downloadUrl.length - 1];
+      srcUrl = targetObj ? targetObj.url : song.downloadUrl[song.downloadUrl.length - 1].url;
     }
 
     if (srcUrl) {
       setCurrentUrl(srcUrl);
       setIsPlaying(true);
       
+      // Update Lockscreen & Status Notification MediaMetadata
       if ('mediaSession' in navigator) {
         const decodeHtml = (html) => {
           const txt = document.createElement("textarea");
@@ -109,7 +195,7 @@ export const PlayerProvider = ({ children }) => {
         navigator.mediaSession.metadata = new window.MediaMetadata({
           title: songTitle,
           artist: decodeHtml(artistName),
-          album: 'Svar Music App',
+          album: 'Svar Music',
           artwork: [
             { src: highResArt, sizes: '96x96', type: 'image/jpeg' },
             { src: highResArt, sizes: '128x128', type: 'image/jpeg' },
@@ -126,12 +212,8 @@ export const PlayerProvider = ({ children }) => {
       
       if ((!song.youtubeId || srcUrl.startsWith('blob:')) && nativeAudioRef.current) {
         const audio = nativeAudioRef.current;
-        audio.removeAttribute('src');
-        audio.innerHTML = '';
-        audio.onerror = null;
-
+        
         if (song.downloadUrl && !srcUrl.startsWith('blob:')) {
-          // Add sources from highest quality to lowest
           for (let i = song.downloadUrl.length - 1; i >= 0; i--) {
             const raw = song.downloadUrl[i].url;
             const source = document.createElement('source');
@@ -199,7 +281,6 @@ export const PlayerProvider = ({ children }) => {
       }
       return [...prev, song];
     });
-    // If no song is playing, start playing the added song immediately
     if (!currentSong) {
       playSong(song, [song]);
     }
@@ -274,7 +355,7 @@ export const PlayerProvider = ({ children }) => {
       setCurrentIndex(0);
       playSong(queue[0]);
     } else if (currentSong) {
-      // Autoplay: fetch a related song
+      // Autoplay: fetch a related song automatically
       try {
         const artistName = currentSong.primaryArtists ? currentSong.primaryArtists.split(',')[0].trim() : 'Bollywood Hits';
         const { searchSongs } = await import('../services/api');
@@ -349,6 +430,10 @@ export const PlayerProvider = ({ children }) => {
       isQueueModalOpen,
       isShuffling,
       isLooping,
+      audioQuality,
+      setAudioQuality,
+      sleepTimerMinutes,
+      setSleepTimer,
       playSong, 
       playSongAt,
       addToQueue,
