@@ -178,10 +178,36 @@ export const searchSongs = async (query, isCustomSearch = true) => {
       });
     }
   } catch (error) {
-    console.warn("JioSaavn proxy search failed, attempting YouTube fallback...", error);
+    console.warn("JioSaavn proxy search failed, attempting iTunes fallback...", error);
   }
 
-  // Strategy 2: Automatic YouTube Search Stream Fallback if JioSaavn returns 0 results
+  // Strategy 2: Apple iTunes Music Official API Fallback (Direct CORS)
+  try {
+    const itunesRes = await axios.get(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=20`);
+    if (itunesRes.data && itunesRes.data.results && itunesRes.data.results.length > 0) {
+      return itunesRes.data.results.map(item => {
+        const highResArt = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://via.placeholder.com/500';
+        return {
+          id: String(item.trackId || item.collectionId),
+          name: item.trackName || item.collectionName,
+          album: item.collectionName || 'Single',
+          year: item.releaseDate ? item.releaseDate.substring(0, 4) : '2025',
+          duration: item.trackTimeMillis ? Math.floor(item.trackTimeMillis / 1000) : 240,
+          primaryArtists: item.artistName || 'Various Artists',
+          url: item.previewUrl || '',
+          image: [
+            { quality: '150x150', url: item.artworkUrl100 || 'https://via.placeholder.com/150' },
+            { quality: '500x500', url: highResArt }
+          ],
+          downloadUrl: item.previewUrl ? [{ quality: '320kbps', url: item.previewUrl }] : []
+        };
+      });
+    }
+  } catch (itunesErr) {
+    console.warn("iTunes fallback error:", itunesErr);
+  }
+
+  // Strategy 3: Automatic YouTube Search Stream Fallback
   try {
     const ytRes = await apiClient.get('/yt-search', { params: { q: query } });
     if (ytRes.data && ytRes.data.results && ytRes.data.results.length > 0) {
