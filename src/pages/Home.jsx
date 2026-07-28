@@ -39,7 +39,7 @@ const Home = () => {
           if (trendingData.trending.songs && Array.isArray(trendingData.trending.songs)) {
             setTrendingSongs(filterDuplicates(trendingData.trending.songs));
           }
-          if (trendingData.trending.albums && Array.isArray(trendingData.trending.albums)) {
+          if (trendingData.trending.albums && Array.isArray(trendingData.trending.albums) && trendingData.trending.albums.length > 0) {
             setTrendingAlbums(filterDuplicates(trendingData.trending.albums));
           }
         } else if (Array.isArray(trendingData)) {
@@ -49,9 +49,23 @@ const Home = () => {
         console.warn("Trending fetch error:", e);
       }
 
+      // Ensure Trending Songs is populated
+      if (trendingSongs.length === 0) {
+        try {
+          const fallback = await searchSongs('Arijit Singh');
+          setTrendingSongs(filterDuplicates(fallback || []));
+        } catch (e) {}
+      }
+
+      // Ensure Trending Albums is populated
+      try {
+        const albums = await searchSongs('Pritam');
+        setTrendingAlbums(filterDuplicates(albums || []));
+      } catch (e) {}
+
       // 2. Load Latest Releases
       try {
-        const latest = await searchSongs('Shreya Ghoshal');
+        const latest = await searchSongs('Latest Indian Hits');
         setLatestAlbums(filterDuplicates(latest || []));
       } catch (e) {
         console.warn("Latest releases error:", e);

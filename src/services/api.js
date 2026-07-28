@@ -128,7 +128,7 @@ export const fetchTrending = async () => {
     console.error("JioSaavn proxy trending error:", error);
   }
 
-  // Guaranteed fallback to top artist search
+  // Guaranteed fallback to search
   const fallbackSongs = await searchSongs('Arijit Singh');
   const fallbackAlbums = await searchSongs('Pritam');
   return {
@@ -140,6 +140,7 @@ export const fetchTrending = async () => {
 };
 
 export const searchSongs = async (query, isCustomSearch = true) => {
+  // Strategy 1: Primary JioSaavn Serverless Proxy Call
   try {
     const response = await apiClient.get('', {
       params: {
@@ -154,7 +155,7 @@ export const searchSongs = async (query, isCustomSearch = true) => {
       }
     });
 
-    if (response.data && typeof response.data === 'object' && response.data.results) {
+    if (response.data && typeof response.data === 'object' && response.data.results && response.data.results.length > 0) {
       return response.data.results.map(song => {
         const rawEnc = song.more_info?.encrypted_media_url;
         const decrypted = decryptUrl(rawEnc);
@@ -177,7 +178,29 @@ export const searchSongs = async (query, isCustomSearch = true) => {
       });
     }
   } catch (error) {
-    console.error("Error searching songs:", error);
+    console.warn("JioSaavn proxy search failed, attempting YouTube fallback...", error);
+  }
+
+  // Strategy 2: Automatic YouTube Search Stream Fallback if JioSaavn returns 0 results
+  try {
+    const ytRes = await apiClient.get('/yt-search', { params: { q: query } });
+    if (ytRes.data && ytRes.data.results && ytRes.data.results.length > 0) {
+      return ytRes.data.results.map(v => ({
+        id: v.videoId,
+        youtubeId: v.videoId,
+        name: v.title,
+        album: 'YouTube Stream',
+        duration: v.seconds || 240,
+        primaryArtists: v.author?.name || 'Trending Artist',
+        image: [
+          { quality: '150x150', url: v.thumbnail || 'https://via.placeholder.com/150' },
+          { quality: '500x500', url: v.thumbnail || 'https://via.placeholder.com/500' }
+        ],
+        downloadUrl: []
+      }));
+    }
+  } catch (ytErr) {
+    console.error("YouTube fallback error:", ytErr);
   }
 
   return [];
