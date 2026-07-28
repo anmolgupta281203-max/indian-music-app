@@ -15,6 +15,8 @@ const SongCard = ({ song, queueContext }) => {
     addToQueue 
   } = usePlayer();
 
+  if (!song) return null;
+
   const isCurrentSong = currentSong?.id === song.id;
   const isFavorite = favorites.some(s => s.id === song.id);
   const isDownloaded = downloadedSongs.some(s => s.id === song.id);
@@ -29,12 +31,24 @@ const SongCard = ({ song, queueContext }) => {
     addToQueue(song);
   };
 
-  const imageUrl = song.image ? song.image[song.image.length - 1].url : 'https://via.placeholder.com/150';
+  const getCardImage = () => {
+    if (!song || !song.image) return 'https://via.placeholder.com/150';
+    if (typeof song.image === 'string') return song.image;
+    if (Array.isArray(song.image) && song.image.length > 0) {
+      const last = song.image[song.image.length - 1];
+      return typeof last === 'string' ? last : (last?.url || song.image[0]?.url || 'https://via.placeholder.com/150');
+    }
+    return 'https://via.placeholder.com/150';
+  };
+
+  const imageUrl = getCardImage();
+  const songTitle = String(song.name || song.title || 'Untitled Song');
+  const artistName = String(song.primaryArtists || song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
 
   return (
     <div className={`song-card ${isCurrentSong ? 'active' : ''}`} onClick={handlePlay}>
       <div className="img-container">
-        <img src={imageUrl} alt={song.name} />
+        <img src={imageUrl} alt={songTitle} />
         
         <button 
           className="download-btn" 
@@ -70,8 +84,8 @@ const SongCard = ({ song, queueContext }) => {
           )}
         </button>
       </div>
-      <h4 dangerouslySetInnerHTML={{ __html: song.name }}></h4>
-      <p dangerouslySetInnerHTML={{ __html: song.primaryArtists || song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist' }}></p>
+      <h4 dangerouslySetInnerHTML={{ __html: songTitle }}></h4>
+      <p dangerouslySetInnerHTML={{ __html: artistName }}></p>
     </div>
   );
 };

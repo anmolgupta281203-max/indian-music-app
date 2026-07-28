@@ -19,9 +19,10 @@ const Home = () => {
       if (!songs || !Array.isArray(songs)) return [];
       const seen = new Set();
       return songs.filter(song => {
-        if (!song || !song.name) return false;
-        const rawName = song.name.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&');
-        const key = rawName.toLowerCase().trim();
+        if (!song) return false;
+        const nameStr = String(song.name || song.title || song.song || '').trim();
+        if (!nameStr) return false;
+        const key = nameStr.toLowerCase();
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -35,8 +36,12 @@ const Home = () => {
       try {
         const trendingData = await fetchTrending();
         if (trendingData && trendingData.trending) {
-          setTrendingSongs(filterDuplicates(trendingData.trending.songs || []));
-          setTrendingAlbums(filterDuplicates(trendingData.trending.albums || []));
+          if (trendingData.trending.songs && Array.isArray(trendingData.trending.songs)) {
+            setTrendingSongs(filterDuplicates(trendingData.trending.songs));
+          }
+          if (trendingData.trending.albums && Array.isArray(trendingData.trending.albums)) {
+            setTrendingAlbums(filterDuplicates(trendingData.trending.albums));
+          }
         } else if (Array.isArray(trendingData)) {
           setTrendingSongs(filterDuplicates(trendingData));
         }
@@ -107,8 +112,8 @@ const Home = () => {
         <h2>Trending Songs</h2>
         {trendingSongs.length > 0 ? (
           <div className="cards-grid">
-            {trendingSongs.map((song) => (
-              <SongCard key={song.id} song={song} queueContext={trendingSongs} />
+            {trendingSongs.map((song, index) => (
+              <SongCard key={song.id || index} song={song} queueContext={trendingSongs} />
             ))}
           </div>
         ) : (
@@ -120,18 +125,25 @@ const Home = () => {
         <h2>Trending Albums</h2>
         {trendingAlbums.length > 0 ? (
           <div className="cards-grid albums-grid">
-            {trendingAlbums.map((album) => (
-              <div 
-                key={album.id} 
-                className="album-card" 
-                onClick={() => album.songs ? playSong(album.songs[0], album.songs) : (album.id ? handleAlbumClick(album.id) : playSong(album, trendingAlbums))}
-                style={{ position: 'relative', cursor: 'pointer' }}
-              >
-                <img src={album.image[1]?.url || album.image[0]?.url || 'https://via.placeholder.com/150'} alt={album.name} />
-                <h4 dangerouslySetInnerHTML={{ __html: album.name }}></h4>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px' }}>{album.artist || album.primaryArtists || 'Featured Album'}</p>
-              </div>
-            ))}
+            {trendingAlbums.map((album, index) => {
+              const imgSrc = Array.isArray(album.image) 
+                ? (album.image[1]?.url || album.image[0]?.url || 'https://via.placeholder.com/150')
+                : (typeof album.image === 'string' ? album.image : 'https://via.placeholder.com/150');
+              const albumName = String(album.name || album.title || 'Album');
+
+              return (
+                <div 
+                  key={album.id || index} 
+                  className="album-card" 
+                  onClick={() => album.songs ? playSong(album.songs[0], album.songs) : (album.id ? handleAlbumClick(album.id) : playSong(album, trendingAlbums))}
+                  style={{ position: 'relative', cursor: 'pointer' }}
+                >
+                  <img src={imgSrc} alt={albumName} />
+                  <h4 dangerouslySetInnerHTML={{ __html: albumName }}></h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px' }}>{album.artist || album.primaryArtists || 'Featured Album'}</p>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="loading-state">{loading ? "Loading albums..." : "Loading albums..."}</div>
@@ -142,8 +154,8 @@ const Home = () => {
         <h2>Latest Releases</h2>
         {latestAlbums.length > 0 ? (
           <div className="cards-grid">
-            {latestAlbums.map((song) => (
-              <SongCard key={song.id} song={song} queueContext={latestAlbums} />
+            {latestAlbums.map((song, index) => (
+              <SongCard key={song.id || index} song={song} queueContext={latestAlbums} />
             ))}
           </div>
         ) : (
@@ -155,8 +167,8 @@ const Home = () => {
         <h2>Top Hindi Hits</h2>
         {hindiHits.length > 0 ? (
           <div className="cards-grid">
-            {hindiHits.map((song) => (
-              <SongCard key={song.id} song={song} queueContext={hindiHits} />
+            {hindiHits.map((song, index) => (
+              <SongCard key={song.id || index} song={song} queueContext={hindiHits} />
             ))}
           </div>
         ) : (
@@ -168,8 +180,8 @@ const Home = () => {
         <h2>Top Punjabi Hits</h2>
         {punjabiHits.length > 0 ? (
           <div className="cards-grid">
-            {punjabiHits.map((song) => (
-              <SongCard key={song.id} song={song} queueContext={punjabiHits} />
+            {punjabiHits.map((song, index) => (
+              <SongCard key={song.id || index} song={song} queueContext={punjabiHits} />
             ))}
           </div>
         ) : (
