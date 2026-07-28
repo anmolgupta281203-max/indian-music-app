@@ -282,7 +282,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
           padding: '8px 16px',
           display: 'flex',
           alignItems: 'center',
-          justify-content: 'space-between',
+          justifyContent: 'space-between',
           fontSize: '13px',
           borderBottom: '1px solid rgba(255,255,255,0.1)'
         }}>
