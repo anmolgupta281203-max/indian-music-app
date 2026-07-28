@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Sparkles, Play, X, Compass, Radio } from 'lucide-react';
+import { Sparkles, Play, X, Radio } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { searchSongs } from '../services/api';
-import './QueueModal.css'; // Shared overlay modal styling
+import './QueueModal.css';
 
 const MOODS = [
   { id: 'monsoon', name: 'Monsoon Chai & Rain Hits ☕🌧️', query: 'Monsoon Bollywood Songs' },
@@ -25,7 +25,6 @@ const AIDjModal = ({ isOpen, onClose }) => {
     try {
       const results = await searchSongs(mood.query);
       if (results && results.length > 0) {
-        // Play first song and queue the rest
         playSong(results[0], results);
         onClose();
       } else {

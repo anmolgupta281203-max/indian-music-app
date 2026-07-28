@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
-  Heart, Download, Share2, ChevronDown, ListMusic, Moon, SlidersHorizontal, MoreVertical, Check, Mic, Disc
+  Heart, Download, Share2, ChevronDown, ListMusic, Moon, SlidersHorizontal, MoreVertical, Check, Mic
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import ReactPlayer from 'react-player/youtube';
