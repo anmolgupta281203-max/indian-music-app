@@ -20,32 +20,6 @@ app.use('/api/tmdb', createProxyMiddleware({
   }
 }));
 
-// 2. JioSaavn API Proxy
-app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/yt-search') || req.path.startsWith('/tmdb')) {
-    return next();
-  }
-  
-  createProxyMiddleware({
-    target: 'https://www.jiosaavn.com',
-    changeOrigin: true,
-    pathRewrite: (path, req) => {
-      let cleanPath = path;
-      if (cleanPath.startsWith('/api')) {
-        cleanPath = cleanPath.substring(4);
-      }
-      if (cleanPath.startsWith('/')) {
-        cleanPath = cleanPath.substring(1);
-      }
-      return '/api.php' + (cleanPath.startsWith('?') || cleanPath === '' ? cleanPath : '?' + cleanPath);
-    },
-    headers: {
-      'Origin': 'https://www.jiosaavn.com',
-      'Referer': 'https://www.jiosaavn.com/',
-    }
-  })(req, res, next);
-});
-
 // 2a. YouTube Search API
 app.get('/api/yt-search', async (req, res) => {
   try {
@@ -129,6 +103,29 @@ app.get('/api/yt-download', async (req, res) => {
   } catch (e) {
     console.error('YT Download Error:', e);
     res.status(500).send(e.message);
+  }
+});
+
+// 2c. Direct JioSaavn API Proxy (Optimized for Vercel Serverless)
+app.get('/api', async (req, res) => {
+  try {
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    const targetUrl = `https://www.jiosaavn.com/api.php${queryString}`;
+
+    const response = await axios.get(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Origin': 'https://www.jiosaavn.com',
+        'Referer': 'https://www.jiosaavn.com/'
+      },
+      timeout: 10000
+    });
+
+    res.header('Access-Control-Allow-Origin', '*');
+    res.json(response.data);
+  } catch (err) {
+    console.error("JioSaavn Serverless Proxy Error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
