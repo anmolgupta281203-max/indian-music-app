@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
-  Heart, Download, Share2, ChevronDown, ListMusic, Moon, SlidersHorizontal, MoreVertical, Check
+  Heart, Download, Share2, ChevronDown, ListMusic, Moon, SlidersHorizontal, MoreVertical, Check, Mic, Disc
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import ReactPlayer from 'react-player/youtube';
@@ -40,6 +40,10 @@ const MusicPlayer = () => {
     toggleLoop,
     audioQuality,
     setAudioQuality,
+    eqPreset,
+    setEqPreset,
+    lyrics,
+    loadingLyrics,
     sleepTimerMinutes,
     setSleepTimer
   } = usePlayer();
@@ -49,10 +53,12 @@ const MusicPlayer = () => {
   const [vol, setVol] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
   
-  // Popover menus state
+  // Popovers
   const [showSleepMenu, setShowSleepMenu] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [showEqMenu, setShowEqMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const playerRef = useRef(null);
@@ -155,6 +161,9 @@ const MusicPlayer = () => {
   const primaryArtist = decodeHtml(currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
   const songTitle = decodeHtml(currentSong.name);
 
+  // Format lyrics lines
+  const lyricsLines = lyrics ? (typeof lyrics === 'string' ? lyrics.replace(/<br\s*[\/]?>/gi, '\n').split('\n') : []) : [];
+
   return (
     <>
       {/* --- Mini Bottom Player Bar --- */}
@@ -238,7 +247,7 @@ const MusicPlayer = () => {
         </div>
       </div>
 
-      {/* --- Inspired Full Screen Player (Matched to Screenshot UI) --- */}
+      {/* --- Full Screen Player --- */}
       <div className={`fullscreen-player ${isFullScreen ? 'open' : ''}`}>
         <div className="fs-background" style={{ backgroundImage: `url(${hqImageUrl})` }}></div>
         <div className="fs-overlay"></div>
@@ -253,15 +262,37 @@ const MusicPlayer = () => {
               <span className="fs-now-playing-label">Now Playing</span>
               <span className="fs-playlist-label">Svar Queue</span>
             </div>
-            <button className="control-btn" onClick={handleShare} title="Share">
-              <Share2 size={22} color="#fff" />
+            <button 
+              className={`fs-action-circle ${showLyrics ? 'active' : ''}`} 
+              onClick={() => setShowLyrics(!showLyrics)} 
+              title="Lyrics & Karaoke"
+              style={{ width: 38, height: 38 }}
+            >
+              <Mic size={20} color={showLyrics ? "#1ed760" : "#fff"} />
             </button>
           </div>
 
-          {/* Centerpiece Artwork Card */}
-          <div className="fs-art-container">
-            <img src={hqImageUrl} alt={songTitle} className="fs-art" />
-          </div>
+          {/* Centerpiece Artwork or Synced Lyrics */}
+          {showLyrics ? (
+            <div className="fs-lyrics-container">
+              <h3>Karaoke & Lyrics</h3>
+              {loadingLyrics ? (
+                <p className="lyrics-placeholder">Loading lyrics...</p>
+              ) : lyricsLines.length > 0 ? (
+                <div className="lyrics-scroll">
+                  {lyricsLines.map((line, idx) => (
+                    <p key={idx} className="lyrics-line">{line}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="lyrics-placeholder">Lyrics not available for this song.</p>
+              )}
+            </div>
+          ) : (
+            <div className="fs-art-container">
+              <img src={hqImageUrl} alt={songTitle} className="fs-art" />
+            </div>
+          )}
 
           {/* Track Info & Quick Actions Row */}
           <div className="fs-track-info-row">
@@ -313,7 +344,7 @@ const MusicPlayer = () => {
               <SkipBack size={32} fill="#fff" color="#fff" />
             </button>
 
-            {/* Custom Scalloped / Starburst White Badge Play/Pause Container */}
+            {/* Custom Scalloped Starburst White Badge Play/Pause Container */}
             <button 
               className="fs-scallop-play-btn" 
               onClick={togglePlay}
@@ -336,7 +367,7 @@ const MusicPlayer = () => {
             </button>
           </div>
 
-          {/* Bottom Action Toolbar (6 Icons Matching Screenshot) */}
+          {/* Bottom Action Toolbar */}
           <div className="fs-toolbar-actions">
             <button className="fs-tool-btn" onClick={openQueueModal} title="Up Next Queue">
               <ListMusic size={22} color="#fff" />
@@ -345,7 +376,7 @@ const MusicPlayer = () => {
             <div style={{ position: 'relative' }}>
               <button 
                 className={`fs-tool-btn ${sleepTimerMinutes > 0 ? 'active' : ''}`}
-                onClick={() => { setShowSleepMenu(!showSleepMenu); setShowQualityMenu(false); setShowMoreMenu(false); }}
+                onClick={() => { setShowSleepMenu(!showSleepMenu); setShowQualityMenu(false); setShowEqMenu(false); setShowMoreMenu(false); }}
                 title="Sleep Timer"
               >
                 <Moon size={22} color={sleepTimerMinutes > 0 ? "#1ed760" : "#fff"} />
@@ -370,23 +401,30 @@ const MusicPlayer = () => {
 
             <div style={{ position: 'relative' }}>
               <button 
-                className="fs-tool-btn" 
-                onClick={() => { setShowQualityMenu(!showQualityMenu); setShowSleepMenu(false); setShowMoreMenu(false); }}
-                title="Audio Quality"
+                className={`fs-tool-btn ${eqPreset !== 'flat' ? 'active' : ''}`}
+                onClick={() => { setShowEqMenu(!showEqMenu); setShowSleepMenu(false); setShowQualityMenu(false); setShowMoreMenu(false); }}
+                title="5-Band Equalizer"
               >
-                <SlidersHorizontal size={22} color="#fff" />
+                <SlidersHorizontal size={22} color={eqPreset !== 'flat' ? "#1ed760" : "#fff"} />
               </button>
-              {showQualityMenu && (
+              {showEqMenu && (
                 <div className="popover-menu">
-                  <h4>Streaming Quality</h4>
-                  {['320kbps', '160kbps', '96kbps'].map(q => (
+                  <h4>5-Band Equalizer</h4>
+                  {[
+                    { id: 'flat', label: 'Flat (Default)' },
+                    { id: 'bassBoost', label: 'Bass Boost 🎧' },
+                    { id: 'vocalEnhancer', label: 'Vocal Enhancer' },
+                    { id: 'bollywoodDance', label: 'Bollywood Dance 💃' },
+                    { id: 'lofiChill', label: 'Lo-Fi Chill 🌙' },
+                    { id: 'acoustic', label: 'Acoustic' }
+                  ].map(eq => (
                     <button 
-                      key={q} 
-                      className={audioQuality === q ? 'selected' : ''}
-                      onClick={() => { setAudioQuality(q); setShowQualityMenu(false); }}
+                      key={eq.id} 
+                      className={eqPreset === eq.id ? 'selected' : ''}
+                      onClick={() => { setEqPreset(eq.id); setShowEqMenu(false); }}
                     >
-                      {q === '320kbps' ? 'Very High (320kbps)' : q === '160kbps' ? 'High (160kbps)' : 'Basic (96kbps)'}
-                      {audioQuality === q && <Check size={16} />}
+                      {eq.label}
+                      {eqPreset === eq.id && <Check size={16} />}
                     </button>
                   ))}
                 </div>
@@ -404,7 +442,7 @@ const MusicPlayer = () => {
             <div style={{ position: 'relative' }}>
               <button 
                 className="fs-tool-btn"
-                onClick={() => { setShowMoreMenu(!showMoreMenu); setShowSleepMenu(false); setShowQualityMenu(false); }}
+                onClick={() => { setShowMoreMenu(!showMoreMenu); setShowSleepMenu(false); setShowQualityMenu(false); setShowEqMenu(false); }}
                 title="More Options"
               >
                 <MoreVertical size={22} color="#fff" />
@@ -412,6 +450,7 @@ const MusicPlayer = () => {
               {showMoreMenu && (
                 <div className="popover-menu">
                   <button onClick={() => { handleShare(); setShowMoreMenu(false); }}>Share Song</button>
+                  <button onClick={() => { setShowQualityMenu(true); setShowMoreMenu(false); }}>Quality: {audioQuality}</button>
                   <button onClick={() => { toggleFavorite(currentSong); setShowMoreMenu(false); }}>
                     {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
                   </button>

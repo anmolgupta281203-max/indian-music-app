@@ -162,7 +162,7 @@ input[type=range].progress-bar:hover::-webkit-slider-thumb {
   width: 90px !important;
 }
 
-/* --- Inspired Full Screen Player (Matched to Screenshot UI) --- */
+/* --- Full Screen Player --- */
 .fullscreen-player {
   position: fixed;
   top: 0;
@@ -271,6 +271,58 @@ input[type=range].progress-bar:hover::-webkit-slider-thumb {
   border-radius: 20px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
   object-fit: cover;
+}
+
+/* Karaoke & Lyrics Container */
+.fs-lyrics-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fs-lyrics-container h3 {
+  margin: 0 0 1rem 0;
+  font-size: 14px;
+  color: #1ed760;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.lyrics-scroll {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  text-align: center;
+  padding-right: 6px;
+}
+
+.lyrics-line {
+  font-size: 16px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 8px 0;
+  font-weight: 500;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.lyrics-line:hover {
+  color: #1ed760;
+  transform: scale(1.03);
+}
+
+.lyrics-placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  margin-top: 2rem;
 }
 
 /* Track Details Row */
@@ -394,7 +446,6 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   transform: scale(1.05);
 }
 
-/* Custom Scalloped / Starburst White Badge Play/Pause Container */
 .fs-scallop-play-btn {
   position: relative;
   width: 80px;
@@ -429,7 +480,7 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   justify-content: center;
 }
 
-/* Bottom Action Toolbar (6 Icons Matching Screenshot) */
+/* Bottom Action Toolbar */
 .fs-toolbar-actions {
   display: flex;
   justify-content: space-between;
@@ -469,7 +520,7 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   border-radius: 10px;
 }
 
-/* Popover Menus for Sleep Timer & Quality */
+/* Popover Menus */
 .popover-menu {
   position: absolute;
   bottom: 55px;

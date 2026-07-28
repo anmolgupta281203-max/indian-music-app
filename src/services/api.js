@@ -14,7 +14,6 @@ const getHighQualityImage = (url) => {
 const createDownloadUrls = (audioUrl) => {
   if (!audioUrl) return [];
 
-  // Handle formats like _96.mp4, _160.mp4, _320.mp4, _96.mp3, etc.
   const cleanUrl = audioUrl.trim();
   const formatMatch = cleanUrl.match(/_(12|48|96|160|320)\.(mp4|mp3)/i);
 
@@ -54,156 +53,186 @@ const decryptUrl = (encryptedUrl) => {
   }
 };
 
+export const fetchLyrics = async (songId) => {
+  try {
+    const res = await axios.get(`https://saavn.dev/api/songs/${songId}/lyrics`);
+    if (res.data && res.data.data && res.data.data.lyrics) {
+      return res.data.data.lyrics;
+    }
+  } catch (e) {
+    console.warn("Primary lyrics API failed, trying fallback...", e);
+  }
+  
+  try {
+    const res = await apiClient.get('', {
+      params: {
+        __call: 'lyrics.getLyrics',
+        lyrics_id: songId,
+        ctx: 'web6dot0',
+        api_version: 4,
+        _format: 'json',
+        _marker: 0
+      }
+    });
+    if (res.data && res.data.lyrics) {
+      return res.data.lyrics;
+    }
+  } catch (err) {
+    console.error("Error fetching lyrics:", err);
+  }
+  return null;
+};
+
 export const fetchTrending = async () => {
   try {
     const response = await apiClient.get('', {
       params: {
-        __call: 'webapi.getLaunchData',
+        __call: 'webapi.get',
+        token: '86427303',
+        type: 'playlist',
+        p: '1',
+        n: '20',
+        includeMetaTags: '0',
+        ctx: 'web6dot0',
+        api_version: '4',
         _format: 'json',
-        _marker: 0,
-        ctx: 'web6dot0'
+        _marker: '0'
       }
     });
 
-    const data = response.data;
-    
-    // Process trending songs
-    const songs = (data.new_trending || [])
-      .filter(item => item.type === 'song' && item.details && (item.details.encrypted_media_url || item.details.vlink))
-      .map(item => {
-        const d = item.details;
-        const audioUrl = decryptUrl(d.encrypted_media_url) || d.vlink;
-        return {
-          id: d.id,
-          name: d.song || d.title,
-          primaryArtists: d.primary_artists || d.singers,
-          image: [{ url: getHighQualityImage(d.image) }],
-          downloadUrl: createDownloadUrls(audioUrl)
-        };
-      });
+    let songs = [];
+    if (response.data && response.data.list) {
+      songs = response.data.list;
+    } else if (response.data && Array.isArray(response.data)) {
+      songs = response.data;
+    }
 
-    // Process trending albums
-    const albums = (data.new_trending || [])
-      .filter(item => item.type === 'album' && item.details)
-      .map(item => {
-        const d = item.details;
-        return {
-          id: d.albumid || d.id,
-          name: d.title,
-          image: [{ url: getHighQualityImage(d.image) }]
-        };
-      });
-
-    // Process new albums (latest releases)
-    const latestAlbums = (data.new_albums || []).map(item => {
+    return songs.map(song => {
+      const rawEnc = song.more_info?.encrypted_media_url;
+      const decrypted = decryptUrl(rawEnc);
+      const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
+      
       return {
-        id: item.albumid || item.id,
-        name: item.title,
-        image: [{ url: getHighQualityImage(item.image) }]
+        id: song.id,
+        name: song.title || song.song,
+        album: song.more_info?.album || song.album,
+        year: song.year,
+        releaseDate: song.more_info?.release_date,
+        duration: song.more_info?.duration,
+        label: song.more_info?.music || song.label,
+        primaryArtists: song.more_info?.artistMap?.primary_artists?.map(a => a.name).join(', ') || song.more_info?.singers || song.singers,
+        featuredArtists: song.more_info?.artistMap?.featured_artists?.map(a => a.name).join(', '),
+        explicitContent: song.explicit_content === "1",
+        playCount: song.play_count,
+        language: song.language,
+        hasLyrics: song.more_info?.has_lyrics === "true",
+        url: song.perma_url,
+        image: [
+          { quality: '150x150', url: song.image },
+          { quality: '500x500', url: getHighQualityImage(song.image) }
+        ],
+        downloadUrl: createDownloadUrls(audioUrl)
       };
     });
-
-    return {
-      trending: {
-        songs: songs,
-        albums: albums,
-        latestAlbums: latestAlbums
-      }
-    };
   } catch (error) {
-    console.error('Error fetching trending data:', error);
-    return null;
+    console.error("Error fetching trending songs:", error);
+    return [];
   }
 };
 
-export const searchSongs = async (query, includeYouTube = true) => {
+export const searchSongs = async (query, isCustomSearch = true) => {
   try {
     const response = await apiClient.get('', {
       params: {
         __call: 'search.getResults',
         q: query,
-        p: 1,
-        n: 250,
+        p: '1',
+        n: '20',
+        ctx: 'web6dot0',
+        api_version: '4',
         _format: 'json',
-        _marker: 0,
-        ctx: 'web6dot0'
+        _marker: '0'
       }
     });
 
-    const data = response.data;
-    const songs = (data.results || [])
-      .map(item => {
-        const audioUrl = decryptUrl(item.encrypted_media_url) || item.vlink;
-        return {
-          id: item.id,
-          name: item.song || item.title || 'Unknown Title',
-          primaryArtists: item.primary_artists || item.singers || item.subtitle || 'Unknown Artist',
-          image: [{ url: getHighQualityImage(item.image) }],
-          downloadUrl: createDownloadUrls(audioUrl),
-          language: (item.language || '').toLowerCase()
-        };
-      })
-      .filter(item => item.downloadUrl.length > 0 && item.downloadUrl[0].url != null)
-      .filter(item => !['telugu', 'tamil', 'bhojpuri', 'english'].includes(item.language));
-
-    if (includeYouTube) {
-      try {
-        const ytRes = await axios.get(`/api/yt-search?q=${encodeURIComponent(query)}`);
-        if (ytRes.data && ytRes.data.results) {
-          const ytSongs = ytRes.data.results.map(v => ({
-            id: v.videoId,
-            name: v.title,
-            primaryArtists: v.author?.name || 'YouTube',
-            image: [{ url: v.thumbnail }],
-            youtubeId: v.videoId
-          }));
-          
-          return [...songs, ...ytSongs];
-        }
-      } catch (ytErr) {
-        console.error('YouTube search fallback failed:', ytErr);
-      }
+    let songs = [];
+    if (response.data && response.data.results) {
+      songs = response.data.results;
     }
 
-    return songs;
+    return songs.map(song => {
+      const rawEnc = song.more_info?.encrypted_media_url;
+      const decrypted = decryptUrl(rawEnc);
+      const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
+      
+      return {
+        id: song.id,
+        name: song.title || song.song,
+        album: song.more_info?.album || song.album,
+        year: song.year,
+        duration: song.more_info?.duration,
+        label: song.more_info?.music || song.label,
+        primaryArtists: song.more_info?.singers || song.singers || song.more_info?.artistMap?.primary_artists?.map(a => a.name).join(', '),
+        image: [
+          { quality: '150x150', url: song.image },
+          { quality: '500x500', url: getHighQualityImage(song.image) }
+        ],
+        downloadUrl: createDownloadUrls(audioUrl)
+      };
+    });
   } catch (error) {
-    console.error('Error searching songs:', error);
+    console.error("Error searching songs:", error);
     return [];
   }
 };
 
-export const fetchAlbumDetails = async (albumid) => {
+export const fetchAlbumDetails = async (albumId) => {
   try {
     const response = await apiClient.get('', {
       params: {
         __call: 'content.getAlbumDetails',
-        albumid: albumid,
+        albumid: albumId,
+        ctx: 'web6dot0',
+        api_version: '4',
         _format: 'json',
-        _marker: 0,
-        ctx: 'web6dot0'
+        _marker: '0'
       }
     });
 
-    const data = response.data;
-    const songs = (data.songs || [])
-      .map(item => {
-        const audioUrl = decryptUrl(item.encrypted_media_url) || item.vlink;
-        return {
-          id: item.id,
-          name: item.song || item.title,
-          primaryArtists: item.primary_artists || item.singers,
-          image: [{ url: getHighQualityImage(item.image) }],
-          downloadUrl: createDownloadUrls(audioUrl),
-          language: (item.language || '').toLowerCase()
-        };
-      })
-      .filter(item => item.downloadUrl.length > 0 && item.downloadUrl[0].url != null)
-      .filter(item => !['telugu', 'tamil', 'bhojpuri', 'english'].includes(item.language));
+    if (!response.data) return null;
 
-    return songs;
+    const album = response.data;
+    const songs = (album.songs || []).map(song => {
+      const rawEnc = song.more_info?.encrypted_media_url;
+      const decrypted = decryptUrl(rawEnc);
+      const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
+      
+      return {
+        id: song.id,
+        name: song.song || song.title,
+        album: album.title,
+        year: song.year,
+        duration: song.more_info?.duration,
+        primaryArtists: song.more_info?.singers || song.singers,
+        image: [
+          { quality: '150x150', url: song.image || album.image },
+          { quality: '500x500', url: getHighQualityImage(song.image || album.image) }
+        ],
+        downloadUrl: createDownloadUrls(audioUrl)
+      };
+    });
+
+    return {
+      id: album.id,
+      name: album.title,
+      artist: album.primary_artists,
+      year: album.year,
+      image: getHighQualityImage(album.image),
+      songs
+    };
   } catch (error) {
-    console.error('Error fetching album details:', error);
-    return [];
+    console.error("Error fetching album details:", error);
+    return null;
   }
 };
 
@@ -211,88 +240,29 @@ export const searchArtists = async (query) => {
   try {
     const response = await apiClient.get('', {
       params: {
-        __call: 'autocomplete.get',
-        query: query,
+        __call: 'search.getArtistResults',
+        q: query,
+        p: '1',
+        n: '10',
+        ctx: 'web6dot0',
+        api_version: '4',
         _format: 'json',
-        _marker: 0,
-        ctx: 'web6dot0'
+        _marker: '0'
       }
     });
 
-    const data = response.data;
-    if (data && data.artists && data.artists.data) {
-      return data.artists.data.map(artist => ({
+    if (response.data && response.data.results) {
+      return response.data.results.map(artist => ({
         id: artist.id,
-        name: artist.title,
-        image: [{ url: getHighQualityImage(artist.image) }],
-        type: 'artist'
+        name: artist.name,
+        role: artist.role,
+        image: getHighQualityImage(artist.image),
+        url: artist.perma_url
       }));
     }
     return [];
   } catch (error) {
-    console.error('Error searching artists:', error);
-    return [];
-  }
-};
-
-export const searchAlbums = async (query) => {
-  try {
-    const response = await apiClient.get('', {
-      params: {
-        __call: 'autocomplete.get',
-        query: query,
-        _format: 'json',
-        _marker: 0,
-        ctx: 'web6dot0'
-      }
-    });
-
-    const data = response.data;
-    if (data && data.albums && data.albums.data) {
-      return data.albums.data.map(album => ({
-        id: album.id,
-        name: album.title,
-        image: [{ url: getHighQualityImage(album.image) }]
-      }));
-    }
-    return [];
-  } catch (error) {
-    console.error('Error searching albums:', error);
-    return [];
-  }
-};
-
-export const fetchArtistTopSongs = async (artistId) => {
-  try {
-    const response = await apiClient.get('', {
-      params: {
-        __call: 'artist.getArtistPageDetails',
-        artistId: artistId,
-        _format: 'json',
-        _marker: 0,
-        ctx: 'web6dot0'
-      }
-    });
-
-    const data = response.data;
-    const songs = (data.topSongs || [])
-      .map(item => {
-        const audioUrl = decryptUrl(item.encrypted_media_url) || item.vlink;
-        return {
-          id: item.id,
-          name: item.song || item.title,
-          primaryArtists: item.primary_artists || item.singers || data.name,
-          image: [{ url: getHighQualityImage(item.image) }],
-          downloadUrl: createDownloadUrls(audioUrl),
-          language: (item.language || '').toLowerCase()
-        };
-      })
-      .filter(item => item.downloadUrl.length > 0 && item.downloadUrl[0].url != null)
-      .filter(item => !['telugu', 'tamil', 'bhojpuri', 'english'].includes(item.language));
-
-    return songs;
-  } catch (error) {
-    console.error('Error fetching artist top songs:', error);
+    console.error("Error searching artists:", error);
     return [];
   }
 };

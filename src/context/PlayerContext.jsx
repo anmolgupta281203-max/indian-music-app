@@ -1,9 +1,19 @@
 import React, { createContext, useState, useContext, useRef, useEffect } from 'react';
 import { getOfflineSong, downloadSongToApp, getAllOfflineSongs, deleteOfflineSong } from '../utils/offlineStorage';
+import { fetchLyrics } from '../services/api';
 
 const PlayerContext = createContext();
 
 export const usePlayer = () => useContext(PlayerContext);
+
+const EQ_PRESETS = {
+  flat: [0, 0, 0, 0, 0],
+  bassBoost: [9, 6, 2, 0, -1],
+  vocalEnhancer: [-2, 2, 6, 4, 1],
+  bollywoodDance: [7, 4, 0, 3, 6],
+  lofiChill: [5, 2, -2, -4, -6],
+  acoustic: [3, 1, 3, 5, 4]
+};
 
 export const PlayerProvider = ({ children }) => {
   const [currentSong, setCurrentSong] = useState(null);
@@ -18,7 +28,16 @@ export const PlayerProvider = ({ children }) => {
     return localStorage.getItem('svar_audio_quality') || '320kbps';
   });
 
-  // Sleep Timer: null or target timestamp in ms
+  // Equalizer Preset: 'flat', 'bassBoost', 'vocalEnhancer', 'bollywoodDance', 'lofiChill', 'acoustic'
+  const [eqPreset, setEqPreset] = useState(() => {
+    return localStorage.getItem('svar_eq_preset') || 'flat';
+  });
+
+  // Lyrics State
+  const [lyrics, setLyrics] = useState(null);
+  const [loadingLyrics, setLoadingLyrics] = useState(false);
+
+  // Sleep Timer
   const [sleepTimerEnd, setSleepTimerEnd] = useState(null);
   const [sleepTimerMinutes, setSleepTimerMinutes] = useState(0);
 
@@ -27,13 +46,14 @@ export const PlayerProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Global Queue Modal State
   const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
-
   const [downloadedSongs, setDownloadedSongs] = useState([]);
   const [currentUrl, setCurrentUrl] = useState('');
 
   const nativeAudioRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const sourceNodeRef = useRef(null);
+  const eqFiltersRef = useRef([]);
 
   useEffect(() => {
     getAllOfflineSongs().then(songs => setDownloadedSongs(songs));
@@ -47,7 +67,60 @@ export const PlayerProvider = ({ children }) => {
     localStorage.setItem('svar_audio_quality', audioQuality);
   }, [audioQuality]);
 
-  // Sleep timer countdown logic
+  useEffect(() => {
+    localStorage.setItem('svar_eq_preset', eqPreset);
+    applyEqPreset(eqPreset);
+  }, [eqPreset]);
+
+  // Web Audio API Equalizer Setup
+  const setupWebAudio = () => {
+    if (!nativeAudioRef.current || audioCtxRef.current) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      audioCtxRef.current = ctx;
+
+      const source = ctx.createMediaElementSource(nativeAudioRef.current);
+      sourceNodeRef.current = source;
+
+      // 5 Frequencies: 60Hz, 230Hz, 910Hz, 4000Hz, 14000Hz
+      const freqs = [60, 230, 910, 4000, 14000];
+      const filters = freqs.map((freq, i) => {
+        const filter = ctx.createBiquadFilter();
+        if (i === 0) filter.type = 'lowshelf';
+        else if (i === freqs.length - 1) filter.type = 'highshelf';
+        else filter.type = 'peaking';
+        filter.frequency.value = freq;
+        filter.gain.value = 0;
+        return filter;
+      });
+
+      eqFiltersRef.current = filters;
+
+      // Connect nodes sequentially: Source -> Filter0 -> Filter1 ... -> Destination
+      let lastNode = source;
+      filters.forEach(filter => {
+        lastNode.connect(filter);
+        lastNode = filter;
+      });
+      lastNode.connect(ctx.destination);
+      applyEqPreset(eqPreset);
+    } catch (e) {
+      console.warn("Web Audio EQ initialization note:", e);
+    }
+  };
+
+  const applyEqPreset = (presetKey) => {
+    const gains = EQ_PRESETS[presetKey] || EQ_PRESETS.flat;
+    if (eqFiltersRef.current && eqFiltersRef.current.length === 5) {
+      eqFiltersRef.current.forEach((filter, idx) => {
+        filter.gain.value = gains[idx];
+      });
+    }
+  };
+
+  // Sleep timer countdown
   useEffect(() => {
     if (!sleepTimerEnd) return;
     const interval = setInterval(() => {
@@ -71,7 +144,7 @@ export const PlayerProvider = ({ children }) => {
     }
   };
 
-  // Setup Global Audio Event Listeners for Background Continuity & Lockscreen
+  // Global Audio Listeners
   useEffect(() => {
     const audio = nativeAudioRef.current;
     if (!audio) return;
@@ -84,6 +157,9 @@ export const PlayerProvider = ({ children }) => {
       setIsPlaying(true);
       if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = 'playing';
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
       }
     };
 
@@ -105,7 +181,7 @@ export const PlayerProvider = ({ children }) => {
     };
   }, [queue, currentIndex, isShuffling, isLooping]);
 
-  // MediaSession Action Handlers for Background & Hardware Control Keys
+  // MediaSession Handlers
   useEffect(() => {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => {
@@ -124,7 +200,8 @@ export const PlayerProvider = ({ children }) => {
   }, [queue, currentIndex, isShuffling, isLooping]);
 
   const playSong = (song, newQueue = null) => {
-    // 1. Immediately Stop and Reset any existing audio stream to prevent overlap
+    setupWebAudio();
+
     if (nativeAudioRef.current) {
       const audio = nativeAudioRef.current;
       audio.pause();
@@ -165,11 +242,18 @@ export const PlayerProvider = ({ children }) => {
     
     setCurrentSong(song);
     
+    // Fetch Lyrics in background
+    setLyrics(null);
+    setLoadingLyrics(true);
+    fetchLyrics(song.id).then(l => {
+      setLyrics(l);
+      setLoadingLyrics(false);
+    }).catch(() => setLoadingLyrics(false));
+
     let srcUrl = '';
     if (song.youtubeId) {
       srcUrl = `https://www.youtube.com/watch?v=${song.youtubeId}`;
     } else if (song.downloadUrl && song.downloadUrl.length > 0) {
-      // Pick based on user quality setting
       let targetObj = song.downloadUrl.find(d => d.quality === audioQuality);
       if (!targetObj) targetObj = song.downloadUrl[song.downloadUrl.length - 1];
       srcUrl = targetObj ? targetObj.url : song.downloadUrl[song.downloadUrl.length - 1].url;
@@ -179,7 +263,6 @@ export const PlayerProvider = ({ children }) => {
       setCurrentUrl(srcUrl);
       setIsPlaying(true);
       
-      // Update Lockscreen & Status Notification MediaMetadata
       if ('mediaSession' in navigator) {
         const decodeHtml = (html) => {
           const txt = document.createElement("textarea");
@@ -225,7 +308,6 @@ export const PlayerProvider = ({ children }) => {
           audio.src = srcUrl;
         }
 
-        // Automatic Proxy Fallback on Audio Errors (e.g. CORS block or 403)
         audio.onerror = () => {
           console.warn("Direct stream failed, falling back to /audio-proxy...");
           const targetRaw = song.downloadUrl ? song.downloadUrl[song.downloadUrl.length - 1].url : srcUrl;
@@ -246,7 +328,6 @@ export const PlayerProvider = ({ children }) => {
       }
     }
 
-    // Offline caching check
     const isDownloaded = downloadedSongs.some(s => s.id === song.id);
     if (isDownloaded) {
       getOfflineSong(song.id).then(offlineSong => {
@@ -355,7 +436,6 @@ export const PlayerProvider = ({ children }) => {
       setCurrentIndex(0);
       playSong(queue[0]);
     } else if (currentSong) {
-      // Autoplay: fetch a related song automatically
       try {
         const artistName = currentSong.primaryArtists ? currentSong.primaryArtists.split(',')[0].trim() : 'Bollywood Hits';
         const { searchSongs } = await import('../services/api');
@@ -432,6 +512,10 @@ export const PlayerProvider = ({ children }) => {
       isLooping,
       audioQuality,
       setAudioQuality,
+      eqPreset,
+      setEqPreset,
+      lyrics,
+      loadingLyrics,
       sleepTimerMinutes,
       setSleepTimer,
       playSong, 
