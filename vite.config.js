@@ -117,9 +117,15 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        navigateFallback: '/index.html'
+      },
       manifest: {
-        name: 'Indian Music App',
-        short_name: 'MusicApp',
+        name: 'Svar Music',
+        short_name: 'Svar',
         description: 'Stream premium Indian music in high fidelity.',
         theme_color: '#09090b',
         background_color: '#09090b',
@@ -140,22 +146,6 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
-          }
-        ],
-        screenshots: [
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            form_factor: 'wide',
-            label: 'Home Screen'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            form_factor: 'narrow',
-            label: 'Mobile View'
           }
         ]
       }
