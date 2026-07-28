@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchAlbumDetails, searchSongs } from '../services/api';
+import { fetchAlbumDetails, searchSongs, fetchTrending } from '../services/api';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/SongCard';
 import './Home.css';
@@ -31,40 +31,28 @@ const Home = () => {
     const loadData = async () => {
       setLoading(true);
 
-      // 1. Load Trending Songs (Top Arijit Singh & Trending Hits)
+      // 1. Fetch Trending Songs & Albums
       try {
-        let trending = await searchSongs('Arijit Singh');
-        if (!trending || trending.length === 0) {
-          trending = await searchSongs('Bollywood');
+        const trendingData = await fetchTrending();
+        if (trendingData && trendingData.trending) {
+          setTrendingSongs(filterDuplicates(trendingData.trending.songs || []));
+          setTrendingAlbums(filterDuplicates(trendingData.trending.albums || []));
+        } else if (Array.isArray(trendingData)) {
+          setTrendingSongs(filterDuplicates(trendingData));
         }
-        setTrendingSongs(filterDuplicates(trending || []));
       } catch (e) {
-        console.warn("Trending songs error:", e);
+        console.warn("Trending fetch error:", e);
       }
 
-      // 2. Load Trending Albums (Pritam Hits)
+      // 2. Load Latest Releases
       try {
-        let albums = await searchSongs('Pritam');
-        if (!albums || albums.length === 0) {
-          albums = await searchSongs('Hindi Hits');
-        }
-        setTrendingAlbums(filterDuplicates(albums || []));
-      } catch (e) {
-        console.warn("Trending albums error:", e);
-      }
-
-      // 3. Load Latest Releases (Shreya Ghoshal & New Hits)
-      try {
-        let latest = await searchSongs('Shreya Ghoshal');
-        if (!latest || latest.length === 0) {
-          latest = await searchSongs('New Hits');
-        }
+        const latest = await searchSongs('Shreya Ghoshal');
         setLatestAlbums(filterDuplicates(latest || []));
       } catch (e) {
         console.warn("Latest releases error:", e);
       }
 
-      // 4. Load Hindi Hits
+      // 3. Load Top Hindi Hits
       try {
         const hindi = await searchSongs('Hindi');
         setHindiHits(filterDuplicates(hindi || []));
@@ -72,7 +60,7 @@ const Home = () => {
         console.warn("Hindi hits error:", e);
       }
 
-      // 5. Load Punjabi Hits
+      // 4. Load Top Punjabi Hits
       try {
         const punjabi = await searchSongs('Punjabi');
         setPunjabiHits(filterDuplicates(punjabi || []));
@@ -136,12 +124,12 @@ const Home = () => {
               <div 
                 key={album.id} 
                 className="album-card" 
-                onClick={() => album.songs ? playSong(album.songs[0], album.songs) : playSong(album, trendingAlbums)}
+                onClick={() => album.songs ? playSong(album.songs[0], album.songs) : (album.id ? handleAlbumClick(album.id) : playSong(album, trendingAlbums))}
                 style={{ position: 'relative', cursor: 'pointer' }}
               >
                 <img src={album.image[1]?.url || album.image[0]?.url || 'https://via.placeholder.com/150'} alt={album.name} />
                 <h4 dangerouslySetInnerHTML={{ __html: album.name }}></h4>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px' }}>{album.primaryArtists || 'Featured Album'}</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px' }}>{album.artist || album.primaryArtists || 'Featured Album'}</p>
               </div>
             ))}
           </div>
