@@ -33,7 +33,7 @@ const Home = () => {
 
       // 1. Load Trending Songs
       try {
-        const trending = await searchSongs('Top Bollywood Hits 2024');
+        const trending = await searchSongs('Bollywood Trending Songs');
         setTrendingSongs(filterDuplicates(trending || []));
       } catch (e) {
         console.warn("Trending songs error:", e);
@@ -41,7 +41,7 @@ const Home = () => {
 
       // 2. Load Trending Albums
       try {
-        const albums = await searchSongs('Top Indian Albums 2024');
+        const albums = await searchSongs('Top Indian Albums');
         setTrendingAlbums(filterDuplicates(albums || []));
       } catch (e) {
         console.warn("Trending albums error:", e);
@@ -49,7 +49,7 @@ const Home = () => {
 
       // 3. Load Latest Releases
       try {
-        const latest = await searchSongs('New Release Songs 2024');
+        const latest = await searchSongs('New Hindi Release Songs');
         setLatestAlbums(filterDuplicates(latest || []));
       } catch (e) {
         console.warn("Latest releases error:", e);
@@ -57,7 +57,7 @@ const Home = () => {
 
       // 4. Load Hindi Hits
       try {
-        const hindi = await searchSongs('Latest Hindi Hits');
+        const hindi = await searchSongs('Top Hindi Hits');
         setHindiHits(filterDuplicates(hindi || []));
       } catch (e) {
         console.warn("Hindi hits error:", e);
@@ -65,7 +65,7 @@ const Home = () => {
 
       // 5. Load Punjabi Hits
       try {
-        const punjabi = await searchSongs('Latest Punjabi Hits');
+        const punjabi = await searchSongs('Top Punjabi Hits');
         setPunjabiHits(filterDuplicates(punjabi || []));
       } catch (e) {
         console.warn("Punjabi hits error:", e);
