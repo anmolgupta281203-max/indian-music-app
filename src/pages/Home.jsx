@@ -31,25 +31,34 @@ const Home = () => {
     const loadData = async () => {
       setLoading(true);
 
-      // 1. Load Trending Songs
+      // 1. Load Trending Songs (Top Arijit Singh & Trending Hits)
       try {
-        const trending = await searchSongs('Bollywood Trending Songs');
+        let trending = await searchSongs('Arijit Singh');
+        if (!trending || trending.length === 0) {
+          trending = await searchSongs('Bollywood');
+        }
         setTrendingSongs(filterDuplicates(trending || []));
       } catch (e) {
         console.warn("Trending songs error:", e);
       }
 
-      // 2. Load Trending Albums
+      // 2. Load Trending Albums (Pritam Hits)
       try {
-        const albums = await searchSongs('Top Indian Albums');
+        let albums = await searchSongs('Pritam');
+        if (!albums || albums.length === 0) {
+          albums = await searchSongs('Hindi Hits');
+        }
         setTrendingAlbums(filterDuplicates(albums || []));
       } catch (e) {
         console.warn("Trending albums error:", e);
       }
 
-      // 3. Load Latest Releases
+      // 3. Load Latest Releases (Shreya Ghoshal & New Hits)
       try {
-        const latest = await searchSongs('New Hindi Release Songs');
+        let latest = await searchSongs('Shreya Ghoshal');
+        if (!latest || latest.length === 0) {
+          latest = await searchSongs('New Hits');
+        }
         setLatestAlbums(filterDuplicates(latest || []));
       } catch (e) {
         console.warn("Latest releases error:", e);
@@ -57,7 +66,7 @@ const Home = () => {
 
       // 4. Load Hindi Hits
       try {
-        const hindi = await searchSongs('Top Hindi Hits');
+        const hindi = await searchSongs('Hindi');
         setHindiHits(filterDuplicates(hindi || []));
       } catch (e) {
         console.warn("Hindi hits error:", e);
@@ -65,7 +74,7 @@ const Home = () => {
 
       // 5. Load Punjabi Hits
       try {
-        const punjabi = await searchSongs('Top Punjabi Hits');
+        const punjabi = await searchSongs('Punjabi');
         setPunjabiHits(filterDuplicates(punjabi || []));
       } catch (e) {
         console.warn("Punjabi hits error:", e);
@@ -115,7 +124,7 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading top hits..." : "Failed to load trending songs."}</div>
+          <div className="loading-state">{loading ? "Loading top hits..." : "Loading recommendations..."}</div>
         )}
       </section>
 
@@ -127,7 +136,7 @@ const Home = () => {
               <div 
                 key={album.id} 
                 className="album-card" 
-                onClick={() => album.songs ? playSong(album.songs[0], album.songs) : playSong(album)}
+                onClick={() => album.songs ? playSong(album.songs[0], album.songs) : playSong(album, trendingAlbums)}
                 style={{ position: 'relative', cursor: 'pointer' }}
               >
                 <img src={album.image[1]?.url || album.image[0]?.url || 'https://via.placeholder.com/150'} alt={album.name} />
@@ -137,7 +146,7 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading albums..." : "No albums found."}</div>
+          <div className="loading-state">{loading ? "Loading albums..." : "Loading albums..."}</div>
         )}
       </section>
 
@@ -150,7 +159,7 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading latest..." : "No latest releases."}</div>
+          <div className="loading-state">{loading ? "Loading latest..." : "Loading latest..."}</div>
         )}
       </section>
 
@@ -163,7 +172,7 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading Hindi hits..." : "No Hindi songs found."}</div>
+          <div className="loading-state">{loading ? "Loading Hindi hits..." : "Loading Hindi hits..."}</div>
         )}
       </section>
 
@@ -176,7 +185,7 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading Punjabi hits..." : "No Punjabi songs found."}</div>
+          <div className="loading-state">{loading ? "Loading Punjabi hits..." : "Loading Punjabi hits..."}</div>
         )}
       </section>
     </div>

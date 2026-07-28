@@ -140,7 +140,7 @@ export const fetchTrending = async () => {
     console.warn("webapi.get failed, falling back to searchSongs...", error);
   }
 
-  return await searchSongs('Bollywood Trending Songs', true);
+  return await searchSongs('Arijit Singh', true);
 };
 
 export const searchSongs = async (query, isCustomSearch = true) => {
