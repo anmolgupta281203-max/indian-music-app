@@ -1,0 +1,115 @@
+.top-nav {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  z-index: 100;
+  background-color: #121212;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+
+
+.nav-arrows {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.nav-arrow:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+.top-right-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-name-header {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.5px;
+  background: linear-gradient(90deg, #fff, #1ed760);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.profile-btn {
+  background-color: rgba(0,0,0,0.7);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.profile-btn:hover, .profile-btn.active {
+  transform: scale(1.05);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.profile-container {
+  position: relative;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background-color: #282828;
+  border-radius: 6px;
+  width: 200px;
+  box-shadow: 0 16px 24px rgba(0,0,0,0.5);
+  padding: 0.25rem;
+  z-index: 1000;
+}
+
+.profile-dropdown ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.profile-dropdown li {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: background-color 0.2s;
+}
+
+.profile-dropdown li:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.profile-dropdown li.divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 0.25rem 0;
+  padding: 0;
+}

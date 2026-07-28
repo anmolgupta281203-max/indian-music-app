@@ -1,0 +1,75 @@
+.category-nav-container {
+  background-color: #0b0b0c;
+  padding: 15px 20px;
+  border-bottom: 1px solid #222;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.category-nav-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 30px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.nav-item {
+  color: #aaa;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.2s;
+  padding: 5px 0;
+}
+
+.nav-item:hover {
+  color: #fff;
+}
+
+.nav-item.active-red {
+  color: #e50914;
+}
+
+.nav-item.active-text {
+  color: #fff;
+}
+
+.dropdown-toggle {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  min-width: 150px;
+  list-style: none;
+  padding: 10px 0;
+  margin: 5px 0 0 0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-menu li {
+  padding: 8px 20px;
+  color: #ccc;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.dropdown-menu li:hover {
+  background-color: #333;
+  color: #fff;
+}

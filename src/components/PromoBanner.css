@@ -1,0 +1,52 @@
+.promo-banner-container {
+  margin-top: 20px;
+  padding: 15px;
+  background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.promo-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: var(--primary-color);
+  color: var(--bg-dark);
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.promo-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.promo-content p {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.promo-btn {
+  display: inline-block;
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.promo-btn:hover {
+  background-color: var(--primary-color);
+  color: var(--bg-dark);
+}
