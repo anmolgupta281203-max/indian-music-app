@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { fetchAlbumDetails, searchSongs, fetchTrending } from '../services/api';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/SongCard';
-import { Sparkles } from 'lucide-react';
 import './Home.css';
 
 const Home = () => {
@@ -16,35 +15,58 @@ const Home = () => {
   const { playSong } = usePlayer();
 
   useEffect(() => {
+    const filterDuplicates = (songs) => {
+      if (!songs || !Array.isArray(songs)) return [];
+      const seen = new Set();
+      return songs.filter(song => {
+        if (!song || !song.name) return false;
+        const rawName = song.name.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&');
+        const key = rawName.toLowerCase().trim();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+
     const loadData = async () => {
-      const [trendingData, hindi, punjabi] = await Promise.all([
-        fetchTrending(),
-        searchSongs('Latest Hindi Hits', true),
-        searchSongs('Latest Punjabi Hits', true)
-      ]);
+      setLoading(true);
 
-      const filterDuplicates = (songs) => {
-        if (!songs || !Array.isArray(songs)) return [];
-        const seen = new Set();
-        return songs.filter(song => {
-          if (!song || !song.name) return false;
-          const rawName = song.name.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&');
-          const key = rawName.toLowerCase().trim();
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-      };
-
-      if (trendingData && trendingData.trending) {
-        setTrendingSongs(trendingData.trending.songs || []);
-        setTrendingAlbums(trendingData.trending.albums || []);
-      } else if (trendingData && Array.isArray(trendingData)) {
-        setTrendingSongs(trendingData);
+      // Load Trending Songs
+      try {
+        let trending = await fetchTrending();
+        if (!trending || trending.length === 0) {
+          trending = await searchSongs('Bollywood Top 2024');
+        }
+        if (trending && trending.trending) {
+          setTrendingSongs(filterDuplicates(trending.trending.songs || []));
+          setTrendingAlbums(trending.trending.albums || []);
+        } else if (Array.isArray(trending)) {
+          setTrendingSongs(filterDuplicates(trending));
+        }
+      } catch (e) {
+        console.warn("Trending fetch failed, searching fallback...", e);
+        try {
+          const fallback = await searchSongs('Arijit Singh Top Hits');
+          setTrendingSongs(filterDuplicates(fallback || []));
+        } catch (err) {}
       }
 
-      setHindiHits(filterDuplicates(hindi));
-      setPunjabiHits(filterDuplicates(punjabi));
+      // Load Hindi Hits
+      try {
+        const hindi = await searchSongs('Latest Hindi Hits');
+        setHindiHits(filterDuplicates(hindi || []));
+      } catch (e) {
+        console.warn("Hindi hits fetch failed", e);
+      }
+
+      // Load Punjabi Hits
+      try {
+        const punjabi = await searchSongs('Latest Punjabi Hits');
+        setPunjabiHits(filterDuplicates(punjabi || []));
+      } catch (e) {
+        console.warn("Punjabi hits fetch failed", e);
+      }
+
       setLoading(false);
     };
 
