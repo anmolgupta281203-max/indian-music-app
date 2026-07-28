@@ -107,37 +107,41 @@ export const fetchTrending = async () => {
       songs = response.data;
     }
 
-    return songs.map(song => {
-      const rawEnc = song.more_info?.encrypted_media_url;
-      const decrypted = decryptUrl(rawEnc);
-      const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
-      
-      return {
-        id: song.id,
-        name: song.title || song.song,
-        album: song.more_info?.album || song.album,
-        year: song.year,
-        releaseDate: song.more_info?.release_date,
-        duration: song.more_info?.duration,
-        label: song.more_info?.music || song.label,
-        primaryArtists: song.more_info?.artistMap?.primary_artists?.map(a => a.name).join(', ') || song.more_info?.singers || song.singers,
-        featuredArtists: song.more_info?.artistMap?.featured_artists?.map(a => a.name).join(', '),
-        explicitContent: song.explicit_content === "1",
-        playCount: song.play_count,
-        language: song.language,
-        hasLyrics: song.more_info?.has_lyrics === "true",
-        url: song.perma_url,
-        image: [
-          { quality: '150x150', url: song.image },
-          { quality: '500x500', url: getHighQualityImage(song.image) }
-        ],
-        downloadUrl: createDownloadUrls(audioUrl)
-      };
-    });
+    if (songs.length > 0) {
+      return songs.map(song => {
+        const rawEnc = song.more_info?.encrypted_media_url;
+        const decrypted = decryptUrl(rawEnc);
+        const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
+        
+        return {
+          id: song.id,
+          name: song.title || song.song,
+          album: song.more_info?.album || song.album,
+          year: song.year,
+          releaseDate: song.more_info?.release_date,
+          duration: song.more_info?.duration,
+          label: song.more_info?.music || song.label,
+          primaryArtists: song.more_info?.artistMap?.primary_artists?.map(a => a.name).join(', ') || song.more_info?.singers || song.singers,
+          featuredArtists: song.more_info?.artistMap?.featured_artists?.map(a => a.name).join(', '),
+          explicitContent: song.explicit_content === "1",
+          playCount: song.play_count,
+          language: song.language,
+          hasLyrics: song.more_info?.has_lyrics === "true",
+          url: song.perma_url,
+          image: [
+            { quality: '150x150', url: song.image },
+            { quality: '500x500', url: getHighQualityImage(song.image) }
+          ],
+          downloadUrl: createDownloadUrls(audioUrl)
+        };
+      });
+    }
   } catch (error) {
-    console.error("Error fetching trending songs:", error);
-    return [];
+    console.warn("webapi.get failed, falling back to searchSongs...", error);
   }
+
+  // Robust fallback to top hits search if playlist endpoint is unavailable
+  return await searchSongs('Top Bollywood Trending Hits 2024', true);
 };
 
 export const searchSongs = async (query, isCustomSearch = true) => {
