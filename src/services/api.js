@@ -140,8 +140,8 @@ export const fetchTrending = async () => {
     console.warn("webapi.get failed, falling back to searchSongs...", error);
   }
 
-  // Robust fallback to top hits search if playlist endpoint is unavailable
-  return await searchSongs('Top Bollywood Trending Hits 2024', true);
+  // High reliability fallback query
+  return await searchSongs('Bollywood Trending Songs', true);
 };
 
 export const searchSongs = async (query, isCustomSearch = true) => {
