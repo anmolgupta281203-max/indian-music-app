@@ -84,67 +84,34 @@ export const fetchLyrics = async (songId) => {
 };
 
 export const fetchTrending = async () => {
-  try {
-    const response = await apiClient.get('', {
-      params: {
-        __call: 'webapi.get',
-        token: '86427303',
-        type: 'playlist',
-        p: '1',
-        n: '20',
-        includeMetaTags: '0',
-        ctx: 'web6dot0',
-        api_version: '4',
-        _format: 'json',
-        _marker: '0'
-      }
-    });
-
-    let songs = [];
-    if (response.data && response.data.list) {
-      songs = response.data.list;
-    } else if (response.data && Array.isArray(response.data)) {
-      songs = response.data;
-    }
-
-    if (songs.length > 0) {
-      return songs.map(song => {
-        const rawEnc = song.more_info?.encrypted_media_url;
-        const decrypted = decryptUrl(rawEnc);
-        const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
-        
-        return {
-          id: song.id,
-          name: song.title || song.song,
-          album: song.more_info?.album || song.album,
-          year: song.year,
-          releaseDate: song.more_info?.release_date,
-          duration: song.more_info?.duration,
-          label: song.more_info?.music || song.label,
-          primaryArtists: song.more_info?.artistMap?.primary_artists?.map(a => a.name).join(', ') || song.more_info?.singers || song.singers,
-          featuredArtists: song.more_info?.artistMap?.featured_artists?.map(a => a.name).join(', '),
-          explicitContent: song.explicit_content === "1",
-          playCount: song.play_count,
-          language: song.language,
-          hasLyrics: song.more_info?.has_lyrics === "true",
-          url: song.perma_url,
-          image: [
-            { quality: '150x150', url: song.image },
-            { quality: '500x500', url: getHighQualityImage(song.image) }
-          ],
-          downloadUrl: createDownloadUrls(audioUrl)
-        };
-      });
-    }
-  } catch (error) {
-    console.warn("webapi.get failed, falling back to searchSongs...", error);
-  }
-
   return await searchSongs('Arijit Singh', true);
 };
 
 export const searchSongs = async (query, isCustomSearch = true) => {
-  // Primary Strategy: Serverless Proxy API Call
+  // Strategy 1: Direct Saavn.dev API Call (High Speed & Direct CORS)
+  try {
+    const res = await axios.get(`https://saavn.dev/api/search/songs?query=${encodeURIComponent(query)}`);
+    if (res.data && res.data.data && res.data.data.results && res.data.data.results.length > 0) {
+      return res.data.data.results.map(song => ({
+        id: song.id,
+        name: song.name,
+        album: song.album?.name || song.album,
+        year: song.year,
+        duration: song.duration,
+        label: song.label,
+        primaryArtists: song.artists?.primary?.map(a => a.name).join(', ') || song.primaryArtists,
+        image: [
+          { quality: '150x150', url: song.image ? song.image[0]?.url : 'https://via.placeholder.com/150' },
+          { quality: '500x500', url: song.image ? (song.image[song.image.length - 1]?.url || song.image[0]?.url) : 'https://via.placeholder.com/500' }
+        ],
+        downloadUrl: song.downloadUrl || []
+      }));
+    }
+  } catch (err) {
+    console.warn("Primary saavn.dev search failed, attempting serverless proxy fallback...", err);
+  }
+
+  // Strategy 2: Serverless Proxy API Call
   try {
     const response = await apiClient.get('', {
       params: {
@@ -159,13 +126,8 @@ export const searchSongs = async (query, isCustomSearch = true) => {
       }
     });
 
-    let songs = [];
-    if (response.data && response.data.results) {
-      songs = response.data.results;
-    }
-
-    if (songs.length > 0) {
-      return songs.map(song => {
+    if (response.data && typeof response.data === 'object' && response.data.results) {
+      return response.data.results.map(song => {
         const rawEnc = song.more_info?.encrypted_media_url;
         const decrypted = decryptUrl(rawEnc);
         const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
@@ -187,36 +149,39 @@ export const searchSongs = async (query, isCustomSearch = true) => {
       });
     }
   } catch (error) {
-    console.warn("Primary proxy search failed, attempting secondary API...", error);
-  }
-
-  // Secondary Strategy: Fallback to Saavn.dev API
-  try {
-    const res = await axios.get(`https://saavn.dev/api/search/songs?query=${encodeURIComponent(query)}`);
-    if (res.data && res.data.data && res.data.data.results) {
-      return res.data.data.results.map(song => ({
-        id: song.id,
-        name: song.name,
-        album: song.album?.name || song.album,
-        year: song.year,
-        duration: song.duration,
-        label: song.label,
-        primaryArtists: song.artists?.primary?.map(a => a.name).join(', ') || song.primaryArtists,
-        image: [
-          { quality: '150x150', url: song.image ? song.image[0]?.url : 'https://via.placeholder.com/150' },
-          { quality: '500x500', url: song.image ? (song.image[song.image.length - 1]?.url || song.image[0]?.url) : 'https://via.placeholder.com/500' }
-        ],
-        downloadUrl: song.downloadUrl || []
-      }));
-    }
-  } catch (err) {
-    console.error("Secondary fallback search failed:", err);
+    console.error("Secondary proxy search failed:", error);
   }
 
   return [];
 };
 
 export const fetchAlbumDetails = async (albumId) => {
+  try {
+    const res = await axios.get(`https://saavn.dev/api/albums?id=${albumId}`);
+    if (res.data && res.data.data) {
+      const album = res.data.data;
+      return {
+        id: album.id,
+        name: album.name,
+        artist: album.artists?.primary?.map(a => a.name).join(', '),
+        year: album.year,
+        image: album.image ? (album.image[album.image.length - 1]?.url || album.image[0]?.url) : 'https://via.placeholder.com/500',
+        songs: (album.songs || []).map(song => ({
+          id: song.id,
+          name: song.name,
+          album: album.name,
+          year: song.year,
+          duration: song.duration,
+          primaryArtists: song.artists?.primary?.map(a => a.name).join(', '),
+          image: song.image,
+          downloadUrl: song.downloadUrl || []
+        }))
+      };
+    }
+  } catch (e) {
+    console.warn("Primary album details failed, trying proxy...", e);
+  }
+
   try {
     const response = await apiClient.get('', {
       params: {

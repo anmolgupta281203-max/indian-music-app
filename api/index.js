@@ -106,8 +106,12 @@ app.get('/api/yt-download', async (req, res) => {
   }
 });
 
-// 2c. Direct JioSaavn API Proxy (Optimized for Vercel Serverless)
-app.get('/api', async (req, res) => {
+// 2c. Direct JioSaavn API Proxy (Handles all /api and /api/* calls)
+app.all(['/api', '/api/*'], async (req, res) => {
+  if (req.path.startsWith('/api/yt-search') || req.path.startsWith('/api/yt-download') || req.path.startsWith('/api/tmdb')) {
+    return;
+  }
+
   try {
     const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
     const targetUrl = `https://www.jiosaavn.com/api.php${queryString}`;
