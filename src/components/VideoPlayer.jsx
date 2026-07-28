@@ -7,17 +7,17 @@ import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmd
 import './VideoPlayer.css';
 
 const SERVERS = [
-  { id: 'vidsrc.cc', name: 'Server 1 (VidSrc.cc) [Recommended]' },
-  { id: 'embed.su', name: 'Server 2 (Embed.su) [HD]' },
-  { id: 'multiembed', name: 'Server 3 (MultiEmbed)' },
-  { id: 'vidsrc.in', name: 'Server 4 (VidSrc.in)' },
-  { id: 'autoembed', name: 'Server 5 (AutoEmbed)' },
-  { id: 'vidlink', name: 'Server 6 (VidLink)' }
+  { id: 'vidlink', name: 'Server 1 (VidLink) [Recommended]' },
+  { id: 'vidsrc.pro', name: 'Server 2 (VidSrc.pro) [HD]' },
+  { id: 'moviesapi', name: 'Server 3 (MoviesAPI)' },
+  { id: 'smashystream', name: 'Server 4 (SmashyStream)' },
+  { id: 'embed.su', name: 'Server 5 (Embed.su)' },
+  { id: 'autoembed', name: 'Server 6 (AutoEmbed)' }
 ];
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [iframeSrc, setIframeSrc] = useState(null);
-  const [server, setServer] = useState('vidsrc.cc'); // Set vidsrc.cc as default working server
+  const [server, setServer] = useState('vidlink'); // VidLink default for max uptime
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [seriesDetails, setSeriesDetails] = useState(null);
@@ -115,21 +115,21 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     let src = '';
     if (video.media_type === 'movie') {
       switch (server) {
+        case 'vidsrc.pro': src = `https://vidsrc.pro/embed/movie/${video.id}`; break;
+        case 'moviesapi': src = `https://moviesapi.club/movie/${video.id}`; break;
+        case 'smashystream': src = `https://player.smashy.stream/movie/${video.id}`; break;
         case 'embed.su': src = `https://embed.su/embed/movie/${video.id}`; break;
-        case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1`; break;
-        case 'vidsrc.in': src = `https://vidsrc.in/embed/movie?tmdb=${video.id}`; break;
         case 'autoembed': src = `https://autoembed.co/movie/tmdb/${video.id}`; break;
-        case 'vidlink': src = `https://vidlink.pro/movie/${video.id}`; break;
-        case 'vidsrc.cc': default: src = `https://vidsrc.cc/v2/embed/movie/${video.id}`; break;
+        case 'vidlink': default: src = `https://vidlink.pro/movie/${video.id}?primaryColor=1ed760&secondaryColor=121212&iconColor=ffffff`; break;
       }
     } else if (video.media_type === 'tv') {
       switch (server) {
+        case 'vidsrc.pro': src = `https://vidsrc.pro/embed/tv/${video.id}/${season}/${episode}`; break;
+        case 'moviesapi': src = `https://moviesapi.club/tv/${video.id}-${season}-${episode}`; break;
+        case 'smashystream': src = `https://player.smashy.stream/tv/${video.id}?s=${season}&e=${episode}`; break;
         case 'embed.su': src = `https://embed.su/embed/tv/${video.id}/${season}/${episode}`; break;
-        case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
-        case 'vidsrc.in': src = `https://vidsrc.in/embed/tv?tmdb=${video.id}&season=${season}&episode=${episode}`; break;
         case 'autoembed': src = `https://autoembed.co/tv/tmdb/${video.id}-${season}-${episode}`; break;
-        case 'vidlink': src = `https://vidlink.pro/tv/${video.id}/${season}/${episode}`; break;
-        case 'vidsrc.cc': default: src = `https://vidsrc.cc/v2/embed/tv/${video.id}/${season}/${episode}`; break;
+        case 'vidlink': default: src = `https://vidlink.pro/tv/${video.id}/${season}/${episode}?primaryColor=1ed760&secondaryColor=121212&iconColor=ffffff`; break;
       }
     }
     setIframeSrc(src);
@@ -360,8 +360,9 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                 src={iframeSrc} 
                 className="video-iframe"
                 allowFullScreen
-                allow="autoplay; fullscreen"
-                {...(adBlockEnabled ? { sandbox: "allow-same-origin allow-scripts allow-forms" } : {})}
+                referrerPolicy="no-referrer"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
+                {...(adBlockEnabled ? { sandbox: "allow-same-origin allow-scripts allow-forms allow-presentation" } : {})}
                 style={{ width: '100%', height: '100%', border: 'none' }}
               ></iframe>
               {needsFullscreen && (
