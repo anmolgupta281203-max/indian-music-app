@@ -199,7 +199,7 @@ export const PlayerProvider = ({ children }) => {
     }
   }, [queue, currentIndex, isShuffling, isLooping]);
 
-  const playSong = (song, newQueue = null) => {
+  const playSong = async (song, newQueue = null) => {
     setupWebAudio();
 
     if (nativeAudioRef.current) {
