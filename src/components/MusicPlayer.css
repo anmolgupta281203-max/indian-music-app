@@ -24,6 +24,7 @@
 }
 
 .song-art {
+  flex-shrink: 0;
   width: 52px;
   height: 52px;
   border-radius: 6px;
@@ -88,6 +89,7 @@
 
 .control-btn:hover {
   color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .play-btn {
@@ -100,10 +102,14 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .play-btn:hover {
-  transform: scale(1.06);
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.3);
+  color: #121212;
+  background-color: #fff;
 }
 
 .progress-container {

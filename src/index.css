@@ -43,7 +43,7 @@ img {
 
 body {
   font-family: var(--font-family);
-  background: linear-gradient(-45deg, #1e0024, #4a0e36, #67104b, #20042a, #0d0118);
+  background: linear-gradient(-45deg, #0a192f, #112240, #233554, #0d1a2f, #020c1b);
   background-size: 400% 400%;
   animation: liquidGradient 20s ease infinite;
   color: var(--text-main);

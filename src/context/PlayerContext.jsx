@@ -259,6 +259,22 @@ export const PlayerProvider = ({ children }) => {
       srcUrl = targetObj ? targetObj.url : song.downloadUrl[song.downloadUrl.length - 1].url;
     }
 
+    // Auto-fallback to YouTube full audio if the JioSaavn track is a 30s preview
+    if (!song.youtubeId && (song.duration <= 30 || srcUrl.includes('preview'))) {
+      try {
+        const { searchSongs } = await import('../services/api');
+        // Force YouTube search fallback by passing a special flag or just using the search proxy directly
+        const axios = (await import('axios')).default;
+        const ytRes = await axios.get(`/api/yt-search?q=${encodeURIComponent(song.name + ' ' + (song.primaryArtists || ''))}`);
+        if (ytRes.data && ytRes.data.results && ytRes.data.results.length > 0) {
+          song.youtubeId = ytRes.data.results[0].videoId;
+          srcUrl = `https://www.youtube.com/watch?v=${song.youtubeId}`;
+        }
+      } catch (err) {
+        console.warn('YouTube auto-fallback failed:', err);
+      }
+    }
+
     if (srcUrl) {
       setCurrentUrl(srcUrl);
       setIsPlaying(true);
