@@ -1,232 +1,118 @@
 import axios from 'axios';
-import CryptoJS from 'crypto-js';
 
 const apiClient = axios.create({
   baseURL: '/api',
 });
 
 // Helper to extract high quality image
-const getHighQualityImage = (url) => {
-  if (!url) return 'https://via.placeholder.com/150';
-  return url.replace('150x150', '500x500').replace('50x50', '500x500');
+const getHighQualityImage = (images) => {
+  if (!images) return 'https://via.placeholder.com/500';
+  // saavn.dev returns array: [{quality, url}]
+  if (Array.isArray(images)) {
+    const hq = images.find(i => i.quality === '500x500') || images[images.length - 1];
+    return hq?.url || 'https://via.placeholder.com/500';
+  }
+  if (typeof images === 'string') {
+    return images.replace('150x150', '500x500').replace('50x50', '500x500');
+  }
+  return 'https://via.placeholder.com/500';
 };
 
-const createDownloadUrls = (audioUrl) => {
-  if (!audioUrl) return [];
+// Normalize a song from saavn.dev format to our internal format
+const normalizeSong = (song) => {
+  if (!song) return null;
 
-  const cleanUrl = audioUrl.trim();
-  const formatMatch = cleanUrl.match(/_(12|48|96|160|320)\.(mp4|mp3)/i);
+  // saavn.dev downloadUrl: [{quality: "96kbps", url: "..."}, ...]
+  const downloadUrl = song.downloadUrl || [];
 
-  if (formatMatch) {
-    const ext = formatMatch[2];
-    const url96 = cleanUrl.replace(/_(12|48|96|160|320)\.(mp4|mp3)/i, `_96.${ext}`);
-    const url160 = cleanUrl.replace(/_(12|48|96|160|320)\.(mp4|mp3)/i, `_160.${ext}`);
-    const url320 = cleanUrl.replace(/_(12|48|96|160|320)\.(mp4|mp3)/i, `_320.${ext}`);
-
-    return [
-      { quality: '96kbps', url: url96 },
-      { quality: '160kbps', url: url160 },
-      { quality: '320kbps', url: url320 }
-    ];
-  }
-
-  return [
-    { quality: '320kbps', url: cleanUrl }
-  ];
-};
-
-// Helper to decrypt JioSaavn media URL
-const decryptUrl = (encryptedUrl) => {
-  if (!encryptedUrl) return null;
-  try {
-    const key = CryptoJS.enc.Utf8.parse("38346591");
-    const decrypted = CryptoJS.DES.decrypt(
-        { ciphertext: CryptoJS.enc.Base64.parse(encryptedUrl) },
-        key,
-        { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 }
-    ).toString(CryptoJS.enc.Utf8);
-    
-    return decrypted && decrypted.length > 5 ? decrypted : null;
-  } catch (err) {
-    console.error("Decryption failed:", err);
-    return null;
-  }
+  return {
+    id: song.id,
+    name: song.name,
+    album: song.album?.name || song.album || '',
+    year: song.year,
+    duration: song.duration,
+    label: song.label,
+    primaryArtists: Array.isArray(song.artists?.primary)
+      ? song.artists.primary.map(a => a.name).join(', ')
+      : (song.primaryArtists || ''),
+    image: song.image || [],
+    downloadUrl,
+  };
 };
 
 export const fetchLyrics = async (songId) => {
   try {
-    const res = await apiClient.get('', {
-      params: {
-        __call: 'lyrics.getLyrics',
-        lyrics_id: songId,
-        ctx: 'web6dot0',
-        api_version: 4,
-        _format: 'json',
-        _marker: 0
-      }
-    });
-    if (res.data && res.data.lyrics) {
-      return res.data.lyrics;
-    }
+    const res = await apiClient.get(`/songs/${songId}/lyrics`);
+    if (res.data?.data?.lyrics) return res.data.data.lyrics;
   } catch (err) {
-    console.error("Error fetching lyrics:", err);
+    console.error('Error fetching lyrics:', err);
   }
   return null;
 };
 
 export const fetchTrending = async () => {
+  // Trending = top hindi hits via saavn.dev search
   try {
-    const response = await apiClient.get('', {
-      params: {
-        __call: 'webapi.get',
-        token: '86427303',
-        type: 'playlist',
-        p: '1',
-        n: '20',
-        includeMetaTags: '0',
-        ctx: 'web6dot0',
-        api_version: '4',
-        _format: 'json',
-        _marker: '0'
-      }
+    const response = await apiClient.get('/search/songs', {
+      params: { query: 'top hindi hits 2024', page: 1, limit: 20 }
     });
 
-    if (response.data) {
-      let rawSongs = response.data.list || (Array.isArray(response.data) ? response.data : []);
-      if (rawSongs.length > 0) {
-        const formatted = rawSongs.map(song => {
-          const rawEnc = song.more_info?.encrypted_media_url;
-          const decrypted = decryptUrl(rawEnc);
-          const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
-          
-          return {
-            id: song.id,
-            name: song.title || song.song,
-            album: song.more_info?.album || song.album,
-            year: song.year,
-            releaseDate: song.more_info?.release_date,
-            duration: song.more_info?.duration,
-            label: song.more_info?.music || song.label,
-            primaryArtists: song.more_info?.artistMap?.primary_artists?.map(a => a.name).join(', ') || song.more_info?.singers || song.singers,
-            image: [
-              { quality: '150x150', url: song.image },
-              { quality: '500x500', url: getHighQualityImage(song.image) }
-            ],
-            downloadUrl: createDownloadUrls(audioUrl)
-          };
-        });
-
-        return {
-          trending: {
-            songs: formatted,
-            albums: []
-          }
-        };
-      }
+    const results = response.data?.data?.results || [];
+    if (results.length > 0) {
+      return {
+        trending: {
+          songs: results.map(normalizeSong).filter(Boolean),
+          albums: []
+        }
+      };
     }
   } catch (error) {
-    console.error("JioSaavn proxy trending error:", error);
+    console.error('Trending fetch error:', error);
   }
 
-  // Guaranteed fallback to search
+  // Fallback
   const fallbackSongs = await searchSongs('Arijit Singh');
   const fallbackAlbums = await searchSongs('Pritam');
-  return {
-    trending: {
-      songs: fallbackSongs,
-      albums: fallbackAlbums
-    }
-  };
+  return { trending: { songs: fallbackSongs, albums: fallbackAlbums } };
 };
 
-export const searchSongs = async (query, isCustomSearch = true) => {
-  // Strategy 1: Primary JioSaavn Serverless Proxy Call
+export const searchSongs = async (query) => {
+  // Strategy 1: saavn.dev via our proxy
   try {
-    const response = await apiClient.get('', {
-      params: {
-        __call: 'search.getResults',
-        q: query,
-        p: '1',
-        n: '20',
-        ctx: 'web6dot0',
-        api_version: '4',
-        _format: 'json',
-        _marker: '0'
-      }
+    const response = await apiClient.get('/search/songs', {
+      params: { query, page: 1, limit: 20 }
     });
 
-    if (response.data && typeof response.data === 'object' && response.data.results && response.data.results.length > 0) {
-      return response.data.results.map(song => {
-        const rawEnc = song.more_info?.encrypted_media_url;
-        const decrypted = decryptUrl(rawEnc);
-        const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
-        
-        return {
-          id: song.id,
-          name: song.title || song.song,
-          album: song.more_info?.album || song.album,
-          year: song.year,
-          duration: song.more_info?.duration,
-          label: song.more_info?.music || song.label,
-          primaryArtists: song.more_info?.singers || song.singers || song.more_info?.artistMap?.primary_artists?.map(a => a.name).join(', '),
-          image: [
-            { quality: '150x150', url: song.image },
-            { quality: '500x500', url: getHighQualityImage(song.image) }
-          ],
-          downloadUrl: createDownloadUrls(audioUrl)
-        };
-      });
+    const results = response.data?.data?.results || [];
+    if (results.length > 0) {
+      return results.map(normalizeSong).filter(Boolean);
     }
   } catch (error) {
-    console.warn("JioSaavn proxy search failed, attempting iTunes fallback...", error);
+    console.warn('saavn.dev search failed, trying iTunes...', error);
   }
 
-  // Strategy 2: Apple iTunes Music Official API Fallback (Direct CORS)
+  // Strategy 2: Apple iTunes fallback (30s previews only)
   try {
-    const itunesRes = await axios.get(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=20`);
-    if (itunesRes.data && itunesRes.data.results && itunesRes.data.results.length > 0) {
-      return itunesRes.data.results.map(item => {
-        const highResArt = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://via.placeholder.com/500';
-        return {
-          id: String(item.trackId || item.collectionId),
-          name: item.trackName || item.collectionName,
-          album: item.collectionName || 'Single',
-          year: item.releaseDate ? item.releaseDate.substring(0, 4) : '2025',
-          duration: item.trackTimeMillis ? Math.floor(item.trackTimeMillis / 1000) : 240,
-          primaryArtists: item.artistName || 'Various Artists',
-          url: item.previewUrl || '',
-          image: [
-            { quality: '150x150', url: item.artworkUrl100 || 'https://via.placeholder.com/150' },
-            { quality: '500x500', url: highResArt }
-          ],
-          downloadUrl: item.previewUrl ? [{ quality: '320kbps', url: item.previewUrl }] : []
-        };
-      });
-    }
-  } catch (itunesErr) {
-    console.warn("iTunes fallback error:", itunesErr);
-  }
-
-  // Strategy 3: Automatic YouTube Search Stream Fallback
-  try {
-    const ytRes = await apiClient.get('/yt-search', { params: { q: query } });
-    if (ytRes.data && ytRes.data.results && ytRes.data.results.length > 0) {
-      return ytRes.data.results.map(v => ({
-        id: v.videoId,
-        youtubeId: v.videoId,
-        name: v.title,
-        album: 'YouTube Stream',
-        duration: v.seconds || 240,
-        primaryArtists: v.author?.name || 'Trending Artist',
+    const itunesRes = await axios.get(
+      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=20`
+    );
+    if (itunesRes.data?.results?.length > 0) {
+      return itunesRes.data.results.map(item => ({
+        id: String(item.trackId || item.collectionId),
+        name: item.trackName || item.collectionName,
+        album: item.collectionName || 'Single',
+        year: item.releaseDate ? item.releaseDate.substring(0, 4) : '2025',
+        duration: item.trackTimeMillis ? Math.floor(item.trackTimeMillis / 1000) : 240,
+        primaryArtists: item.artistName || 'Various Artists',
         image: [
-          { quality: '150x150', url: v.thumbnail || 'https://via.placeholder.com/150' },
-          { quality: '500x500', url: v.thumbnail || 'https://via.placeholder.com/500' }
+          { quality: '150x150', url: item.artworkUrl100 || '' },
+          { quality: '500x500', url: item.artworkUrl100?.replace('100x100bb', '600x600bb') || '' },
         ],
-        downloadUrl: []
+        downloadUrl: item.previewUrl ? [{ quality: '320kbps', url: item.previewUrl }] : [],
       }));
     }
-  } catch (ytErr) {
-    console.error("YouTube fallback error:", ytErr);
+  } catch (itunesErr) {
+    console.warn('iTunes fallback error:', itunesErr);
   }
 
   return [];
@@ -234,81 +120,41 @@ export const searchSongs = async (query, isCustomSearch = true) => {
 
 export const fetchAlbumDetails = async (albumId) => {
   try {
-    const response = await apiClient.get('', {
-      params: {
-        __call: 'content.getAlbumDetails',
-        albumid: albumId,
-        ctx: 'web6dot0',
-        api_version: '4',
-        _format: 'json',
-        _marker: '0'
-      }
-    });
+    const response = await apiClient.get('/albums', { params: { id: albumId } });
+    const album = response.data?.data;
+    if (!album) return null;
 
-    if (!response.data) return null;
-
-    const album = response.data;
-    const songs = (album.songs || []).map(song => {
-      const rawEnc = song.more_info?.encrypted_media_url;
-      const decrypted = decryptUrl(rawEnc);
-      const audioUrl = decrypted || song.more_info?.media_preview_url || song.media_preview_url;
-      
-      return {
-        id: song.id,
-        name: song.song || song.title,
-        album: album.title,
-        year: song.year,
-        duration: song.more_info?.duration,
-        primaryArtists: song.more_info?.singers || song.singers,
-        image: [
-          { quality: '150x150', url: song.image || album.image },
-          { quality: '500x500', url: getHighQualityImage(song.image || album.image) }
-        ],
-        downloadUrl: createDownloadUrls(audioUrl)
-      };
-    });
-
+    const songs = (album.songs || []).map(normalizeSong).filter(Boolean);
     return {
       id: album.id,
-      name: album.title,
-      artist: album.primary_artists,
+      name: album.name,
+      artist: Array.isArray(album.artists?.primary)
+        ? album.artists.primary.map(a => a.name).join(', ')
+        : album.primaryArtists || '',
       year: album.year,
       image: getHighQualityImage(album.image),
-      songs
+      songs,
     };
   } catch (error) {
-    console.error("Error fetching album details:", error);
+    console.error('Error fetching album details:', error);
     return null;
   }
 };
 
 export const searchArtists = async (query) => {
   try {
-    const response = await apiClient.get('', {
-      params: {
-        __call: 'search.getArtistResults',
-        q: query,
-        p: '1',
-        n: '10',
-        ctx: 'web6dot0',
-        api_version: '4',
-        _format: 'json',
-        _marker: '0'
-      }
+    const response = await apiClient.get('/search/artists', {
+      params: { query, page: 1, limit: 10 }
     });
-
-    if (response.data && response.data.results) {
-      return response.data.results.map(artist => ({
-        id: artist.id,
-        name: artist.name,
-        role: artist.role,
-        image: getHighQualityImage(artist.image),
-        url: artist.perma_url
-      }));
-    }
-    return [];
+    const results = response.data?.data?.results || [];
+    return results.map(artist => ({
+      id: artist.id,
+      name: artist.name,
+      image: getHighQualityImage(artist.image),
+      url: artist.url,
+    }));
   } catch (error) {
-    console.error("Error searching artists:", error);
+    console.error('Error searching artists:', error);
     return [];
   }
 };

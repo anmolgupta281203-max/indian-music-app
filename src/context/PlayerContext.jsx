@@ -199,7 +199,7 @@ export const PlayerProvider = ({ children }) => {
     }
   }, [queue, currentIndex, isShuffling, isLooping]);
 
-  const playSong = async (song, newQueue = null) => {
+  const playSong = (song, newQueue = null) => {
     setupWebAudio();
 
     if (nativeAudioRef.current) {
@@ -254,25 +254,11 @@ export const PlayerProvider = ({ children }) => {
     if (song.youtubeId) {
       srcUrl = `https://www.youtube.com/watch?v=${song.youtubeId}`;
     } else if (song.downloadUrl && song.downloadUrl.length > 0) {
-      let targetObj = song.downloadUrl.find(d => d.quality === audioQuality);
-      if (!targetObj) targetObj = song.downloadUrl[song.downloadUrl.length - 1];
-      srcUrl = targetObj ? targetObj.url : song.downloadUrl[song.downloadUrl.length - 1].url;
-    }
-
-    // Auto-fallback to YouTube full audio if the JioSaavn track is a 30s preview
-    if (!song.youtubeId && (song.duration <= 30 || srcUrl.includes('preview'))) {
-      try {
-        const { searchSongs } = await import('../services/api');
-        // Force YouTube search fallback by passing a special flag or just using the search proxy directly
-        const axios = (await import('axios')).default;
-        const ytRes = await axios.get(`/api/yt-search?q=${encodeURIComponent(song.name + ' ' + (song.primaryArtists || ''))}`);
-        if (ytRes.data && ytRes.data.results && ytRes.data.results.length > 0) {
-          song.youtubeId = ytRes.data.results[0].videoId;
-          srcUrl = `https://www.youtube.com/watch?v=${song.youtubeId}`;
-        }
-      } catch (err) {
-        console.warn('YouTube auto-fallback failed:', err);
-      }
+      // Prefer 320kbps, then highest available
+      let targetObj = song.downloadUrl.find(d => d.quality === '320kbps')
+        || song.downloadUrl.find(d => d.quality === audioQuality)
+        || song.downloadUrl[song.downloadUrl.length - 1];
+      srcUrl = targetObj?.url || '';
     }
 
     if (srcUrl) {
