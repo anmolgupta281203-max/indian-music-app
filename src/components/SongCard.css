@@ -1,11 +1,13 @@
 .song-card {
-  background: var(--bg-dark);
+  background: var(--bg-card);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
   border-radius: 12px;
   padding: 12px;
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, background 0.3s ease;
   cursor: pointer;
   position: relative;
-  border: 1px solid transparent;
+  border: 1px solid var(--glass-border);
   transform-style: preserve-3d;
   perspective: 1000px;
   width: 100%;
@@ -13,16 +15,16 @@
 }
 
 .song-card:hover {
-  background: #2a2a2a;
-  border-color: rgba(255,255,255,0.05);
+  background: var(--bg-card-hover);
+  border-color: rgba(255,255,255,0.2);
   transform: translateY(-8px) scale(1.02) rotateX(4deg);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(255, 255, 255, 0.1) inset;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(255, 255, 255, 0.1) inset;
 }
 
 .song-card.active {
-  background: #333;
+  background: rgba(250, 36, 60, 0.15);
   border-color: var(--primary-color);
-  box-shadow: 0 0 20px rgba(29, 185, 84, 0.2), 0 1px 3px rgba(255, 255, 255, 0.1) inset;
+  box-shadow: 0 0 20px var(--primary-glow), 0 1px 3px rgba(255, 255, 255, 0.1) inset;
 }
 
 .img-container {

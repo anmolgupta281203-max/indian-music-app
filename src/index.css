@@ -1,17 +1,20 @@
 :root {
-  /* Spotify Theme Colors */
-  --bg-dark: #121212;
-  --bg-sidebar: #000000;
-  --bg-player: #181818;
-  --bg-card: #181818;
-  --bg-card-hover: #282828;
+  /* Apple Music Liquid Glass Theme Colors */
+  --bg-dark: rgba(0, 0, 0, 0.15);
+  --bg-sidebar: rgba(20, 20, 25, 0.4);
+  --bg-player: rgba(20, 20, 25, 0.6);
+  --bg-card: rgba(255, 255, 255, 0.08);
+  --bg-card-hover: rgba(255, 255, 255, 0.15);
   
-  --primary-color: #1ed760;
-  --primary-glow: rgba(30, 215, 96, 0.3);
+  --primary-color: #fa243c; /* Apple Music red/pink */
+  --primary-glow: rgba(250, 36, 60, 0.4);
   --accent-color: #ffffff; 
   
   --text-main: #ffffff;
-  --text-secondary: #b3b3b3;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 
   /* Spacing */
   --sidebar-width: 260px;
@@ -32,21 +35,30 @@ img {
   height: auto;
 }
 
+@keyframes liquidGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 body {
   font-family: var(--font-family);
-  background-color: var(--bg-sidebar); /* Fallback */
+  background: linear-gradient(-45deg, #1e0024, #4a0e36, #67104b, #20042a, #0d0118);
+  background-size: 400% 400%;
+  animation: liquidGradient 20s ease infinite;
   color: var(--text-main);
   overflow: hidden; /* Prevent body scroll */
   height: 100vh;
   width: 100%;
 }
 
-/* Glassmorphism utility - kept for backward compatibility if needed */
+/* Glassmorphism utility */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 /* Layout */
