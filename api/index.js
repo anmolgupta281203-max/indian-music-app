@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 const SAAVN_API = 'https://saavn.dev/api';
+const TMDB_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
+const TMDB_BASE = 'https://api.themoviedb.org/3';
 
-// Helper: forward request to saavn.dev
 async function saavnProxy(path, params = {}) {
   const res = await axios.get(`${SAAVN_API}${path}`, {
     params,
@@ -21,55 +22,73 @@ export default async function handler(req, res) {
   const { searchParams } = new URL(url, 'http://localhost');
 
   try {
-    // Route: /api/search/songs?q=...
+    // ── TMDB PROXY ──────────────────────────────────────────────────────────
+    if (url.includes('/tmdb/')) {
+      const tmdbPath = url.replace(/^\/api\/tmdb/, '');
+      // Strip any existing api_key to avoid duplicates, then add ours
+      const cleanPath = tmdbPath.replace(/[?&]api_key=[^&]*/g, '');
+      const sep = cleanPath.includes('?') ? '&' : '?';
+      const tmdbUrl = `${TMDB_BASE}${cleanPath}${sep}api_key=${TMDB_KEY}`;
+      const tmdbRes = await axios.get(tmdbUrl, { timeout: 10000 });
+      return res.json(tmdbRes.data);
+    }
+
+    // ── SAAVN SEARCH SONGS ───────────────────────────────────────────────────
     if (url.includes('/search/songs') || searchParams.get('__call') === 'search.getResults') {
       const q = searchParams.get('q') || searchParams.get('query') || '';
-      const page = searchParams.get('p') || '1';
-      const limit = searchParams.get('n') || '20';
+      const page = searchParams.get('p') || searchParams.get('page') || '1';
+      const limit = searchParams.get('n') || searchParams.get('limit') || '20';
       const data = await saavnProxy('/search/songs', { query: q, page, limit });
       return res.json(data);
     }
 
-    // Route: /api/search/albums?q=...
+    // ── SAAVN SEARCH ALBUMS ──────────────────────────────────────────────────
     if (url.includes('/search/albums')) {
       const q = searchParams.get('q') || searchParams.get('query') || '';
       const data = await saavnProxy('/search/albums', { query: q, page: 1, limit: 20 });
       return res.json(data);
     }
 
-    // Route: /api/albums?id=...
+    // ── SAAVN SEARCH ARTISTS ─────────────────────────────────────────────────
+    if (url.includes('/search/artists')) {
+      const q = searchParams.get('q') || searchParams.get('query') || '';
+      const data = await saavnProxy('/search/artists', { query: q, page: 1, limit: 10 });
+      return res.json(data);
+    }
+
+    // ── SAAVN ALBUM DETAILS ──────────────────────────────────────────────────
     if (url.includes('/albums') && searchParams.get('id')) {
       const data = await saavnProxy('/albums', { id: searchParams.get('id') });
       return res.json(data);
     }
 
-    // Route: /api/songs?id=...
+    // ── SAAVN SONG DETAILS ───────────────────────────────────────────────────
     if (url.includes('/songs') && searchParams.get('id')) {
       const data = await saavnProxy('/songs', { id: searchParams.get('id') });
       return res.json(data);
     }
 
-    // Legacy: /api?__call=webapi.get (trending)
+    // ── LEGACY: webapi.get (trending) ────────────────────────────────────────
     if (searchParams.get('__call') === 'webapi.get') {
       const data = await saavnProxy('/search/songs', { query: 'top hindi hits 2024', page: 1, limit: 20 });
       return res.json(data);
     }
 
-    // Legacy: /api?__call=content.getAlbumDetails&albumid=...
+    // ── LEGACY: content.getAlbumDetails ─────────────────────────────────────
     if (searchParams.get('__call') === 'content.getAlbumDetails') {
       const albumId = searchParams.get('albumid');
       const data = await saavnProxy('/albums', { id: albumId });
       return res.json(data);
     }
 
-    // Legacy: /api?__call=search.getArtistResults
+    // ── LEGACY: search.getArtistResults ─────────────────────────────────────
     if (searchParams.get('__call') === 'search.getArtistResults') {
       const q = searchParams.get('q') || '';
       const data = await saavnProxy('/search/artists', { query: q, page: 1, limit: 10 });
       return res.json(data);
     }
 
-    // Default: proxy all to saavn.dev search
+    // ── DEFAULT: saavn song search ───────────────────────────────────────────
     const q = searchParams.get('q') || searchParams.get('query') || 'trending';
     const data = await saavnProxy('/search/songs', { query: q, page: 1, limit: 20 });
     return res.json(data);
