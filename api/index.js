@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const SAAVN_API = 'https://saavn.dev/api';
+const SAAVN_API = 'https://jiosaavn-api-2.vercel.app';
 const TMDB_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -25,7 +25,6 @@ export default async function handler(req, res) {
     // ── TMDB PROXY ──────────────────────────────────────────────────────────
     if (url.includes('/tmdb/')) {
       const tmdbPath = url.replace(/^\/api\/tmdb/, '');
-      // Strip any existing api_key to avoid duplicates, then add ours
       const cleanPath = tmdbPath.replace(/[?&]api_key=[^&]*/g, '');
       const sep = cleanPath.includes('?') ? '&' : '?';
       const tmdbUrl = `${TMDB_BASE}${cleanPath}${sep}api_key=${TMDB_KEY}`;
@@ -63,9 +62,12 @@ export default async function handler(req, res) {
     }
 
     // ── SAAVN SONG DETAILS ───────────────────────────────────────────────────
-    if (url.includes('/songs') && searchParams.get('id')) {
-      const data = await saavnProxy('/songs', { id: searchParams.get('id') });
-      return res.json(data);
+    if (url.includes('/songs') && !url.includes('/search') && !url.includes('/albums')) {
+      const id = searchParams.get('id');
+      if (id) {
+        const data = await saavnProxy(`/songs/${id}`);
+        return res.json(data);
+      }
     }
 
     // ── LEGACY: webapi.get (trending) ────────────────────────────────────────
@@ -89,7 +91,7 @@ export default async function handler(req, res) {
     }
 
     // ── DEFAULT: saavn song search ───────────────────────────────────────────
-    const q = searchParams.get('q') || searchParams.get('query') || 'trending';
+    const q = searchParams.get('q') || searchParams.get('query') || 'trending hindi';
     const data = await saavnProxy('/search/songs', { query: q, page: 1, limit: 20 });
     return res.json(data);
 
