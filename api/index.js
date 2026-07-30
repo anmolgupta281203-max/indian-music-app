@@ -105,7 +105,7 @@ export default async function handler(req, res) {
 
     // ── LEGACY: webapi.get (trending) ────────────────────────────────────────
     if (searchParams.get('__call') === 'webapi.get') {
-      const data = await saavnProxy('/search/songs', { query: 'top hindi hits 2024', page: 1, limit: 20 });
+      const data = await saavnProxy('/search/songs', { query: 'top hindi hits 2026', page: 1, limit: 20 });
       return res.json(data);
     }
 

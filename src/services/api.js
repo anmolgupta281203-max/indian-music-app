@@ -44,7 +44,7 @@ export const fetchLyrics = async (songId) => {
 export const fetchTrending = async () => {
   try {
     const response = await apiClient.get('/search/songs', {
-      params: { query: 'top hindi hits 2024', page: 1, limit: 20 }
+      params: { query: 'top hindi hits 2026', page: 1, limit: 20 }
     });
     const results = response.data?.results || [];
     if (results.length > 0) {

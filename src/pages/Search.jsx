@@ -232,8 +232,8 @@ const Search = () => {
                 { label: 'Punjabi', query: 'Punjabi Hits' },
                 { label: 'Devotional', query: 'Devotional Hits' },
                 { label: 'Indie', query: 'Indie Hits' },
-                { label: 'New Albums', query: 'New Albums 2024' },
-                { label: 'New Release Songs', query: 'New Songs 2024' }
+                { label: 'New Albums', query: 'New Albums 2026' },
+                { label: 'New Release Songs', query: 'New Songs 2026' }
               ].map(category => (
                 <div 
                   key={category.label} 
