@@ -36,6 +36,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [playedSeconds, setPlayedSeconds] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [musicVideoId, setMusicVideoId] = useState(null);
 
   const handleProgress = (state) => {
     if (!isSeeking) {
@@ -127,6 +128,27 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     setIsVideoLoading(true);
     setPlayedSeconds(0);
     setDuration(0);
+
+    // Music video: search YouTube for the official video
+    if (video.type === 'music-video') {
+      setIsVideoLoading(true);
+      setIsPlaying(false);
+      const query = `${video.name || video.title} ${video.artist || ''} official video`;
+      fetch(`/api/yt-search?q=${encodeURIComponent(query)}&limit=1`)
+        .then(r => r.json())
+        .then(data => {
+          const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
+          if (vid) {
+            // Reuse the 'youtube' rendering path by patching video id in state
+            setMusicVideoId(vid);
+          }
+          setIsVideoLoading(false);
+          setIsPlaying(true);
+        })
+        .catch(() => setIsVideoLoading(false));
+      return;
+    }
+
     if (video.type === 'youtube') {
       setIsVideoLoading(false);
       setIsPlaying(true);
@@ -316,125 +338,139 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
           ))}
         </div>
 
-        {video.type === 'youtube' ? (
-          <div 
-            ref={containerRef}
-            style={{ position: 'relative', width: '100%', height: '100%', backgroundColor: 'black', display: 'flex', flexDirection: 'column' }}
-          >
-            <div style={{ flex: 1, position: 'relative' }}>
-              <div style={{ width: '100%', height: '100%' }}>
-                <ReactPlayer
-                  ref={playerRef}
-                  url={`https://www.youtube.com/watch?v=${video.id}`}
-                  playing={isPlaying}
-                  controls={false}
-                  onEnded={onEnded}
-                  onProgress={handleProgress}
-                  onDuration={handleDuration}
-                  width="100%"
-                  height="100%"
-                  style={{ position: 'absolute', top: 0, left: 0 }}
-                  config={{
-                    youtube: {
-                      playerVars: { 
-                        playsinline: 1,
-                        rel: 0,
-                        showinfo: 0,
-                        controls: 0,
-                        disablekb: 1,
-                        iv_load_policy: 3,
-                        cc_load_policy: 0
-                      }
-                    }
-                  }}
-                />
-              </div>
-
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '80px', zIndex: 10 }}></div>
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '60px', zIndex: 10 }}></div>
-              
-              <div 
-                style={{ position: 'absolute', top: '80px', bottom: '60px', left: 0, right: 0, zIndex: 15, cursor: 'pointer' }}
-                onClick={() => setIsPlaying(!isPlaying)}
-              ></div>
-              
-              {!isPlaying && (
-                <div 
-                  onClick={() => setIsPlaying(true)}
-                  style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                    borderRadius: '50%',
-                    width: '60px',
-                    height: '60px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 20
-                  }}
-                >
-                  <div style={{ 
-                    width: 0, 
-                    height: 0, 
-                    borderTop: '12px solid transparent', 
-                    borderBottom: '12px solid transparent', 
-                    borderLeft: '20px solid white', 
-                    marginLeft: '4px' 
-                  }}></div>
+        {(video.type === 'youtube' || video.type === 'music-video') ? (
+          // Determine the videoId to play
+          (() => {
+            const ytId = video.type === 'music-video' ? musicVideoId : video.id;
+            if (!ytId) {
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 16, color: '#fff' }}>
+                  <div className="spinner" />
+                  <span>Searching for video...</span>
                 </div>
-              )}
-            </div>
+              );
+            }
+            return (
+              <div 
+                ref={containerRef}
+                style={{ position: 'relative', width: '100%', height: '100%', backgroundColor: 'black', display: 'flex', flexDirection: 'column' }}
+              >
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <div style={{ width: '100%', height: '100%' }}>
+                    <ReactPlayer
+                      ref={playerRef}
+                      url={`https://www.youtube.com/watch?v=${ytId}`}
+                      playing={isPlaying}
+                      controls={false}
+                      onEnded={onEnded}
+                      onProgress={handleProgress}
+                      onDuration={handleDuration}
+                      width="100%"
+                      height="100%"
+                      style={{ position: 'absolute', top: 0, left: 0 }}
+                      config={{
+                        youtube: {
+                          playerVars: { 
+                            playsinline: 1,
+                            rel: 0,
+                            showinfo: 0,
+                            controls: 0,
+                            disablekb: 1,
+                            iv_load_policy: 3,
+                            cc_load_policy: 0
+                          }
+                        }
+                      }}
+                    />
+                  </div>
 
-            <div style={{
-              height: '50px',
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 15px',
-              gap: '15px',
-              zIndex: 30
-            }}>
-              <button 
-                onClick={() => setIsPlaying(!isPlaying)}
-                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-              >
-                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-              </button>
-              
-              <div style={{ color: 'white', fontSize: '12px', minWidth: '40px' }}>
-                {formatTime(playedSeconds)}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '80px', zIndex: 10 }}></div>
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '60px', zIndex: 10 }}></div>
+                  
+                  <div 
+                    style={{ position: 'absolute', top: '80px', bottom: '60px', left: 0, right: 0, zIndex: 15, cursor: 'pointer' }}
+                    onClick={() => setIsPlaying(!isPlaying)}
+                  ></div>
+                  
+                  {!isPlaying && (
+                    <div 
+                      onClick={() => setIsPlaying(true)}
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                        borderRadius: '50%',
+                        width: '60px',
+                        height: '60px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        zIndex: 20
+                      }}
+                    >
+                      <div style={{ 
+                        width: 0, 
+                        height: 0, 
+                        borderTop: '12px solid transparent', 
+                        borderBottom: '12px solid transparent', 
+                        borderLeft: '20px solid white', 
+                        marginLeft: '4px' 
+                      }}></div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{
+                  height: '50px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 15px',
+                  gap: '15px',
+                  zIndex: 30
+                }}>
+                  <button 
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                  </button>
+                  
+                  <div style={{ color: 'white', fontSize: '12px', minWidth: '40px' }}>
+                    {formatTime(playedSeconds)}
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 100}
+                    step="any"
+                    value={playedSeconds}
+                    onChange={handleSeekChange}
+                    onMouseUp={handleSeekMouseUp}
+                    onTouchEnd={handleSeekMouseUp}
+                    className="custom-video-slider"
+                    style={{
+                      flex: 1, 
+                      cursor: 'pointer', 
+                      background: `linear-gradient(to right, var(--primary-color) ${(playedSeconds / (duration || 1)) * 100}%, rgba(255,255,255,0.2) ${(playedSeconds / (duration || 1)) * 100}%)`
+                    }}
+                  />
+                  <div style={{ color: 'white', fontSize: '12px', minWidth: '40px' }}>
+                    {formatTime(duration)}
+                  </div>
+                  <button 
+                    onClick={toggleFullScreen}
+                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    <Maximize size={20} />
+                  </button>
+                </div>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={duration || 100}
-                step="any"
-                value={playedSeconds}
-                onChange={handleSeekChange}
-                onMouseUp={handleSeekMouseUp}
-                onTouchEnd={handleSeekMouseUp}
-                className="custom-video-slider"
-                style={{
-                  flex: 1, 
-                  cursor: 'pointer', 
-                  background: `linear-gradient(to right, var(--primary-color) ${(playedSeconds / (duration || 1)) * 100}%, rgba(255,255,255,0.2) ${(playedSeconds / (duration || 1)) * 100}%)`
-                }}
-              />
-              <div style={{ color: 'white', fontSize: '12px', minWidth: '40px' }}>
-                {formatTime(duration)}
-              </div>
-              <button 
-                onClick={toggleFullScreen}
-                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-              >
-                <Maximize size={20} />
-              </button>
-            </div>
-          </div>
+            );
+          })()
         ) : (
           iframeSrc && (
             <div style={{ position: 'relative', width: '100%', height: '100%', backgroundColor: 'black' }}>

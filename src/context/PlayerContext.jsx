@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useRef, useEffect } from 'react';
+import React, { createContext, useState, useContext, useRef, useEffect, useCallback } from 'react';
 import { getOfflineSong, downloadSongToApp, getAllOfflineSongs, deleteOfflineSong } from '../utils/offlineStorage';
 import { fetchLyrics } from '../services/api';
 
@@ -49,6 +49,10 @@ export const PlayerProvider = ({ children }) => {
   const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
   const [downloadedSongs, setDownloadedSongs] = useState([]);
   const [currentUrl, setCurrentUrl] = useState('');
+
+  // YouTube playback state
+  const [youtubeVideoId, setYoutubeVideoId] = useState(null);
+  const ytPlayerRef = useRef(null);
 
   const nativeAudioRef = useRef(null);
   const audioCtxRef = useRef(null);
@@ -250,65 +254,59 @@ export const PlayerProvider = ({ children }) => {
       setLoadingLyrics(false);
     }).catch(() => setLoadingLyrics(false));
 
-    let srcUrl = '';
-    if (song.youtubeId) {
-      srcUrl = `https://www.youtube.com/watch?v=${song.youtubeId}`;
-    } else if (song.downloadUrl && song.downloadUrl.length > 0) {
-      // Prefer 320kbps, then highest available
-      let targetObj = song.downloadUrl.find(d => d.quality === '320kbps')
-        || song.downloadUrl.find(d => d.quality === audioQuality)
-        || song.downloadUrl[song.downloadUrl.length - 1];
-      srcUrl = targetObj?.url || '';
+    // ── YOUTUBE SEARCH & PLAY ─────────────────────────────────────────────
+    const decodeHtml = (html) => {
+      const txt = document.createElement('textarea');
+      txt.innerHTML = html;
+      return txt.value;
+    };
+    const artistName = song.primaryArtists || song.artists?.primary?.map(a => a.name).join(', ') || '';
+    const songTitle = decodeHtml(song.name || '');
+    const searchQuery = song.youtubeId
+      ? null  // already have the ID
+      : `${songTitle} ${artistName} full audio song`;
+
+    // Reset YouTube player
+    setYoutubeVideoId(null);
+    setIsPlaying(true);
+
+    // Update MediaSession metadata immediately (album art etc.)
+    if ('mediaSession' in navigator) {
+      const artworkUrl = song.image?.[song.image.length - 1]?.url
+        || song.image?.[0]?.url
+        || 'https://via.placeholder.com/512';
+      const highResArt = artworkUrl.replace('150x150', '500x500').replace('50x50', '500x500');
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title: songTitle,
+        artist: decodeHtml(artistName),
+        album: 'Svar Music',
+        artwork: [
+          { src: highResArt, sizes: '512x512', type: 'image/jpeg' },
+        ]
+      });
+      navigator.mediaSession.playbackState = 'playing';
+      document.title = `${songTitle} - Svar`;
     }
 
-    if (srcUrl) {
-      setCurrentUrl(srcUrl);
-      setIsPlaying(true);
-      
-      if ('mediaSession' in navigator) {
-        const decodeHtml = (html) => {
-          const txt = document.createElement("textarea");
-          txt.innerHTML = html;
-          return txt.value;
-        };
-        const artistName = song.primaryArtists || song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-        const songTitle = decodeHtml(song.name || 'Unknown Title');
-        
-        const artworkUrl = song.image?.[0]?.url || 'https://via.placeholder.com/512';
-        const highResArt = artworkUrl.replace('150x150', '500x500').replace('50x50', '500x500');
-
-        navigator.mediaSession.metadata = new window.MediaMetadata({
-          title: songTitle,
-          artist: decodeHtml(artistName),
-          album: 'Svar Music',
-          artwork: [
-            { src: highResArt, sizes: '96x96', type: 'image/jpeg' },
-            { src: highResArt, sizes: '128x128', type: 'image/jpeg' },
-            { src: highResArt, sizes: '192x192', type: 'image/jpeg' },
-            { src: highResArt, sizes: '256x256', type: 'image/jpeg' },
-            { src: highResArt, sizes: '384x384', type: 'image/jpeg' },
-            { src: highResArt, sizes: '512x512', type: 'image/jpeg' }
-          ]
-        });
-        
-        navigator.mediaSession.playbackState = 'playing';
-        document.title = `${songTitle} - Svar`;
-      }
-      
-      if ((!song.youtubeId || srcUrl.startsWith('blob:')) && nativeAudioRef.current) {
-        const audio = nativeAudioRef.current;
-        
-        audio.src = srcUrl;
-
-        audio.onerror = (e) => {
-          console.error("Audio playback error:", e);
-        };
-
-        audio.load();
-        audio.play().catch(e => {
-          console.log("Audio play initiated:", e);
-        });
-      }
+    if (song.youtubeId) {
+      // Directly known YouTube ID (e.g. from Videos page)
+      setYoutubeVideoId(song.youtubeId);
+      setCurrentUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
+    } else {
+      // Search YouTube for the best matching video
+      setCurrentUrl(`yt-searching:${searchQuery}`);
+      fetch(`/api/yt-search?q=${encodeURIComponent(searchQuery)}&limit=3`)
+        .then(r => r.json())
+        .then(data => {
+          const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
+          if (vid) {
+            setYoutubeVideoId(vid);
+            setCurrentUrl(`https://www.youtube.com/watch?v=${vid}`);
+          } else {
+            console.error('No YouTube result found for:', searchQuery);
+          }
+        })
+        .catch(e => console.error('YT search failed:', e));
     }
 
     const isDownloaded = downloadedSongs.some(s => s.id === song.id);
@@ -374,16 +372,8 @@ export const PlayerProvider = ({ children }) => {
 
   const togglePlay = () => {
     if (!currentSong) return;
-    const nextState = !isPlaying;
-    setIsPlaying(nextState);
-    
-    if ((!currentSong.youtubeId || currentUrl.startsWith('blob:')) && nativeAudioRef.current) {
-      if (nextState) {
-        nativeAudioRef.current.play().catch(e => console.log(e));
-      } else {
-        nativeAudioRef.current.pause();
-      }
-    }
+    setIsPlaying(prev => !prev);
+    // YouTube player play/pause is controlled via the `playing` prop on ReactPlayer
   };
 
   const pause = () => {
@@ -518,12 +508,15 @@ export const PlayerProvider = ({ children }) => {
       toggleFavorite,
       handleDownloadToggle,
       currentUrl,
+      youtubeVideoId,
+      ytPlayerRef,
       nativeAudioRef
     }}>
       {children}
+      {/* Keep native audio element for offline/downloaded songs */}
       <audio 
         ref={nativeAudioRef} 
-        preload="auto" 
+        preload="none"
         playsInline
         style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }} 
       />

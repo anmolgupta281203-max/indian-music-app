@@ -34,6 +34,8 @@ const MusicPlayer = () => {
     currentUrl, 
     openQueueModal, 
     nativeAudioRef, 
+    ytPlayerRef,
+    youtubeVideoId,
     isShuffling, 
     isLooping, 
     toggleShuffle, 
@@ -61,37 +63,31 @@ const MusicPlayer = () => {
   const [showEqMenu, setShowEqMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
-  const playerRef = useRef(null);
+  const playerRef = useRef(null); // local ref just for seeking on the global YT player
 
+  // Track progress from native audio (for offline/downloaded songs)
   useEffect(() => {
     const audio = nativeAudioRef.current;
     if (!audio) return;
-
     const updateProgress = () => {
-      if (!currentSong?.youtubeId) {
+      if (!youtubeVideoId) {
         setProgress(audio.currentTime || 0);
         setDuration(audio.duration || 0);
-        
-        if ('mediaSession' in navigator && !isNaN(audio.duration)) {
-          try {
-            navigator.mediaSession.setPositionState({
-              duration: audio.duration,
-              playbackRate: audio.playbackRate,
-              position: audio.currentTime
-            });
-          } catch (e) {}
-        }
       }
     };
-
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('loadedmetadata', updateProgress);
-
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('loadedmetadata', updateProgress);
     };
-  }, [currentSong, nativeAudioRef]);
+  }, [youtubeVideoId, nativeAudioRef]);
+
+  // Reset progress when song changes
+  useEffect(() => {
+    setProgress(0);
+    setDuration(0);
+  }, [youtubeVideoId, currentSong?.id]);
 
   useEffect(() => {
     if ('mediaSession' in navigator) {
@@ -116,9 +112,9 @@ const MusicPlayer = () => {
   const handleSeek = (e) => {
     const time = Number(e.target.value);
     setProgress(time);
-    
-    if (currentSong?.youtubeId && playerRef.current) {
-      playerRef.current.seekTo(time, 'seconds');
+    // Seek on the global YouTube player in context
+    if (youtubeVideoId && ytPlayerRef?.current) {
+      ytPlayerRef.current.seekTo(time, 'seconds');
     } else if (nativeAudioRef.current) {
       nativeAudioRef.current.currentTime = time;
     }
@@ -471,28 +467,27 @@ const MusicPlayer = () => {
         </div>
       </div>
 
-      {/* YouTube Stream Fallback */}
-      <ReactPlayer
-        ref={playerRef}
-        url={(currentSong && currentSong.youtubeId && !currentUrl.startsWith('blob:')) ? currentUrl : ''}
-        playing={isPlaying && currentSong && currentSong.youtubeId && !currentUrl.startsWith('blob:')}
-        volume={isMuted ? 0 : vol}
-        onProgress={({ playedSeconds }) => {
-          if (currentSong?.youtubeId) setProgress(playedSeconds);
-        }}
-        onDuration={(d) => {
-          if (currentSong?.youtubeId) setDuration(d);
-        }}
-        onEnded={playNext}
-        width="200px"
-        height="200px"
-        style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}
-        config={{
-          youtube: {
-            playerVars: { showinfo: 0, autoplay: 1, playsinline: 1 }
-          }
-        }}
-      />
+      {/* The global hidden YouTube player lives in PlayerContext — no duplicate ReactPlayer here */}
+      {/* Local ReactPlayer is only needed to get progress callbacks from the global YT player */}
+      {youtubeVideoId && (
+        <ReactPlayer
+          ref={ytPlayerRef}
+          url={`https://www.youtube.com/watch?v=${youtubeVideoId}`}
+          playing={isPlaying}
+          volume={isMuted ? 0 : vol}
+          onProgress={({ playedSeconds }) => setProgress(playedSeconds)}
+          onDuration={(d) => setDuration(d)}
+          onEnded={playNext}
+          width="1px"
+          height="1px"
+          style={{ position: 'fixed', bottom: '-1px', left: '-1px', opacity: 0, pointerEvents: 'none', zIndex: -1 }}
+          config={{
+            youtube: {
+              playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1 }
+            }
+          }}
+        />
+      )}
     </>
   );
 };
