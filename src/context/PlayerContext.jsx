@@ -2,8 +2,6 @@ import React, { createContext, useState, useContext, useRef, useEffect, useCallb
 import { getOfflineSong, downloadSongToApp, getAllOfflineSongs, deleteOfflineSong } from '../utils/offlineStorage';
 import { fetchLyrics } from '../services/api';
 
-const SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU5LjI3LjEwMAAAAAAAAAAAAAAA//OEwAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
-
 const PlayerContext = createContext();
 
 export const usePlayer = () => useContext(PlayerContext);
@@ -294,11 +292,6 @@ export const PlayerProvider = ({ children }) => {
       // Directly known YouTube ID (e.g. from Videos page)
       setYoutubeVideoId(song.youtubeId);
       setCurrentUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
-      if (nativeAudioRef.current) {
-        nativeAudioRef.current.src = SILENT_MP3;
-        nativeAudioRef.current.loop = true;
-        nativeAudioRef.current.play().catch(console.error);
-      }
     } else {
       // Search YouTube for the best matching video
       setCurrentUrl(`yt-searching:${searchQuery}`);
@@ -309,11 +302,6 @@ export const PlayerProvider = ({ children }) => {
           if (vid) {
             setYoutubeVideoId(vid);
             setCurrentUrl(`https://www.youtube.com/watch?v=${vid}`);
-            if (nativeAudioRef.current) {
-              nativeAudioRef.current.src = SILENT_MP3;
-              nativeAudioRef.current.loop = true;
-              nativeAudioRef.current.play().catch(console.error);
-            }
           } else {
             console.error('No YouTube result found for:', searchQuery);
           }
