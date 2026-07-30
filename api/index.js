@@ -22,6 +22,39 @@ export default async function handler(req, res) {
   const { searchParams } = new URL(url, 'http://localhost');
 
   try {
+    // ── AUDIO STREAM PROXY ───────────────────────────────────────────────────
+    // Bypasses CORS on aac.saavncdn.com by streaming audio server-side
+    if (url.includes('/stream')) {
+      const audioUrl = searchParams.get('url');
+      if (!audioUrl) return res.status(400).json({ error: 'Missing url param' });
+
+      const decoded = decodeURIComponent(audioUrl);
+      const audioRes = await axios.get(decoded, {
+        responseType: 'stream',
+        timeout: 30000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://www.jiosaavn.com/',
+          'Origin': 'https://www.jiosaavn.com',
+          'Accept': '*/*',
+          'Range': req.headers['range'] || 'bytes=0-',
+        },
+      });
+
+      // Forward relevant headers for range requests (seek support)
+      const headersToForward = ['content-type', 'content-length', 'content-range', 'accept-ranges'];
+      headersToForward.forEach(h => {
+        if (audioRes.headers[h]) res.setHeader(h, audioRes.headers[h]);
+      });
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+
+      const statusCode = audioRes.status === 206 ? 206 : 200;
+      res.status(statusCode);
+      audioRes.data.pipe(res);
+      return;
+    }
+
     // ── TMDB PROXY ──────────────────────────────────────────────────────────
     if (url.includes('/tmdb/')) {
       const tmdbPath = url.replace(/^\/api\/tmdb/, '');
@@ -62,7 +95,7 @@ export default async function handler(req, res) {
     }
 
     // ── SAAVN SONG DETAILS ───────────────────────────────────────────────────
-    if (url.includes('/songs') && !url.includes('/search') && !url.includes('/albums')) {
+    if (url.includes('/songs') && !url.includes('/search') && !url.includes('/albums') && !url.includes('/stream')) {
       const id = searchParams.get('id');
       if (id) {
         const data = await saavnProxy(`/songs/${id}`);
@@ -90,7 +123,7 @@ export default async function handler(req, res) {
       return res.json(data);
     }
 
-    // ── DEFAULT: saavn song search ───────────────────────────────────────────
+    // ── DEFAULT ──────────────────────────────────────────────────────────────
     const q = searchParams.get('q') || searchParams.get('query') || 'trending hindi';
     const data = await saavnProxy('/search/songs', { query: q, page: 1, limit: 20 });
     return res.json(data);
