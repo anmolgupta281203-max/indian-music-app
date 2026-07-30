@@ -298,29 +298,10 @@ export const PlayerProvider = ({ children }) => {
       if ((!song.youtubeId || srcUrl.startsWith('blob:')) && nativeAudioRef.current) {
         const audio = nativeAudioRef.current;
         
-        if (song.downloadUrl && !srcUrl.startsWith('blob:')) {
-          for (let i = song.downloadUrl.length - 1; i >= 0; i--) {
-            const raw = song.downloadUrl[i].url;
-            const source = document.createElement('source');
-            source.src = raw;
-            source.type = 'audio/mp4';
-            audio.appendChild(source);
-          }
-        } else {
-          audio.src = srcUrl;
-        }
+        audio.src = srcUrl;
 
-        audio.onerror = () => {
-          console.warn("Direct stream failed, falling back to /audio-proxy...");
-          const targetRaw = song.downloadUrl ? song.downloadUrl[song.downloadUrl.length - 1].url : srcUrl;
-          if (targetRaw && !targetRaw.startsWith('/audio-proxy')) {
-            const proxyUrl = `/audio-proxy?url=${encodeURIComponent(targetRaw)}`;
-            audio.onerror = null;
-            audio.src = proxyUrl;
-            setCurrentUrl(proxyUrl);
-            audio.load();
-            audio.play().catch(console.error);
-          }
+        audio.onerror = (e) => {
+          console.error("Audio playback error:", e);
         };
 
         audio.load();
