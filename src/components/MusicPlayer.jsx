@@ -404,37 +404,7 @@ const MusicPlayer = () => {
               )}
             </div>
 
-            <div style={{ position: 'relative' }}>
-              <button 
-                className={`fs-tool-btn ${eqPreset !== 'flat' ? 'active' : ''}`}
-                onClick={() => { setShowEqMenu(!showEqMenu); setShowSleepMenu(false); setShowQualityMenu(false); setShowMoreMenu(false); }}
-                title="5-Band Equalizer"
-              >
-                <SlidersHorizontal size={22} color={eqPreset !== 'flat' ? "#1ed760" : "#fff"} />
-              </button>
-              {showEqMenu && (
-                <div className="popover-menu">
-                  <h4>5-Band Equalizer</h4>
-                  {[
-                    { id: 'flat', label: 'Flat (Default)' },
-                    { id: 'bassBoost', label: 'Bass Boost 🎧' },
-                    { id: 'vocalEnhancer', label: 'Vocal Enhancer' },
-                    { id: 'bollywoodDance', label: 'Bollywood Dance 💃' },
-                    { id: 'lofiChill', label: 'Lo-Fi Chill 🌙' },
-                    { id: 'acoustic', label: 'Acoustic' }
-                  ].map(eq => (
-                    <button 
-                      key={eq.id} 
-                      className={eqPreset === eq.id ? 'selected' : ''}
-                      onClick={() => { setEqPreset(eq.id); setShowEqMenu(false); }}
-                    >
-                      {eq.label}
-                      {eqPreset === eq.id && <Check size={16} />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Equalizer is hidden as it requires Web Audio API which is incompatible with YouTube Iframe cross-origin policies */}
 
             <button className="fs-tool-btn" onClick={toggleShuffle} title="Shuffle">
               <Shuffle size={22} color={isShuffling ? "#1ed760" : "#fff"} />
@@ -455,7 +425,6 @@ const MusicPlayer = () => {
               {showMoreMenu && (
                 <div className="popover-menu">
                   <button onClick={() => { handleShare(); setShowMoreMenu(false); }}>Share Song</button>
-                  <button onClick={() => { setShowQualityMenu(true); setShowMoreMenu(false); }}>Quality: {audioQuality}</button>
                   <button onClick={() => { toggleFavorite(currentSong); setShowMoreMenu(false); }}>
                     {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
                   </button>
