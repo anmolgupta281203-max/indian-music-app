@@ -2,24 +2,14 @@ import axios from 'axios';
 
 const apiClient = axios.create({ baseURL: '/api' });
 
-// Wrap a direct CDN audio URL through our server proxy to bypass CORS
-const proxyAudioUrl = (rawUrl) => {
-  if (!rawUrl) return '';
-  // Already proxied or a YouTube URL — don't double-wrap
-  if (rawUrl.startsWith('/api/stream') || rawUrl.includes('youtube.com') || rawUrl.includes('youtu.be')) {
-    return rawUrl;
-  }
-  return `/api/stream?url=${encodeURIComponent(rawUrl)}`;
-};
-
 // jiosaavn-api-2.vercel.app uses `link` field (not `url`) in downloadUrl and image arrays
 const normalizeSong = (song) => {
   if (!song) return null;
 
-  // Normalize downloadUrl: proxy through server to bypass CORS
+  // Normalize downloadUrl: use direct CDN link
   const downloadUrl = (song.downloadUrl || []).map(d => ({
     quality: d.quality,
-    url: proxyAudioUrl(d.link || d.url || ''),
+    url: d.link || d.url || '',
   })).filter(d => d.url);
 
   // Normalize image: handle both {link} and {url} formats

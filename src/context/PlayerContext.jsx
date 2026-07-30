@@ -543,7 +543,6 @@ export const PlayerProvider = ({ children }) => {
       <audio 
         ref={nativeAudioRef} 
         preload="auto" 
-        crossOrigin="anonymous" 
         playsInline
         style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }} 
       />
