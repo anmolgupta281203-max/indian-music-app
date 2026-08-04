@@ -369,37 +369,28 @@ export const PlayerProvider = ({ children }) => {
         }
       }).catch(e => console.error("Error loading offline song", e));
     } else {
-      // Not downloaded, stream from YouTube
-      if (song.youtubeId) {
+      // Stream natively from JioSaavn via backend proxy to enable background playback
+      if (song.downloadUrl && song.downloadUrl.length > 0) {
+        setYoutubeVideoId(null);
+        
+        // Find highest quality (320kbps) or fallback to the first available
+        const bestAudio = song.downloadUrl.find(d => d.quality === '320kbps') || song.downloadUrl[song.downloadUrl.length - 1];
+        const rawUrl = bestAudio.url || song.downloadUrl[0].url;
+        setCurrentUrl(rawUrl);
+        
+        // Use our proxy to bypass CORS so Web Audio API (Equalizer) works
+        const proxyUrl = `/api/stream?url=${encodeURIComponent(rawUrl)}`;
+        nativeAudioRef.current.crossOrigin = "anonymous";
+        nativeAudioRef.current.src = proxyUrl;
+        nativeAudioRef.current.currentTime = 0;
+        nativeAudioRef.current.play().catch(e => console.log('Native play error:', e));
+      } 
+      // Only use YouTube player if explicitly a YouTube video (e.g. from Video tab)
+      else if (song.youtubeId) {
         setYoutubeVideoId(song.youtubeId);
         setCurrentUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
       } else {
-        setCurrentUrl(`yt-searching:${searchQuery}`);
-        fetch(`/api/yt-search?q=${encodeURIComponent(searchQuery)}&limit=3`)
-          .then(r => r.json())
-          .then(data => {
-            const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
-            if (vid) {
-              setYoutubeVideoId(vid);
-              setCurrentUrl(`https://www.youtube.com/watch?v=${vid}`);
-            } else {
-              console.error('No YouTube result found for:', searchQuery);
-              fallbackToNativeAudio();
-            }
-          })
-          .catch(e => {
-            console.error('YT search failed:', e);
-            fallbackToNativeAudio();
-          });
-          
-        const fallbackToNativeAudio = () => {
-          if (song.downloadUrl && song.downloadUrl.length > 0) {
-            setYoutubeVideoId(null);
-            setCurrentUrl(song.downloadUrl[0].url);
-          } else {
-            setIsPlaying(false);
-          }
-        };
+        setIsPlaying(false);
       }
     }
   };
