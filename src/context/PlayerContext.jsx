@@ -384,9 +384,22 @@ export const PlayerProvider = ({ children }) => {
               setCurrentUrl(`https://www.youtube.com/watch?v=${vid}`);
             } else {
               console.error('No YouTube result found for:', searchQuery);
+              fallbackToNativeAudio();
             }
           })
-          .catch(e => console.error('YT search failed:', e));
+          .catch(e => {
+            console.error('YT search failed:', e);
+            fallbackToNativeAudio();
+          });
+          
+        const fallbackToNativeAudio = () => {
+          if (song.downloadUrl && song.downloadUrl.length > 0) {
+            setYoutubeVideoId(null);
+            setCurrentUrl(song.downloadUrl[0].url);
+          } else {
+            setIsPlaying(false);
+          }
+        };
       }
     }
   };
@@ -438,6 +451,13 @@ export const PlayerProvider = ({ children }) => {
     setIsPlaying(next);
     if (next) {
       startSilentKeepalive();
+      if (nativeAudioRef.current) {
+        nativeAudioRef.current.play().catch(e => console.error('Play error:', e));
+      }
+    } else {
+      if (nativeAudioRef.current) {
+        nativeAudioRef.current.pause();
+      }
     }
     // YouTube player play/pause is controlled via the `playing` prop on ReactPlayer
   };
