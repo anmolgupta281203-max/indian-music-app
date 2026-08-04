@@ -45,7 +45,26 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api': {
+      '/api/yt-search': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/api/search': {
+        target: 'https://www.jiosaavn.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api.php')
+      },
+      '/api/songs': {
+        target: 'https://www.jiosaavn.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api.php')
+      },
+      '/api/albums': {
+        target: 'https://www.jiosaavn.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api.php')
+      },
+      '/api/playlists': {
         target: 'https://www.jiosaavn.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api.php')

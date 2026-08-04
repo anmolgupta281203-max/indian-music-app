@@ -15,6 +15,11 @@ const EQ_PRESETS = {
   acoustic: [3, 1, 3, 5, 4]
 };
 
+// Tiny silent WAV (44 bytes of silence) as a data URI.
+// Playing this on loop keeps the browser audio session alive on mobile,
+// preventing the OS from killing YouTube iframe playback when the screen locks.
+const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+
 export const PlayerProvider = ({ children }) => {
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -58,6 +63,11 @@ export const PlayerProvider = ({ children }) => {
   const audioCtxRef = useRef(null);
   const sourceNodeRef = useRef(null);
   const eqFiltersRef = useRef([]);
+  
+  // Silent audio keepalive ref - separate from the nativeAudioRef
+  const silentAudioRef = useRef(null);
+  // Track whether keepalive has been started (needs user gesture on mobile)
+  const keepaliveStartedRef = useRef(false);
 
   useEffect(() => {
     getAllOfflineSongs().then(songs => setDownloadedSongs(songs));
@@ -124,6 +134,40 @@ export const PlayerProvider = ({ children }) => {
     }
   };
 
+  // ── SILENT AUDIO KEEPALIVE ──────────────────────────────────────────────
+  // Start a silent audio loop to keep the browser's audio session alive.
+  // This prevents Android/iOS from killing the YouTube iframe when minimized.
+  const startSilentKeepalive = useCallback(() => {
+    if (keepaliveStartedRef.current) return;
+    try {
+      if (!silentAudioRef.current) {
+        const audio = new Audio();
+        audio.src = SILENT_WAV;
+        audio.loop = true;
+        audio.volume = 0.01; // Near-silent but not zero (some browsers ignore volume=0)
+        audio.setAttribute('playsinline', '');
+        silentAudioRef.current = audio;
+      }
+      const playPromise = silentAudioRef.current.play();
+      if (playPromise) {
+        playPromise.then(() => {
+          keepaliveStartedRef.current = true;
+        }).catch(() => {
+          // Will retry on next user interaction
+        });
+      }
+    } catch (e) {
+      console.warn('Silent keepalive start failed:', e);
+    }
+  }, []);
+
+  const stopSilentKeepalive = useCallback(() => {
+    if (silentAudioRef.current) {
+      silentAudioRef.current.pause();
+      keepaliveStartedRef.current = false;
+    }
+  }, []);
+
   // Sleep timer countdown
   useEffect(() => {
     if (!sleepTimerEnd) return;
@@ -185,23 +229,41 @@ export const PlayerProvider = ({ children }) => {
     };
   }, [queue, currentIndex, isShuffling, isLooping]);
 
-  // MediaSession Handlers
+  // MediaSession Handlers — controls YouTube player from lock screen
   useEffect(() => {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => {
-        if (nativeAudioRef.current) nativeAudioRef.current.play().catch(console.error);
         setIsPlaying(true);
-        navigator.mediaSession.playbackState = 'playing';
+        startSilentKeepalive();
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'playing';
+        }
       });
       navigator.mediaSession.setActionHandler('pause', () => {
-        if (nativeAudioRef.current) nativeAudioRef.current.pause();
         setIsPlaying(false);
-        navigator.mediaSession.playbackState = 'paused';
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'paused';
+        }
       });
       navigator.mediaSession.setActionHandler('previoustrack', () => playPrev());
       navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (ytPlayerRef.current && details.seekTime != null) {
+          ytPlayerRef.current.seekTo(details.seekTime, 'seconds');
+        }
+      });
     }
   }, [queue, currentIndex, isShuffling, isLooping]);
+
+  // Sync silent keepalive with isPlaying state
+  useEffect(() => {
+    if (isPlaying && currentSong) {
+      startSilentKeepalive();
+    } else if (!isPlaying) {
+      // Don't stop keepalive immediately — let it run so background resume works
+      // It will be stopped when no song is loaded
+    }
+  }, [isPlaying, currentSong, startSilentKeepalive]);
 
   const playSong = (song, newQueue = null) => {
     setupWebAudio();
@@ -270,6 +332,9 @@ export const PlayerProvider = ({ children }) => {
     setYoutubeVideoId(null);
     setIsPlaying(true);
 
+    // Start silent keepalive on first user interaction (play)
+    startSilentKeepalive();
+
     // Update MediaSession metadata immediately (album art etc.)
     if ('mediaSession' in navigator) {
       const artworkUrl = song.image?.[song.image.length - 1]?.url
@@ -288,44 +353,41 @@ export const PlayerProvider = ({ children }) => {
       document.title = `${songTitle} - Svar`;
     }
 
-    if (song.youtubeId) {
-      // Directly known YouTube ID (e.g. from Videos page)
-      setYoutubeVideoId(song.youtubeId);
-      setCurrentUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
-    } else {
-      // Search YouTube for the best matching video
-      setCurrentUrl(`yt-searching:${searchQuery}`);
-      fetch(`/api/yt-search?q=${encodeURIComponent(searchQuery)}&limit=3`)
-        .then(r => r.json())
-        .then(data => {
-          const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
-          if (vid) {
-            setYoutubeVideoId(vid);
-            setCurrentUrl(`https://www.youtube.com/watch?v=${vid}`);
-          } else {
-            console.error('No YouTube result found for:', searchQuery);
-          }
-        })
-        .catch(e => console.error('YT search failed:', e));
-    }
-
     const isDownloaded = downloadedSongs.some(s => s.id === song.id);
+    
     if (isDownloaded) {
+      // Prioritize the offline blob
       getOfflineSong(song.id).then(offlineSong => {
-        if (offlineSong && offlineSong.blob) {
+        if (offlineSong && offlineSong.blob && nativeAudioRef.current) {
           const blobUrl = URL.createObjectURL(offlineSong.blob);
-          if (!song.youtubeId && nativeAudioRef.current) {
-            const wasPlaying = !nativeAudioRef.current.paused;
-            const currentTime = nativeAudioRef.current.currentTime;
-            nativeAudioRef.current.src = blobUrl;
-            setCurrentUrl(blobUrl);
-            nativeAudioRef.current.currentTime = currentTime;
-            if (wasPlaying) {
-              nativeAudioRef.current.play().catch(e => console.log(e));
-            }
-          }
+          setYoutubeVideoId(null); // Disable YouTube player
+          setCurrentUrl(blobUrl);
+          
+          nativeAudioRef.current.src = blobUrl;
+          nativeAudioRef.current.currentTime = 0;
+          nativeAudioRef.current.play().catch(e => console.log(e));
         }
       }).catch(e => console.error("Error loading offline song", e));
+    } else {
+      // Not downloaded, stream from YouTube
+      if (song.youtubeId) {
+        setYoutubeVideoId(song.youtubeId);
+        setCurrentUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
+      } else {
+        setCurrentUrl(`yt-searching:${searchQuery}`);
+        fetch(`/api/yt-search?q=${encodeURIComponent(searchQuery)}&limit=3`)
+          .then(r => r.json())
+          .then(data => {
+            const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
+            if (vid) {
+              setYoutubeVideoId(vid);
+              setCurrentUrl(`https://www.youtube.com/watch?v=${vid}`);
+            } else {
+              console.error('No YouTube result found for:', searchQuery);
+            }
+          })
+          .catch(e => console.error('YT search failed:', e));
+      }
     }
   };
 
@@ -372,7 +434,11 @@ export const PlayerProvider = ({ children }) => {
 
   const togglePlay = () => {
     if (!currentSong) return;
-    setIsPlaying(prev => !prev);
+    const next = !isPlaying;
+    setIsPlaying(next);
+    if (next) {
+      startSilentKeepalive();
+    }
     // YouTube player play/pause is controlled via the `playing` prop on ReactPlayer
   };
 
@@ -385,6 +451,7 @@ export const PlayerProvider = ({ children }) => {
 
   const resumePlayback = () => {
     setIsPlaying(true);
+    startSilentKeepalive();
     if (nativeAudioRef.current) {
       nativeAudioRef.current.play().catch(e => console.log(e));
     }
@@ -457,18 +524,26 @@ export const PlayerProvider = ({ children }) => {
   };
 
   const handleDownloadToggle = async (song) => {
-    const isDownloaded = downloadedSongs.find(s => s.id === song.id);
-    if (isDownloaded) {
-      await deleteOfflineSong(song.id);
-      setDownloadedSongs(prev => prev.filter(s => s.id !== song.id));
-    } else {
-      const success = await downloadSongToApp(song);
-      if (success) {
-        const allSongs = await getAllOfflineSongs();
-        setDownloadedSongs(allSongs);
-      } else {
-        alert("Download failed. Make sure you're connected to the internet.");
+    let vid = song.youtubeId;
+    
+    // If we don't have the YouTube ID yet, fetch it real quick
+    if (!vid) {
+      const searchQuery = `${song.name} ${song.primaryArtists || ''} audio`;
+      try {
+        const res = await fetch(`/api/yt-search?q=${encodeURIComponent(searchQuery)}&limit=1`);
+        const data = await res.json();
+        vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
+      } catch (e) {
+        console.error("Failed to find YouTube ID for download", e);
       }
+    }
+    
+    if (vid) {
+      const ytUrl = `https://www.youtube.com/watch?v=${vid}`;
+      // Open Cobalt with the YouTube URL pre-loaded
+      window.open(`https://cobalt.tools/?u=${encodeURIComponent(ytUrl)}`, '_blank', 'noopener,noreferrer');
+    } else {
+      alert("Could not find the YouTube source to download this song.");
     }
   };
 

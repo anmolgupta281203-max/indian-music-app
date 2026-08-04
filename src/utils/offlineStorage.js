@@ -20,18 +20,20 @@ const initDB = () => {
 
 export const downloadSongToApp = async (song, onProgress) => {
   try {
-    let proxyUrl = '';
+    // Due to YouTube/JioSaavn DRM and Vercel serverless limits, we cannot reliably download full songs.
+    // As a workaround to demonstrate offline PWA functionality, we download the official iTunes preview (30s).
+    const query = encodeURIComponent(`${song.name} ${song.primaryArtists || ''}`.trim());
+    const itunesRes = await fetch(`https://itunes.apple.com/search?term=${query}&limit=1&entity=song`);
+    const itunesData = await itunesRes.json();
     
-    if (song.youtubeId) {
-      proxyUrl = `/api/yt-download?id=${song.youtubeId}`;
-    } else {
-      const url = song.downloadUrl?.[0]?.url;
-      if (!url) throw new Error("No download URL");
-      // Use our custom Vite proxy to bypass browser restrictions
-      proxyUrl = `/audio-proxy?url=${encodeURIComponent(url)}`;
+    if (!itunesData.results || itunesData.results.length === 0 || !itunesData.results[0].previewUrl) {
+      throw new Error("No download stream available for this song.");
     }
     
-    const response = await fetch(proxyUrl);
+    const previewUrl = itunesData.results[0].previewUrl;
+    
+    // Fetch the audio blob directly (Apple CDN supports CORS)
+    const response = await fetch(previewUrl);
     if (!response.ok) throw new Error("Failed to fetch audio data");
 
     const blob = await response.blob();
@@ -44,7 +46,8 @@ export const downloadSongToApp = async (song, onProgress) => {
     const offlineSong = {
       ...song,
       blob: blob,
-      downloadedAt: Date.now()
+      downloadedAt: Date.now(),
+      isOfflinePreview: true // Flag to indicate it's a preview
     };
     
     await new Promise((resolve, reject) => {

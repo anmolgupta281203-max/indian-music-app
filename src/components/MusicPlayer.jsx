@@ -24,7 +24,9 @@ const MusicPlayer = () => {
   const { 
     currentSong, 
     isPlaying, 
-    togglePlay, 
+    togglePlay,
+    pause,
+    resumePlayback,
     playNext, 
     playPrev, 
     favorites, 
@@ -162,7 +164,6 @@ const MusicPlayer = () => {
   const imageUrl = getPlayerImage();
   const hqImageUrl = imageUrl.replace('150x150', '500x500').replace('50x50', '500x500');
   const isFavorite = favorites.some(s => s.id === currentSong.id);
-  const isDownloaded = downloadedSongs.some(s => s.id === currentSong.id);
   const primaryArtist = decodeHtml(currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
   const songTitle = decodeHtml(currentSong.name);
 
@@ -198,16 +199,14 @@ const MusicPlayer = () => {
           >
             <ListMusic size={20} color="var(--primary-color)" />
           </button>
-          {!currentSong.youtubeId && (
-            <button 
-              className="control-btn hide-on-mobile" 
-              style={{marginLeft: '0.5rem'}} 
-              onClick={() => handleDownloadToggle(currentSong)}
-              title={isDownloaded ? "Remove from downloads" : "Download for offline playback"}
-            >
-              <Download size={20} color={isDownloaded ? "var(--primary-color)" : "var(--text-secondary)"} />
-            </button>
-          )}
+          <button 
+            className="control-btn hide-on-mobile" 
+            style={{marginLeft: '0.5rem'}} 
+            onClick={() => handleDownloadToggle(currentSong)}
+            title="Download MP3"
+          >
+            <Download size={20} color="var(--text-secondary)" />
+          </button>
         </div>
 
         <div className="player-controls-container">
@@ -307,15 +306,13 @@ const MusicPlayer = () => {
             </div>
             
             <div className="fs-quick-actions">
-              {!currentSong.youtubeId && (
-                <button 
-                  className={`fs-action-circle ${isDownloaded ? 'active' : ''}`}
-                  onClick={() => handleDownloadToggle(currentSong)}
-                  title={isDownloaded ? "Downloaded" : "Download"}
-                >
-                  <Download size={20} color={isDownloaded ? "#1ed760" : "#fff"} />
-                </button>
-              )}
+              <button 
+                className="fs-action-circle"
+                onClick={() => handleDownloadToggle(currentSong)}
+                title="Download MP3"
+              >
+                <Download size={20} color="#fff" />
+              </button>
               <button 
                 className={`fs-action-circle ${isFavorite ? 'active' : ''}`}
                 onClick={() => toggleFavorite(currentSong)}
@@ -444,7 +441,21 @@ const MusicPlayer = () => {
           url={`https://www.youtube.com/watch?v=${youtubeVideoId}`}
           playing={isPlaying}
           volume={isMuted ? 0 : vol}
-          onProgress={({ playedSeconds }) => setProgress(playedSeconds)}
+          onPlay={() => resumePlayback()}
+          onPause={() => pause()}
+          onProgress={({ playedSeconds }) => {
+            setProgress(playedSeconds);
+            // Update MediaSession position state for lock screen progress bar
+            if ('mediaSession' in navigator && duration > 0) {
+              try {
+                navigator.mediaSession.setPositionState({
+                  duration: duration,
+                  playbackRate: 1,
+                  position: Math.min(playedSeconds, duration)
+                });
+              } catch (e) {}
+            }
+          }}
           onDuration={(d) => setDuration(d)}
           onEnded={playNext}
           width="1px"
@@ -452,7 +463,7 @@ const MusicPlayer = () => {
           style={{ position: 'fixed', bottom: '-1px', left: '-1px', opacity: 0, pointerEvents: 'none', zIndex: -1 }}
           config={{
             youtube: {
-              playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1 }
+              playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, playsinline: 1 }
             }
           }}
         />

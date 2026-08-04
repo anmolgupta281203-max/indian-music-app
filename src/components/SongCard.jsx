@@ -19,7 +19,6 @@ const SongCard = ({ song, queueContext }) => {
 
   const isCurrentSong = currentSong?.id === song.id;
   const isFavorite = favorites.some(s => s.id === song.id);
-  const isDownloaded = downloadedSongs.some(s => s.id === song.id);
 
   const handlePlay = (e) => {
     e.stopPropagation();
@@ -53,9 +52,9 @@ const SongCard = ({ song, queueContext }) => {
         <button 
           className="download-btn" 
           onClick={(e) => { e.stopPropagation(); handleDownloadToggle(song); }}
-          title={isDownloaded ? "Remove from downloads" : "Download"}
+          title="Download MP3"
         >
-          <Download size={18} color={isDownloaded ? "var(--primary-color)" : "white"} />
+          <Download size={18} color="white" />
         </button>
 
         <button 

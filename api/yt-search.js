@@ -1,13 +1,5 @@
-import axios from 'axios';
+import ytSearch from 'yt-search';
 
-/**
- * Searches YouTube and extracts videoIds from the HTML response.
- * No API key needed — uses YouTube's public search page.
- * 
- * Query params:
- *   q      – search query (e.g. "Tum Hi Ho Arijit Singh audio")
- *   limit  – max results to return (default 5)
- */
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -22,110 +14,33 @@ export default async function handler(req, res) {
   }
 
   try {
-    const encodedQuery = encodeURIComponent(query);
-    const ytUrl = `https://www.youtube.com/results?search_query=${encodedQuery}`;
+    const searchQuery = query.toLowerCase().includes('song') || query.toLowerCase().includes('music') 
+      ? query 
+      : `${query} song`;
 
-    const response = await axios.get(ytUrl, {
-      timeout: 8000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml',
-      },
-    });
-
-    const html = response.data;
-
-    // Extract ytInitialData JSON from the page
-    const match = html.match(/var ytInitialData = ({.+?});<\/script>/s)
-      || html.match(/ytInitialData = ({.+?});\s*<\/script>/s);
-
-    if (!match) {
-      // Fallback: regex scan for videoId patterns
-      const videoIds = [];
-      const regex = /"videoId":"([a-zA-Z0-9_-]{11})"/g;
-      let m;
-      const seen = new Set();
-      while ((m = regex.exec(html)) !== null) {
-        if (!seen.has(m[1])) {
-          seen.add(m[1]);
-          videoIds.push(m[1]);
-        }
-        if (videoIds.length >= limit) break;
-      }
-      return res.json({ videoIds });
+    const r = await ytSearch(searchQuery);
+    
+    if (!r || !r.videos || r.videos.length === 0) {
+      return res.status(404).json({ error: 'No videos found' });
     }
 
-    // Parse ytInitialData and extract video results
-    let data;
-    try {
-      data = JSON.parse(match[1]);
-    } catch {
-      // Fallback regex if JSON parse fails
-      const videoIds = [];
-      const regex = /"videoId":"([a-zA-Z0-9_-]{11})"/g;
-      let m;
-      const seen = new Set();
-      while ((m = regex.exec(html)) !== null) {
-        if (!seen.has(m[1])) {
-          seen.add(m[1]);
-          videoIds.push(m[1]);
-        }
-        if (videoIds.length >= limit) break;
-      }
-      return res.json({ videoIds });
-    }
+    // Filter to reasonable lengths for songs (under 10 mins)
+    const videos = r.videos.filter(v => v.seconds < 600).slice(0, limit);
+    
+    // Fallback if filtering removed everything
+    const finalVideos = videos.length > 0 ? videos : r.videos.slice(0, limit);
 
-    // Walk the deeply nested ytInitialData to find videoRenderers
-    const results = [];
-    try {
-      const contents =
-        data?.contents?.twoColumnSearchResultsRenderer?.primaryContents
-          ?.sectionListRenderer?.contents || [];
+    // Map to the format the frontend expects (or just return videoIds)
+    const videoIds = finalVideos.map(v => v.videoId);
+    const results = finalVideos.map(v => ({
+      videoId: v.videoId,
+      title: v.title,
+      duration: v.timestamp,
+      channel: v.author?.name || '',
+      thumbnail: v.thumbnail || ''
+    }));
 
-      for (const section of contents) {
-        const items =
-          section?.itemSectionRenderer?.contents || [];
-        for (const item of items) {
-          if (item?.videoRenderer) {
-            const vr = item.videoRenderer;
-            const videoId = vr.videoId;
-            const title = vr.title?.runs?.[0]?.text || '';
-            const duration = vr.lengthText?.simpleText || '';
-            const channel = vr.ownerText?.runs?.[0]?.text || '';
-            const thumbnail = vr.thumbnail?.thumbnails?.[vr.thumbnail.thumbnails.length - 1]?.url || '';
-
-            if (videoId) {
-              results.push({ videoId, title, duration, channel, thumbnail });
-            }
-          }
-          if (results.length >= limit) break;
-        }
-        if (results.length >= limit) break;
-      }
-    } catch {
-      // Ignore parsing errors
-    }
-
-    if (results.length > 0) {
-      return res.json({ videoIds: results.map(r => r.videoId), results });
-    }
-
-    // Last resort: regex scan
-    const videoIds = [];
-    const regex = /"videoId":"([a-zA-Z0-9_-]{11})"/g;
-    let m;
-    const seen = new Set();
-    while ((m = regex.exec(html)) !== null) {
-      if (!seen.has(m[1])) {
-        seen.add(m[1]);
-        videoIds.push(m[1]);
-      }
-      if (videoIds.length >= limit) break;
-    }
-
-    return res.json({ videoIds, results: videoIds.map(id => ({ videoId: id })) });
-
+    return res.json({ videoIds, results });
   } catch (err) {
     console.error('YT search error:', err.message);
     return res.status(500).json({ error: err.message });

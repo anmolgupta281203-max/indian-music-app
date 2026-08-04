@@ -149,7 +149,7 @@ const Home = () => {
                 <div 
                   key={album.id || index} 
                   className="album-card" 
-                  onClick={() => album.songs ? playSong(album.songs[0], album.songs) : (album.id ? handleAlbumClick(album.id) : playSong(album, trendingAlbums))}
+                  onClick={() => album.type === 'album' || album.songs ? handleAlbumClick(album.id) : playSong(album, trendingAlbums)}
                   style={{ position: 'relative', cursor: 'pointer' }}
                 >
                   <img src={imgSrc} alt={albumName} />
