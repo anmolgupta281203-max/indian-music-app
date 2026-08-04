@@ -369,7 +369,7 @@ export const PlayerProvider = ({ children }) => {
         }
       }).catch(e => console.error("Error loading offline song", e));
     } else {
-      // Stream natively from JioSaavn via backend proxy to enable background playback
+      // Stream natively from JioSaavn to enable background playback
       if (song.downloadUrl && song.downloadUrl.length > 0) {
         setYoutubeVideoId(null);
         
@@ -378,10 +378,9 @@ export const PlayerProvider = ({ children }) => {
         const rawUrl = bestAudio.url || song.downloadUrl[0].url;
         setCurrentUrl(rawUrl);
         
-        // Use our proxy to bypass CORS so Web Audio API (Equalizer) works
-        const proxyUrl = `/api/stream?url=${encodeURIComponent(rawUrl)}`;
+        // Use direct URL since JioSaavn CDN allows CORS
         nativeAudioRef.current.crossOrigin = "anonymous";
-        nativeAudioRef.current.src = proxyUrl;
+        nativeAudioRef.current.src = rawUrl;
         nativeAudioRef.current.currentTime = 0;
         nativeAudioRef.current.play().catch(e => console.log('Native play error:', e));
       } 
