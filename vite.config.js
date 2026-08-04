@@ -50,24 +50,24 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/api/search': {
-        target: 'https://www.jiosaavn.com',
+        target: 'https://jiosaavn-api-2.vercel.app',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api.php')
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/api/songs': {
-        target: 'https://www.jiosaavn.com',
+        target: 'https://jiosaavn-api-2.vercel.app',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api.php')
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/api/albums': {
-        target: 'https://www.jiosaavn.com',
+        target: 'https://jiosaavn-api-2.vercel.app',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api.php')
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/api/playlists': {
-        target: 'https://www.jiosaavn.com',
+        target: 'https://jiosaavn-api-2.vercel.app',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api.php')
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   }
