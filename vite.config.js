@@ -45,29 +45,9 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api/yt-search': {
+      '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
-      },
-      '/api/search': {
-        target: 'https://jiosaavn-api-2.vercel.app',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      '/api/songs': {
-        target: 'https://jiosaavn-api-2.vercel.app',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      '/api/albums': {
-        target: 'https://jiosaavn-api-2.vercel.app',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      '/api/playlists': {
-        target: 'https://jiosaavn-api-2.vercel.app',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   }

@@ -1,17 +1,68 @@
 import axios from 'axios';
+import CryptoJS from 'crypto-js';
 
-const SAAVN_API = 'https://jiosaavn-api-2.vercel.app';
 const TMDB_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
-async function saavnProxy(path, params = {}) {
-  const res = await axios.get(`${SAAVN_API}${path}`, {
-    params,
-    timeout: 12000,
-    headers: { 'Accept': 'application/json' }
+// ── NATIVE JIOSAAVN WRAPPER ───────────────────────────────────────────────────
+
+function decryptUrl(encryptedUrl) {
+  if (!encryptedUrl) return '';
+  try {
+    const key = CryptoJS.enc.Utf8.parse('38346591');
+    const decrypted = CryptoJS.DES.decrypt(
+      { ciphertext: CryptoJS.enc.Base64.parse(encryptedUrl) },
+      key,
+      { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 }
+    );
+    let url = decrypted.toString(CryptoJS.enc.Utf8);
+    url = url.replace('audios.saavncdn.com', 'aac.saavncdn.com');
+    url = url.replace('_master_d.mpd', '_320.mp4');
+    url = url.replace('_96.mp4', '_320.mp4');
+    return url;
+  } catch (e) {
+    console.error('Decryption error:', e);
+    return '';
+  }
+}
+
+function normalizeRawSong(song) {
+  if (!song) return null;
+  return {
+    id: song.id,
+    name: song.title || song.song || '',
+    album: song.album || '',
+    year: song.year || '',
+    duration: parseInt(song.duration) || 0,
+    label: song.label || '',
+    primaryArtists: song.primary_artists || song.singers || song.subtitle || '',
+    image: [{ quality: '500x500', url: (song.image || '').replace('150x150', '500x500') }],
+    downloadUrl: [{ quality: '320kbps', url: decryptUrl(song.encrypted_media_url || song.encrypted_drm_media_url) }]
+  };
+}
+
+async function fetchJioSaavnRaw(params) {
+  const defaultParams = { _format: 'json', _marker: 0, ctx: 'web6dot0' };
+  const res = await axios.get('https://www.jiosaavn.com/api.php', {
+    params: { ...defaultParams, ...params },
+    headers: {
+      'Origin': 'https://www.jiosaavn.com',
+      'Referer': 'https://www.jiosaavn.com/',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
   });
+  
+  // The API sometimes returns a plain text string instead of json if it fails or has ads
+  if (typeof res.data === 'string') {
+     try {
+       return JSON.parse(res.data.trim());
+     } catch(e) {
+       return {};
+     }
+  }
   return res.data;
 }
+
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,7 +74,6 @@ export default async function handler(req, res) {
 
   try {
     // ── AUDIO STREAM PROXY ───────────────────────────────────────────────────
-    // Bypasses CORS on aac.saavncdn.com by streaming audio server-side
     if (url.includes('/stream')) {
       const audioUrl = searchParams.get('url');
       if (!audioUrl) return res.status(400).json({ error: 'Missing url param' });
@@ -41,7 +91,6 @@ export default async function handler(req, res) {
         },
       });
 
-      // Forward relevant headers for range requests (seek support)
       const headersToForward = ['content-type', 'content-length', 'content-range', 'accept-ranges'];
       headersToForward.forEach(h => {
         if (audioRes.headers[h]) res.setHeader(h, audioRes.headers[h]);
@@ -66,67 +115,78 @@ export default async function handler(req, res) {
     }
 
     // ── SAAVN SEARCH SONGS ───────────────────────────────────────────────────
-    if (url.includes('/search/songs') || searchParams.get('__call') === 'search.getResults') {
-      const q = searchParams.get('q') || searchParams.get('query') || '';
+    if (url.includes('/search/songs') || searchParams.get('__call') === 'search.getResults' || searchParams.get('__call') === 'webapi.get') {
+      let q = searchParams.get('q') || searchParams.get('query') || '';
+      if (searchParams.get('__call') === 'webapi.get') q = 'top hindi hits 2026';
+      
       const page = searchParams.get('p') || searchParams.get('page') || '1';
       const limit = searchParams.get('n') || searchParams.get('limit') || '20';
-      const data = await saavnProxy('/search/songs', { query: q, page, limit });
-      return res.json(data);
+      
+      const rawData = await fetchJioSaavnRaw({ __call: 'search.getResults', q, p: page, n: limit });
+      const results = (rawData.results || []).map(normalizeRawSong).filter(Boolean);
+      return res.json({ results });
     }
 
     // ── SAAVN SEARCH ALBUMS ──────────────────────────────────────────────────
     if (url.includes('/search/albums')) {
       const q = searchParams.get('q') || searchParams.get('query') || '';
-      const data = await saavnProxy('/search/albums', { query: q, page: 1, limit: 20 });
-      return res.json(data);
+      const rawData = await fetchJioSaavnRaw({ __call: 'search.getAlbumResults', q, p: 1, n: 20 });
+      return res.json({ results: rawData.results || [] });
     }
 
     // ── SAAVN SEARCH ARTISTS ─────────────────────────────────────────────────
-    if (url.includes('/search/artists')) {
+    if (url.includes('/search/artists') || searchParams.get('__call') === 'search.getArtistResults') {
       const q = searchParams.get('q') || searchParams.get('query') || '';
-      const data = await saavnProxy('/search/artists', { query: q, page: 1, limit: 10 });
-      return res.json(data);
+      const rawData = await fetchJioSaavnRaw({ __call: 'search.getArtistResults', q, p: 1, n: 10 });
+      const results = (rawData.results || []).map(artist => ({
+         id: artist.id,
+         name: artist.title || artist.name,
+         url: artist.url,
+         image: [{ quality: '500x500', url: (artist.image || '').replace('150x150', '500x500') }]
+      }));
+      return res.json({ results });
     }
 
     // ── SAAVN ALBUM DETAILS ──────────────────────────────────────────────────
-    if (url.includes('/albums') && searchParams.get('id')) {
-      const data = await saavnProxy('/albums', { id: searchParams.get('id') });
-      return res.json(data);
+    if (url.includes('/albums') || searchParams.get('__call') === 'content.getAlbumDetails') {
+      const albumId = searchParams.get('id') || searchParams.get('albumid');
+      if (albumId) {
+        const rawData = await fetchJioSaavnRaw({ __call: 'content.getAlbumDetails', albumid: albumId });
+        const songs = (rawData.songs || rawData.list || []).map(normalizeRawSong).filter(Boolean);
+        return res.json({
+           id: rawData.albumid,
+           name: rawData.title,
+           year: rawData.year,
+           primaryArtists: rawData.primary_artists,
+           image: [{ quality: '500x500', url: (rawData.image || '').replace('150x150', '500x500') }],
+           songs
+        });
+      }
+    }
+
+    // ── SAAVN SONG LYRICS ───────────────────────────────────────────────────
+    if (url.includes('/lyrics')) {
+       return res.json({ lyrics: '' });
     }
 
     // ── SAAVN SONG DETAILS ───────────────────────────────────────────────────
     if (url.includes('/songs') && !url.includes('/search') && !url.includes('/albums') && !url.includes('/stream')) {
       const id = searchParams.get('id');
       if (id) {
-        const data = await saavnProxy(`/songs/${id}`);
-        return res.json(data);
+        const rawData = await fetchJioSaavnRaw({ __call: 'song.getDetails', pids: id });
+        const songData = rawData[id] || rawData;
+        const normalized = normalizeRawSong(songData);
+        // api.js usually expects an array of songs or a song object. 
+        // Vercel proxy usually returns a single song array or object. We'll return the object.
+        return res.json([normalized]);
       }
-    }
-
-    // ── LEGACY: webapi.get (trending) ────────────────────────────────────────
-    if (searchParams.get('__call') === 'webapi.get') {
-      const data = await saavnProxy('/search/songs', { query: 'top hindi hits 2026', page: 1, limit: 20 });
-      return res.json(data);
-    }
-
-    // ── LEGACY: content.getAlbumDetails ─────────────────────────────────────
-    if (searchParams.get('__call') === 'content.getAlbumDetails') {
-      const albumId = searchParams.get('albumid');
-      const data = await saavnProxy('/albums', { id: albumId });
-      return res.json(data);
-    }
-
-    // ── LEGACY: search.getArtistResults ─────────────────────────────────────
-    if (searchParams.get('__call') === 'search.getArtistResults') {
-      const q = searchParams.get('q') || '';
-      const data = await saavnProxy('/search/artists', { query: q, page: 1, limit: 10 });
-      return res.json(data);
     }
 
     // ── DEFAULT ──────────────────────────────────────────────────────────────
     const q = searchParams.get('q') || searchParams.get('query') || 'trending hindi';
-    const data = await saavnProxy('/search/songs', { query: q, page: 1, limit: 20 });
-    return res.json(data);
+    const rawData = await fetchJioSaavnRaw({ __call: 'search.getResults', q, p: 1, n: 20 });
+    const results = (rawData.results || []).map(normalizeRawSong).filter(Boolean);
+    return res.json({ results });
 
   } catch (err) {
     console.error('API proxy error:', err.message);

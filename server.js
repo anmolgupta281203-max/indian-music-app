@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import { createProxyMiddleware } from 'http-proxy-middleware';
 import path from 'path';
 import https from 'https';
 import http from 'http';
@@ -16,33 +15,39 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 
-// 1. TMDB API Proxy
-app.use('/tmdb', createProxyMiddleware({
-  target: 'https://api.themoviedb.org/3',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/tmdb': '', 
+// 1. TMDB Proxy using apiHandler
+app.use('/tmdb', async (req, res, next) => {
+  try {
+    const apiHandler = (await import('./api/index.js')).default;
+    const vercelReq = {
+      url: `/api/tmdb${req.url}`,
+      method: req.method,
+      headers: req.headers
+    };
+    await apiHandler(vercelReq, res);
+  } catch (err) {
+    next(err);
   }
-}));
+});
 
-// 2. JioSaavn API Proxy
-app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/yt-search') || req.path.startsWith('/yt-download')) {
+// 2. JioSaavn Native Proxy
+app.use('/api', async (req, res, next) => {
+  if (req.path.startsWith('/yt-search') || req.path.startsWith('/yt-download') || req.path.startsWith('/stream')) {
     return next();
   }
   
-  createProxyMiddleware({
-    target: 'https://www.jiosaavn.com',
-    changeOrigin: true,
-    pathRewrite: (path, req) => {
-      const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-      return '/api.php' + (cleanPath.startsWith('?') || cleanPath === '' ? cleanPath : '?' + cleanPath);
-    },
-    headers: {
-      'Origin': 'https://www.jiosaavn.com',
-      'Referer': 'https://www.jiosaavn.com/',
-    }
-  })(req, res, next);
+  try {
+    const apiHandler = (await import('./api/index.js')).default;
+    const originalUrl = req.originalUrl; // '/api/search/songs?q=...'
+    const vercelReq = {
+      url: originalUrl,
+      method: req.method,
+      headers: req.headers
+    };
+    await apiHandler(vercelReq, res);
+  } catch (err) {
+    next(err);
+  }
 });
 
 // 2a. YouTube Search API
