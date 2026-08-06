@@ -389,7 +389,23 @@ export const PlayerProvider = ({ children }) => {
         setYoutubeVideoId(song.youtubeId);
         setCurrentUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
       } else {
-        setIsPlaying(false);
+        // Fallback to YouTube if no JioSaavn audio URL is found
+        const fallbackQuery = `${songTitle} ${artistName} audio`;
+        fetch(`/api/yt-search?q=${encodeURIComponent(fallbackQuery)}&limit=1`)
+          .then(res => res.json())
+          .then(data => {
+            const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
+            if (vid) {
+              setYoutubeVideoId(vid);
+              setCurrentUrl(`https://www.youtube.com/watch?v=${vid}`);
+            } else {
+              setIsPlaying(false);
+            }
+          })
+          .catch(e => {
+            console.error('YT fallback failed:', e);
+            setIsPlaying(false);
+          });
       }
     }
   };
