@@ -379,7 +379,6 @@ export const PlayerProvider = ({ children }) => {
         setCurrentUrl(rawUrl);
         
         // Use direct URL since JioSaavn CDN allows CORS
-        nativeAudioRef.current.crossOrigin = "anonymous";
         nativeAudioRef.current.src = rawUrl;
         nativeAudioRef.current.currentTime = 0;
         nativeAudioRef.current.play().catch(e => console.log('Native play error:', e));
@@ -550,26 +549,19 @@ export const PlayerProvider = ({ children }) => {
   };
 
   const handleDownloadToggle = async (song) => {
-    let vid = song.youtubeId;
-    
-    // If we don't have the YouTube ID yet, fetch it real quick
-    if (!vid) {
-      const searchQuery = `${song.name} ${song.primaryArtists || ''} audio`;
-      try {
-        const res = await fetch(`/api/yt-search?q=${encodeURIComponent(searchQuery)}&limit=1`);
-        const data = await res.json();
-        vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
-      } catch (e) {
-        console.error("Failed to find YouTube ID for download", e);
-      }
-    }
-    
-    if (vid) {
-      const ytUrl = `https://www.youtube.com/watch?v=${vid}`;
-      // Open Cobalt with the YouTube URL pre-loaded
-      window.open(`https://cobalt.tools/?u=${encodeURIComponent(ytUrl)}`, '_blank', 'noopener,noreferrer');
+    const isDownloaded = downloadedSongs.some(s => s.id === song.id);
+    if (isDownloaded) {
+      await deleteOfflineSong(song.id);
+      const allSongs = await getAllOfflineSongs();
+      setDownloadedSongs(allSongs);
     } else {
-      alert("Could not find the YouTube source to download this song.");
+      const success = await downloadSongToApp(song);
+      if (success) {
+        const allSongs = await getAllOfflineSongs();
+        setDownloadedSongs(allSongs);
+      } else {
+        alert("Download failed. Make sure you're connected to the internet.");
+      }
     }
   };
 
