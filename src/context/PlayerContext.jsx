@@ -126,6 +126,12 @@ export const PlayerProvider = ({ children }) => {
   };
 
   const applyEqPreset = (presetKey) => {
+    // Only initialize Web Audio if a custom EQ is actually used
+    // This prevents background/lockscreen playback from being suspended by mobile browsers
+    if (presetKey !== 'Normal' && presetKey !== 'flat' && !audioCtxRef.current) {
+      setupWebAudio();
+    }
+
     const gains = EQ_PRESETS[presetKey] || EQ_PRESETS.flat;
     if (eqFiltersRef.current && eqFiltersRef.current.length === 5) {
       eqFiltersRef.current.forEach((filter, idx) => {
@@ -266,8 +272,6 @@ export const PlayerProvider = ({ children }) => {
   }, [isPlaying, currentSong, startSilentKeepalive]);
 
   const playSong = (song, newQueue = null) => {
-    setupWebAudio();
-
     if (nativeAudioRef.current) {
       const audio = nativeAudioRef.current;
       audio.pause();
