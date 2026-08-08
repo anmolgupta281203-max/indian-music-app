@@ -68,7 +68,7 @@ export const searchSongs = async (query) => {
   // Primary: jiosaavn-api-2 via our proxy
   try {
     const response = await apiClient.get('/search/songs', {
-      params: { query, page: 1, limit: 20 }
+      params: { query, page: 1, limit: 50 }
     });
     const results = response.data?.results || [];
     if (results.length > 0) {
@@ -81,7 +81,7 @@ export const searchSongs = async (query) => {
   // iTunes fallback (30s previews only — last resort)
   try {
     const itunesRes = await axios.get(
-      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=20`
+      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=50`
     );
     if (itunesRes.data?.results?.length > 0) {
       return itunesRes.data.results.map(item => ({

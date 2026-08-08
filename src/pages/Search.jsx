@@ -57,6 +57,10 @@ const Search = () => {
           
           setResults(data || []);
           setYtResults([]);
+        } else if (searchMode === 'artists') {
+          const data = await searchArtists(query);
+          setResults(data || []);
+          setYtResults([]);
         } else if (searchMode === 'videos') {
           // Search YouTube directly from client to bypass Vercel IP blocks
           let foundVideos = [];
@@ -165,6 +169,13 @@ const Search = () => {
           >
             Video Music (YouTube)
           </button>
+          <button 
+            className={`tab-btn ${searchMode === 'artists' ? 'active' : ''}`}
+            onClick={() => setSearchMode('artists')}
+            style={{padding: '0.5rem 1.5rem', borderRadius: '20px', border: 'none', background: searchMode === 'artists' ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', fontWeight: 'bold'}}
+          >
+            Artists
+          </button>
         </div>
       </div>
 
@@ -217,6 +228,30 @@ const Search = () => {
                   </div>
                   <h4 style={{marginTop: '0.5rem', fontSize: '0.9rem'}}>{v.title}</h4>
                   <p style={{color: 'var(--text-secondary)', fontSize: '0.8rem'}}>{v.author?.name}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {!loading && searchMode === 'artists' && results.length > 0 && (
+          <>
+            <h2>Top Artists</h2>
+            <div className="cards-grid albums-grid">
+              {results.map(artist => (
+                <div 
+                  key={artist.id} 
+                  className="album-card" 
+                  onClick={() => navigate(`/artist?name=${encodeURIComponent(artist.name)}`)} 
+                  style={{cursor: 'pointer', textAlign: 'center'}}
+                >
+                  <img 
+                    src={artist.image || 'https://via.placeholder.com/150'} 
+                    alt={artist.name} 
+                    loading="lazy" 
+                    style={{borderRadius: '50%', width: '100%', aspectRatio: '1/1', objectFit: 'cover', marginBottom: '0.5rem'}} 
+                  />
+                  <h4 style={{fontSize: '1rem', marginTop: '0.5rem'}}>{artist.name}</h4>
                 </div>
               ))}
             </div>
