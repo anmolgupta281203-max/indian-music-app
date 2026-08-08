@@ -133,7 +133,7 @@ export const fetchAlbumDetails = async (albumId) => {
 export const searchArtists = async (query) => {
   try {
     const response = await apiClient.get('/search/artists', {
-      params: { query, page: 1, limit: 10 }
+      params: { query, page: 1, limit: 50 }
     });
     const results = response.data?.results || [];
     return results.map(artist => ({

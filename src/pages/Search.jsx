@@ -55,10 +55,45 @@ const Search = () => {
             });
           }
           
-          setResults(data || []);
-          setYtResults([]);
         } else if (searchMode === 'artists') {
-          const data = await searchArtists(query);
+          let data = await searchArtists(query);
+          
+          if (data && Array.isArray(data)) {
+            const seen = new Map();
+            data.forEach(artist => {
+              if (!artist || !artist.name) return;
+              // Clean up common bad characters and generic suffixes for deduplication
+              let cleanName = artist.name.toLowerCase().trim()
+                .replace(/&quot;/g, '"')
+                .replace(/&#039;/g, "'")
+                .replace(/&amp;/g, '&');
+                
+              // If name has a comma, we might just take the first part to avoid duplicates like "Jass Manak,Priya"
+              if (cleanName.includes(',')) {
+                cleanName = cleanName.split(',')[0].trim();
+              }
+              
+              const isDefaultImg = !artist.image || artist.image.includes('default_') || artist.image.includes('artist-default');
+              const existing = seen.get(cleanName);
+              
+              if (!existing) {
+                seen.set(cleanName, { ...artist, name: artist.name.split(',')[0] });
+              } else {
+                const existingIsDefault = !existing.image || existing.image.includes('default_') || existing.image.includes('artist-default');
+                if (existingIsDefault && !isDefaultImg) {
+                  seen.set(cleanName, { ...artist, name: artist.name.split(',')[0] });
+                }
+              }
+            });
+            
+            data = Array.from(seen.values());
+            data.sort((a, b) => {
+              const aDef = (!a.image || a.image.includes('default_') || a.image.includes('artist-default')) ? 1 : 0;
+              const bDef = (!b.image || b.image.includes('default_') || b.image.includes('artist-default')) ? 1 : 0;
+              return aDef - bDef;
+            });
+          }
+          
           setResults(data || []);
           setYtResults([]);
         } else if (searchMode === 'videos') {
