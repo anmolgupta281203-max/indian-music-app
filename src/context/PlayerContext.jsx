@@ -353,42 +353,10 @@ export const PlayerProvider = ({ children }) => {
       document.title = `${songTitle} - Svar`;
     }
 
-    const isDownloaded = downloadedSongs.some(s => s.id === song.id);
-    
-    if (isDownloaded) {
-      // Prioritize the offline blob
-      getOfflineSong(song.id).then(offlineSong => {
-        if (offlineSong && offlineSong.blob && nativeAudioRef.current) {
-          const blobUrl = URL.createObjectURL(offlineSong.blob);
-          setYoutubeVideoId(null); // Disable YouTube player
-          setCurrentUrl(blobUrl);
-          
-          nativeAudioRef.current.src = blobUrl;
-          nativeAudioRef.current.currentTime = 0;
-          nativeAudioRef.current.play().catch(e => console.log(e));
-        }
-      }).catch(e => console.error("Error loading offline song", e));
-    } else {
-      // Stream natively from JioSaavn to enable background playback
-      if (song.downloadUrl && song.downloadUrl.length > 0) {
-        setYoutubeVideoId(null);
-        
-        // Find highest quality (320kbps) or fallback to the first available
-        const bestAudio = song.downloadUrl.find(d => d.quality === '320kbps') || song.downloadUrl[song.downloadUrl.length - 1];
-        const rawUrl = bestAudio.url || song.downloadUrl[0].url;
-        setCurrentUrl(rawUrl);
-        
-        // Use direct URL since JioSaavn CDN allows CORS
-        nativeAudioRef.current.src = rawUrl;
-        nativeAudioRef.current.currentTime = 0;
-        nativeAudioRef.current.play().catch(e => console.log('Native play error:', e));
-      } 
-      // Only use YouTube player if explicitly a YouTube video (e.g. from Video tab)
-      else if (song.youtubeId) {
-        setYoutubeVideoId(song.youtubeId);
-        setCurrentUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
-      } else {
-        // Fallback to YouTube if no JioSaavn audio URL is found
+    const streamNetwork = () => {
+      const validDownloadUrls = (song.downloadUrl || []).filter(d => d.url && d.url.trim().length > 0);
+      
+      const fallbackToYouTube = () => {
         const fallbackQuery = `${songTitle} ${artistName} audio`;
         fetch(`/api/yt-search?q=${encodeURIComponent(fallbackQuery)}&limit=1`)
           .then(res => res.json())
@@ -405,7 +373,62 @@ export const PlayerProvider = ({ children }) => {
             console.error('YT fallback failed:', e);
             setIsPlaying(false);
           });
+      };
+
+      // Stream natively from JioSaavn to enable background playback
+      if (validDownloadUrls.length > 0) {
+        setYoutubeVideoId(null);
+        
+        // Find highest quality (320kbps) or fallback to the first available
+        const bestAudio = validDownloadUrls.find(d => d.quality === '320kbps') || validDownloadUrls[validDownloadUrls.length - 1];
+        const rawUrl = bestAudio.url || validDownloadUrls[0].url;
+        setCurrentUrl(rawUrl);
+        
+        // Use direct URL since JioSaavn CDN allows CORS
+        nativeAudioRef.current.crossOrigin = "anonymous";
+        nativeAudioRef.current.src = rawUrl;
+        nativeAudioRef.current.currentTime = 0;
+        nativeAudioRef.current.play().catch(e => {
+          console.log('Native play error:', e);
+          if (e.name !== 'AbortError') {
+            console.log('Falling back to YouTube due to playback error');
+            fallbackToYouTube();
+          }
+        });
+      } 
+      // Only use YouTube player if explicitly a YouTube video (e.g. from Video tab)
+      else if (song.youtubeId) {
+        setYoutubeVideoId(song.youtubeId);
+        setCurrentUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
+      } else {
+        fallbackToYouTube();
       }
+    };
+
+    const isDownloaded = downloadedSongs.some(s => s.id === song.id);
+    
+    if (isDownloaded) {
+      // Prioritize the offline blob
+      getOfflineSong(song.id).then(offlineSong => {
+        if (offlineSong && offlineSong.blob && nativeAudioRef.current) {
+          const blobUrl = URL.createObjectURL(offlineSong.blob);
+          setYoutubeVideoId(null); // Disable YouTube player
+          setCurrentUrl(blobUrl);
+          
+          nativeAudioRef.current.removeAttribute('crossOrigin');
+          nativeAudioRef.current.src = blobUrl;
+          nativeAudioRef.current.currentTime = 0;
+          nativeAudioRef.current.play().catch(e => console.log('Offline play error:', e));
+        } else {
+          // If blob is corrupt or missing, fallback to network
+          streamNetwork();
+        }
+      }).catch(e => {
+        console.error("Error loading offline song", e);
+        streamNetwork();
+      });
+    } else {
+      streamNetwork();
     }
   };
 
@@ -610,6 +633,7 @@ export const PlayerProvider = ({ children }) => {
       <audio 
         ref={nativeAudioRef} 
         preload="none"
+        crossOrigin="anonymous"
         playsInline
         style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }} 
       />
