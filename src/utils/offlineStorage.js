@@ -20,20 +20,35 @@ const initDB = () => {
 
 export const downloadSongToApp = async (song, onProgress) => {
   try {
-    // Due to YouTube/JioSaavn DRM and Vercel serverless limits, we cannot reliably download full songs.
-    // As a workaround to demonstrate offline PWA functionality, we download the official iTunes preview (30s).
-    const query = encodeURIComponent(`${song.name} ${song.primaryArtists || ''}`.trim());
-    const itunesRes = await fetch(`https://itunes.apple.com/search?term=${query}&limit=1&entity=song`);
-    const itunesData = await itunesRes.json();
+    let downloadUrl = '';
     
-    if (!itunesData.results || itunesData.results.length === 0 || !itunesData.results[0].previewUrl) {
+    // 1. Try JioSaavn native URL
+    if (song.downloadUrl && song.downloadUrl.length > 0) {
+      const validDownloadUrls = song.downloadUrl.filter(d => d.url && d.url.trim().length > 0);
+      if (validDownloadUrls.length > 0) {
+        const bestAudio = validDownloadUrls.find(d => d.quality === '320kbps') || validDownloadUrls[validDownloadUrls.length - 1];
+        downloadUrl = bestAudio.url || validDownloadUrls[0].url;
+      }
+    }
+    
+    // 2. Fallback to YouTube
+    if (!downloadUrl) {
+      const searchQuery = `${song.name} ${song.primaryArtists || ''} audio`;
+      const res = await fetch(`/api/yt-search?q=${encodeURIComponent(searchQuery)}&limit=1`);
+      const data = await res.json();
+      const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
+      
+      if (vid) {
+         downloadUrl = `/api/yt-download?id=${vid}`;
+      }
+    }
+
+    if (!downloadUrl) {
       throw new Error("No download stream available for this song.");
     }
     
-    const previewUrl = itunesData.results[0].previewUrl;
-    
-    // Fetch the audio blob directly (Apple CDN supports CORS)
-    const response = await fetch(previewUrl);
+    // Fetch the audio blob directly
+    const response = await fetch(downloadUrl);
     if (!response.ok) throw new Error("Failed to fetch audio data");
 
     const blob = await response.blob();
@@ -47,7 +62,7 @@ export const downloadSongToApp = async (song, onProgress) => {
       ...song,
       blob: blob,
       downloadedAt: Date.now(),
-      isOfflinePreview: true // Flag to indicate it's a preview
+      isOfflinePreview: false // Changed to false as it's the full song
     };
     
     await new Promise((resolve, reject) => {
