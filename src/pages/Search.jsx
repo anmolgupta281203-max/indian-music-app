@@ -55,45 +55,6 @@ const Search = () => {
             });
           }
           
-        } else if (searchMode === 'artists') {
-          let data = await searchArtists(query);
-          
-          if (data && Array.isArray(data)) {
-            const seen = new Map();
-            data.forEach(artist => {
-              if (!artist || !artist.name) return;
-              // Clean up common bad characters and generic suffixes for deduplication
-              let cleanName = artist.name.toLowerCase().trim()
-                .replace(/&quot;/g, '"')
-                .replace(/&#039;/g, "'")
-                .replace(/&amp;/g, '&');
-                
-              // If name has a comma, we might just take the first part to avoid duplicates like "Jass Manak,Priya"
-              if (cleanName.includes(',')) {
-                cleanName = cleanName.split(',')[0].trim();
-              }
-              
-              const isDefaultImg = !artist.image || artist.image.includes('default_') || artist.image.includes('artist-default');
-              const existing = seen.get(cleanName);
-              
-              if (!existing) {
-                seen.set(cleanName, { ...artist, name: artist.name.split(',')[0] });
-              } else {
-                const existingIsDefault = !existing.image || existing.image.includes('default_') || existing.image.includes('artist-default');
-                if (existingIsDefault && !isDefaultImg) {
-                  seen.set(cleanName, { ...artist, name: artist.name.split(',')[0] });
-                }
-              }
-            });
-            
-            data = Array.from(seen.values());
-            data.sort((a, b) => {
-              const aDef = (!a.image || a.image.includes('default_') || a.image.includes('artist-default')) ? 1 : 0;
-              const bDef = (!b.image || b.image.includes('default_') || b.image.includes('artist-default')) ? 1 : 0;
-              return aDef - bDef;
-            });
-          }
-          
           setResults(data || []);
           setYtResults([]);
         } else if (searchMode === 'videos') {
@@ -204,13 +165,6 @@ const Search = () => {
           >
             Video Music (YouTube)
           </button>
-          <button 
-            className={`tab-btn ${searchMode === 'artists' ? 'active' : ''}`}
-            onClick={() => setSearchMode('artists')}
-            style={{padding: '0.5rem 1.5rem', borderRadius: '20px', border: 'none', background: searchMode === 'artists' ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', fontWeight: 'bold'}}
-          >
-            Artists
-          </button>
         </div>
       </div>
 
@@ -263,30 +217,6 @@ const Search = () => {
                   </div>
                   <h4 style={{marginTop: '0.5rem', fontSize: '0.9rem'}}>{v.title}</h4>
                   <p style={{color: 'var(--text-secondary)', fontSize: '0.8rem'}}>{v.author?.name}</p>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {!loading && searchMode === 'artists' && results.length > 0 && (
-          <>
-            <h2>Top Artists</h2>
-            <div className="cards-grid albums-grid">
-              {results.map(artist => (
-                <div 
-                  key={artist.id} 
-                  className="album-card" 
-                  onClick={() => navigate(`/artist?name=${encodeURIComponent(artist.name)}`)} 
-                  style={{cursor: 'pointer', textAlign: 'center'}}
-                >
-                  <img 
-                    src={artist.image || 'https://via.placeholder.com/150'} 
-                    alt={artist.name} 
-                    loading="lazy" 
-                    style={{borderRadius: '50%', width: '100%', aspectRatio: '1/1', objectFit: 'cover', marginBottom: '0.5rem'}} 
-                  />
-                  <h4 style={{fontSize: '1rem', marginTop: '0.5rem'}}>{artist.name}</h4>
                 </div>
               ))}
             </div>
