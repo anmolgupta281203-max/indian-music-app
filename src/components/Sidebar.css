@@ -34,18 +34,23 @@
   color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.95rem;
-  border-radius: 4px;
-  transition: color 0.2s;
+  border-radius: 8px;
+  transition: all 0.3s ease;
   cursor: pointer;
   text-decoration: none;
 }
 
 .nav-item:hover {
   color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(4px);
 }
 
 .nav-item.active {
   color: var(--text-main);
+  background: rgba(250, 36, 60, 0.2);
+  border-right: 3px solid var(--primary-color);
+  box-shadow: 0 4px 15px rgba(250, 36, 60, 0.2);
 }
 
 .action-btn {

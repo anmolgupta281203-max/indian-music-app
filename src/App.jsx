@@ -112,7 +112,9 @@ const Library = () => {
 };
 
 function App() {
-  const [hasAccess, setHasAccess] = useState(false);
+  const [hasAccess, setHasAccess] = useState(() => {
+    return localStorage.getItem('svar_skipped_paywall') === 'true';
+  });
   const [user, setUser] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [isAiDjOpen, setIsAiDjOpen] = useState(false);

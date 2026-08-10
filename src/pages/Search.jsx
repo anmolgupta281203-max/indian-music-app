@@ -237,7 +237,7 @@ const Search = () => {
               ].map(category => (
                 <div 
                   key={category.label} 
-                  className="genre-card" 
+                  className="genre-card hover-scale" 
                   style={{backgroundColor: `hsl(${Math.random() * 360}, 70%, 30%)`, cursor: 'pointer'}}
                   onClick={() => setQuery(category.query)}
                 >

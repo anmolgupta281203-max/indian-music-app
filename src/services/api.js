@@ -78,28 +78,39 @@ export const searchSongs = async (query) => {
     console.warn('Primary search failed, trying iTunes...', error);
   }
 
-  // iTunes fallback (30s previews only — last resort)
+  // YouTube fallback for full songs (replacing iTunes 30s previews)
   try {
-    const itunesRes = await axios.get(
-      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=50`
-    );
-    if (itunesRes.data?.results?.length > 0) {
-      return itunesRes.data.results.map(item => ({
-        id: String(item.trackId || item.collectionId),
-        name: item.trackName || item.collectionName,
-        album: item.collectionName || 'Single',
-        year: item.releaseDate ? item.releaseDate.substring(0, 4) : '2025',
-        duration: item.trackTimeMillis ? Math.floor(item.trackTimeMillis / 1000) : 240,
-        primaryArtists: item.artistName || 'Various Artists',
-        image: [
-          { quality: '150x150', url: item.artworkUrl100 || '' },
-          { quality: '500x500', url: item.artworkUrl100?.replace('100x100bb', '600x600bb') || '' },
-        ],
-        downloadUrl: item.previewUrl ? [{ quality: '320kbps', url: item.previewUrl }] : [],
-      }));
+    const ytRes = await axios.get(`/api/yt-search?q=${encodeURIComponent(query)}`);
+    if (ytRes.data?.results?.length > 0) {
+      return ytRes.data.results.map(item => {
+        let secs = 240;
+        if (item.timestamp) {
+          const parts = item.timestamp.split(':');
+          if (parts.length === 2) {
+            secs = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+          } else if (parts.length === 3) {
+            secs = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(parts[2], 10);
+          }
+        }
+        return {
+          id: item.videoId,
+          name: item.title,
+          album: 'YouTube',
+          year: new Date().getFullYear().toString(),
+          duration: secs,
+          primaryArtists: item.author?.name || 'YouTube',
+          image: [
+            { quality: '150x150', url: item.thumbnail },
+            { quality: '500x500', url: item.thumbnail },
+          ],
+          downloadUrl: [], // Force PlayerContext to use YouTube
+          youtubeId: item.videoId,
+          isYouTubeFallback: true
+        };
+      });
     }
-  } catch (itunesErr) {
-    console.warn('iTunes fallback error:', itunesErr);
+  } catch (ytErr) {
+    console.warn('YT fallback error:', ytErr);
   }
 
   return [];

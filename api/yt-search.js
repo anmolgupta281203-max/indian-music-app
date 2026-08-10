@@ -35,8 +35,8 @@ export default async function handler(req, res) {
     const results = finalVideos.map(v => ({
       videoId: v.videoId,
       title: v.title,
-      duration: v.timestamp,
-      channel: v.author?.name || '',
+      timestamp: v.timestamp,
+      author: { name: v.author?.name || '' },
       thumbnail: v.thumbnail || ''
     }));
 

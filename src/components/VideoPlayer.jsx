@@ -7,17 +7,12 @@ import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmd
 import './VideoPlayer.css';
 
 const SERVERS = [
-  { id: 'vidlink', name: 'Server 1 (VidLink) [Recommended]' },
-  { id: 'vidsrc.pro', name: 'Server 2 (VidSrc.pro) [HD]' },
-  { id: 'moviesapi', name: 'Server 3 (MoviesAPI)' },
-  { id: 'smashystream', name: 'Server 4 (SmashyStream)' },
-  { id: 'embed.su', name: 'Server 5 (Embed.su)' },
   { id: 'autoembed', name: 'Server 6 (AutoEmbed)' }
 ];
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [iframeSrc, setIframeSrc] = useState(null);
-  const [server, setServer] = useState('vidlink');
+  const [server, setServer] = useState('autoembed');
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [seriesDetails, setSeriesDetails] = useState(null);
@@ -220,15 +215,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       <div className="video-controls-header">
         {video.type !== 'youtube' && (
           <div className="server-selector" style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span className="server-label">Server:</span>
-              <select value={server} onChange={(e) => setServer(e.target.value)}>
-                {SERVERS.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-            
+
             <button 
               onClick={() => setShowWatchParty(!showWatchParty)}
               style={{
@@ -483,38 +470,6 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                 {...(adBlockEnabled ? { sandbox: "allow-same-origin allow-scripts allow-forms allow-presentation" } : {})}
                 style={{ width: '100%', height: '100%', border: 'none' }}
               ></iframe>
-
-              {/* Reaction Bar Overlay */}
-              <div style={{
-                position: 'absolute',
-                bottom: '20px',
-                right: '20px',
-                display: 'flex',
-                gap: '8px',
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                padding: '6px 12px',
-                borderRadius: '24px',
-                zIndex: 35,
-                backdropFilter: 'blur(8px)'
-              }}>
-                {['❤️', '🔥', '👏', '😂', '🍿'].map(emoji => (
-                  <button 
-                    key={emoji}
-                    onClick={() => addReaction(emoji)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontSize: '18px',
-                      cursor: 'pointer',
-                      transition: 'transform 0.1s ease'
-                    }}
-                    onMouseDown={(e) => e.currentTarget.style.transform = 'scale(1.3)'}
-                    onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
 
               {needsFullscreen && (
                 <div 

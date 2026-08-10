@@ -319,6 +319,16 @@ const Paywall = ({ onAccessGranted }) => {
             <button className="primary-btn checkout-btn" onClick={handleProceed} disabled={loading}>
               {loading ? 'Checking Account...' : (isLogin ? 'Login' : `Proceed to Pay ₹${Math.max(0, finalPrice).toFixed(2)}`)}
             </button>
+
+            <button 
+              onClick={() => {
+                localStorage.setItem('svar_skipped_paywall', 'true');
+                onAccessGranted({ id: 'guest', name: 'Guest' }, null);
+              }}
+              style={{marginTop: '1rem', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline'}}
+            >
+              Skip for now
+            </button>
           </>
         )}
 
