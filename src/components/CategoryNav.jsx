@@ -12,12 +12,6 @@ const GENRES = [
   { id: 53, name: 'Thriller' }
 ];
 
-const CATEGORIES = [
-  { id: 'movie', name: 'Movies' },
-  { id: 'tv', name: 'TV Shows' },
-  { id: 'anime', name: 'Anime' }
-];
-
 const OTT_PLATFORMS = [
   { id: 213, name: 'Netflix' },
   { id: 1024, name: 'Amazon Prime' },
@@ -56,18 +50,6 @@ const CategoryNav = ({ activeFilter, onFilterChange }) => {
             <ul className="dropdown-menu">
               {GENRES.map(g => (
                 <li key={g.id} onClick={(e) => { e.stopPropagation(); handleSelect('genre', g.id, g.name); }}>{g.name}</li>
-              ))}
-            </ul>
-          )}
-        </li>
-
-        {/* Category Dropdown */}
-        <li className={`nav-item dropdown-toggle ${openDropdown === 'category' || activeFilter?.type === 'category' ? 'active-text' : ''}`} onClick={() => toggleDropdown('category')}>
-          Category <ChevronDown size={14} />
-          {openDropdown === 'category' && (
-            <ul className="dropdown-menu">
-              {CATEGORIES.map(c => (
-                <li key={c.id} onClick={(e) => { e.stopPropagation(); handleSelect('category', c.id, c.name); }}>{c.name}</li>
               ))}
             </ul>
           )}

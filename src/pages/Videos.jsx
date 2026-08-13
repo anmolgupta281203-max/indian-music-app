@@ -196,13 +196,35 @@ const Videos = () => {
 
       {!query.trim() && (!activeFilter || activeFilter.type === 'home') && !loading && (
         <>
+          {hindiMovies.length > 0 && (
+            <div className="video-hero" onClick={() => handlePlay(hindiMovies[0], 'movie')}>
+              <div className="hero-backdrop">
+                <img src={`https://image.tmdb.org/t/p/original${hindiMovies[0].backdrop_path}`} alt={hindiMovies[0].title} />
+                <div className="hero-gradient"></div>
+              </div>
+              <div className="hero-content">
+                <h2>{hindiMovies[0].title}</h2>
+                <div className="hero-meta">
+                  <span className="media-badge">MOVIE</span>
+                  <span>{hindiMovies[0].release_date?.substring(0,4)}</span>
+                  <span className="rating">★ {hindiMovies[0].vote_average?.toFixed(1)}</span>
+                </div>
+                <p className="hero-overview">{hindiMovies[0].overview}</p>
+                <button className="hero-play-btn">
+                  <Play fill="black" size={20} /> Play Now
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="video-section">
             <h2>Trending Hindi Movies</h2>
-            <div className="video-grid">
-              {hindiMovies.map(movie => (
+            <div className="video-row">
+              {hindiMovies.slice(1).map(movie => (
                 <div key={movie.id} className="video-card" onClick={() => handlePlay(movie, 'movie')}>
                   <div className="video-card-img-container">
                     <img src={getImageUrl(movie.poster_path)} alt={movie.title} loading="lazy" />
+                    <div className="media-badge">MOVIE</div>
                     <div className="play-overlay">
                       <div className="play-button-small"><Play fill="black" size={24} /></div>
                     </div>
@@ -216,11 +238,12 @@ const Videos = () => {
 
           <div className="video-section">
             <h2>Popular Hindi Series</h2>
-            <div className="video-grid">
+            <div className="video-row">
               {hindiSeries.map(show => (
                 <div key={show.id} className="video-card" onClick={() => handlePlay(show, 'tv')}>
                   <div className="video-card-img-container">
                     <img src={getImageUrl(show.poster_path)} alt={show.name} loading="lazy" />
+                    <div className="media-badge tv">TV</div>
                     <div className="play-overlay">
                       <div className="play-button-small"><Play fill="black" size={24} /></div>
                     </div>
@@ -234,11 +257,12 @@ const Videos = () => {
 
           <div className="video-section">
             <h2>Global Trending Movies</h2>
-            <div className="video-grid">
+            <div className="video-row">
               {movies.map(movie => (
                 <div key={movie.id} className="video-card" onClick={() => handlePlay(movie, 'movie')}>
                   <div className="video-card-img-container">
                     <img src={getImageUrl(movie.poster_path)} alt={movie.title} loading="lazy" />
+                    <div className="media-badge">MOVIE</div>
                     <div className="play-overlay">
                       <div className="play-button-small"><Play fill="black" size={24} /></div>
                     </div>
@@ -252,11 +276,12 @@ const Videos = () => {
 
           <div className="video-section">
             <h2>Global Popular Series</h2>
-            <div className="video-grid">
+            <div className="video-row">
               {series.map(show => (
                 <div key={show.id} className="video-card" onClick={() => handlePlay(show, 'tv')}>
                   <div className="video-card-img-container">
                     <img src={getImageUrl(show.poster_path)} alt={show.name} loading="lazy" />
+                    <div className="media-badge tv">TV</div>
                     <div className="play-overlay">
                       <div className="play-button-small"><Play fill="black" size={24} /></div>
                     </div>
