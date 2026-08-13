@@ -5,6 +5,20 @@
   height: 100vh;
 }
 
+@media (max-width: 768px) {
+  .videos-page {
+    padding: 1rem;
+    padding-bottom: 120px;
+  }
+  .videos-header h1 {
+    font-size: 2rem;
+  }
+  .video-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
 .videos-header {
   margin-bottom: 2rem;
 }

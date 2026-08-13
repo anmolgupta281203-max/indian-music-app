@@ -7,6 +7,11 @@ import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmd
 import './VideoPlayer.css';
 
 const SERVERS = [
+  { id: 'vidlink', name: 'Server 1 (VidLink - Fast)' },
+  { id: 'embed.su', name: 'Server 2 (Embed.su - HD)' },
+  { id: 'vidsrc.pro', name: 'Server 3 (VidSrc Pro)' },
+  { id: 'moviesapi', name: 'Server 4 (MoviesAPI)' },
+  { id: 'smashystream', name: 'Server 5 (Smashy)' },
   { id: 'autoembed', name: 'Server 6 (AutoEmbed)' }
 ];
 
@@ -215,6 +220,23 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       <div className="video-controls-header">
         {video.type !== 'youtube' && (
           <div className="server-selector" style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+            <select 
+              value={server} 
+              onChange={(e) => setServer(e.target.value)}
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.2)',
+                padding: '5px 10px',
+                borderRadius: '5px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              {SERVERS.map(s => (
+                <option key={s.id} value={s.id} style={{ color: 'black' }}>{s.name}</option>
+              ))}
+            </select>
 
             <button 
               onClick={() => setShowWatchParty(!showWatchParty)}
@@ -462,6 +484,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
           iframeSrc && (
             <div style={{ position: 'relative', width: '100%', height: '100%', backgroundColor: 'black' }}>
               <iframe 
+                key={iframeSrc}
                 src={iframeSrc} 
                 className="video-iframe"
                 allowFullScreen

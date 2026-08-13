@@ -109,6 +109,7 @@ body {
   .main-content {
     margin: 0;
     border-radius: 0;
+    padding-bottom: 120px;
   }
 }
 
