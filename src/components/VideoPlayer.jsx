@@ -7,12 +7,8 @@ import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmd
 import './VideoPlayer.css';
 
 const SERVERS = [
-  { id: 'vidlink', name: 'Server 1 (VidLink - Fast)' },
-  { id: 'embed.su', name: 'Server 2 (Embed.su - HD)' },
-  { id: 'vidsrc.pro', name: 'Server 3 (VidSrc Pro)' },
-  { id: 'moviesapi', name: 'Server 4 (MoviesAPI)' },
-  { id: 'smashystream', name: 'Server 5 (Smashy)' },
-  { id: 'autoembed', name: 'Server 6 (AutoEmbed)' }
+  { id: 'embed.su', name: 'Server 1 (Embed.su - HD)' },
+  { id: 'moviesapi', name: 'Server 2 (MoviesAPI)' }
 ];
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
