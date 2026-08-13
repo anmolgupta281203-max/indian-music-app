@@ -13,7 +13,7 @@ const SERVERS = [
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [iframeSrc, setIframeSrc] = useState(null);
-  const [server, setServer] = useState('autoembed');
+  const [server, setServer] = useState('embed.su');
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [seriesDetails, setSeriesDetails] = useState(null);
@@ -154,21 +154,15 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     let src = '';
     if (video.media_type === 'movie') {
       switch (server) {
-        case 'vidsrc.pro': src = `https://vidsrc.pro/embed/movie/${video.id}`; break;
         case 'moviesapi': src = `https://moviesapi.club/movie/${video.id}`; break;
-        case 'smashystream': src = `https://player.smashy.stream/movie/${video.id}`; break;
         case 'embed.su': src = `https://embed.su/embed/movie/${video.id}`; break;
-        case 'autoembed': src = `https://autoembed.co/movie/tmdb/${video.id}`; break;
-        case 'vidlink': default: src = `https://vidlink.pro/movie/${video.id}?primaryColor=1ed760&secondaryColor=121212&iconColor=ffffff`; break;
+        default: src = `https://embed.su/embed/movie/${video.id}`; break;
       }
     } else if (video.media_type === 'tv') {
       switch (server) {
-        case 'vidsrc.pro': src = `https://vidsrc.pro/embed/tv/${video.id}/${season}/${episode}`; break;
         case 'moviesapi': src = `https://moviesapi.club/tv/${video.id}-${season}-${episode}`; break;
-        case 'smashystream': src = `https://player.smashy.stream/tv/${video.id}?s=${season}&e=${episode}`; break;
         case 'embed.su': src = `https://embed.su/embed/tv/${video.id}/${season}/${episode}`; break;
-        case 'autoembed': src = `https://autoembed.co/tv/tmdb/${video.id}-${season}-${episode}`; break;
-        case 'vidlink': default: src = `https://vidlink.pro/tv/${video.id}/${season}/${episode}?primaryColor=1ed760&secondaryColor=121212&iconColor=ffffff`; break;
+        default: src = `https://embed.su/embed/tv/${video.id}/${season}/${episode}`; break;
       }
     }
     setIframeSrc(src);
