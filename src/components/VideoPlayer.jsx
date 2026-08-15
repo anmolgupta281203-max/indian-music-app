@@ -161,7 +161,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
         case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1`; break;
         case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1`; break;
         case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/movie/${video.id}`; break;
-        case '2embed': default: src = `https://www.2embed.cc/embed/${video.id}`; break;
+        case '2embed': default: src = `https://www.2embed.cc/embed/${video.id}?server=vcr`; break;
       }
     } else {
       switch (server) {
@@ -169,7 +169,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
         case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
         case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
         case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/tv/${video.id}/${season}/${episode}`; break;
-        case '2embed': default: src = `https://www.2embed.cc/embedtv/${video.id}&s=${season}&e=${episode}`; break;
+        case '2embed': default: src = `https://www.2embed.cc/embedtv/${video.id}?s=${season}&e=${episode}&server=vcr`; break;
       }
     }
     setIframeSrc(src);
