@@ -63,9 +63,8 @@ const Home = () => {
         setTrendingAlbums(filterDuplicates(albums || []));
       } catch (e) {}
 
-      // 2. Load Latest Releases
       try {
-        const latest = await searchSongs('Latest Indian Hits');
+        const latest = await searchSongs('latest hindi song');
         setLatestAlbums(filterDuplicates(latest || []));
       } catch (e) {
         console.warn("Latest releases error:", e);

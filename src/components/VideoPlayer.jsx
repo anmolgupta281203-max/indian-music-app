@@ -7,13 +7,16 @@ import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmd
 import './VideoPlayer.css';
 
 const SERVERS = [
-  { id: 'embed.su', name: 'Server 1 (Embed.su - HD)' },
-  { id: 'moviesapi', name: 'Server 2 (MoviesAPI)' }
+  { id: 'vidsrc.me', name: 'Server 1 (VidSrc)' },
+  { id: 'vidsrc.cc', name: 'Server 2 (VidSrc CC)' },
+  { id: 'multiembed', name: 'Server 3 (MultiEmbed)' },
+  { id: 'superembed', name: 'Server 4 (SuperEmbed)' },
+  { id: '2embed', name: 'Server 5 (2Embed)' }
 ];
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [iframeSrc, setIframeSrc] = useState(null);
-  const [server, setServer] = useState('embed.su');
+  const [server, setServer] = useState('vidlink');
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [seriesDetails, setSeriesDetails] = useState(null);
@@ -154,15 +157,19 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     let src = '';
     if (video.media_type === 'movie') {
       switch (server) {
-        case 'moviesapi': src = `https://moviesapi.club/movie/${video.id}`; break;
-        case 'embed.su': src = `https://embed.su/embed/movie/${video.id}`; break;
-        default: src = `https://embed.su/embed/movie/${video.id}`; break;
+        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/movie/${video.id}`; break;
+        case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1`; break;
+        case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1`; break;
+        case '2embed': src = `https://www.2embed.cc/embed/${video.id}`; break;
+        case 'vidsrc.me': default: src = `https://vidsrc.me/embed/movie?tmdb=${video.id}`; break;
       }
     } else if (video.media_type === 'tv') {
       switch (server) {
-        case 'moviesapi': src = `https://moviesapi.club/tv/${video.id}-${season}-${episode}`; break;
-        case 'embed.su': src = `https://embed.su/embed/tv/${video.id}/${season}/${episode}`; break;
-        default: src = `https://embed.su/embed/tv/${video.id}/${season}/${episode}`; break;
+        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/tv/${video.id}/${season}/${episode}`; break;
+        case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
+        case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
+        case '2embed': src = `https://www.2embed.cc/embedtv/${video.id}&s=${season}&e=${episode}`; break;
+        case 'vidsrc.me': default: src = `https://vidsrc.me/embed/tv?tmdb=${video.id}&season=${season}&episode=${episode}`; break;
       }
     }
     setIframeSrc(src);
@@ -510,10 +517,37 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
           <div className="season-header">
             <div className="season-badge">{season}</div>
             <div className="season-info">
-              <h3>
-                Season {season}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <select 
+                  value={season} 
+                  onChange={(e) => {
+                    setSeason(parseInt(e.target.value));
+                    setEpisode(1);
+                  }}
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    padding: '5px 10px',
+                    borderRadius: '5px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {seriesDetails && seriesDetails.seasons ? (
+                    seriesDetails.seasons.filter(s => s.season_number > 0).map(s => (
+                      <option key={s.season_number} value={s.season_number} style={{ color: 'black' }}>
+                        Season {s.season_number}
+                      </option>
+                    ))
+                  ) : (
+                    <option value={season} style={{ color: 'black' }}>Season {season}</option>
+                  )}
+                </select>
                 {seasonData.air_date && <span className="season-date">{new Date(seasonData.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
-              </h3>
+              </div>
               {video.vote_average > 0 && (
                 <div className="season-rating">
                   <span style={{ color: '#ffd700' }}>★</span> {(video.vote_average).toFixed(1)}

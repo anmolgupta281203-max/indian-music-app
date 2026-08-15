@@ -216,12 +216,13 @@ input[type=range].progress-bar:hover::-webkit-slider-thumb {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1.5rem 2rem 1.5rem;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
   max-width: 480px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
   justify-content: space-between;
+  overflow-y: auto;
 }
 
 /* Header */
@@ -274,7 +275,7 @@ input[type=range].progress-bar:hover::-webkit-slider-thumb {
 .fs-art {
   width: 100%;
   max-width: 320px;
-  max-height: 320px;
+  max-height: 100%;
   aspect-ratio: 1/1;
   border-radius: 20px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);

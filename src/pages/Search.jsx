@@ -46,11 +46,9 @@ const Search = () => {
           if (data && Array.isArray(data)) {
             const seen = new Set();
             data = data.filter(song => {
-              if (!song || !song.name) return false;
-              const rawName = song.name.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&');
-              const key = rawName.toLowerCase().trim();
-              if (seen.has(key)) return false;
-              seen.add(key);
+              if (!song || !song.id) return false;
+              if (seen.has(song.id)) return false;
+              seen.add(song.id);
               return true;
             });
           }
