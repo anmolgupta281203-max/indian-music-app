@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
-import { Check, QrCode } from 'lucide-react';
+import { Check, QrCode, X } from 'lucide-react';
 import './Paywall.css';
 
-const Paywall = ({ onAccessGranted }) => {
+const Paywall = ({ onAccessGranted, onClose }) => {
   const [step, setStep] = useState(1);
   const [isLogin, setIsLogin] = useState(false);
   const [name, setName] = useState('');
@@ -233,7 +233,15 @@ const Paywall = ({ onAccessGranted }) => {
 
   return (
     <div className="paywall-overlay">
-      <div className="paywall-container">
+      <div className="paywall-container" style={{ position: 'relative' }}>
+        {onClose && (
+          <button 
+            onClick={onClose} 
+            style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', zIndex: 10 }}
+          >
+            <X size={24} />
+          </button>
+        )}
         
         {step === 1 && (
           <>

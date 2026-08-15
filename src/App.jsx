@@ -118,6 +118,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [isAiDjOpen, setIsAiDjOpen] = useState(false);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -140,7 +141,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Sidebar onOpenAiDj={() => setIsAiDjOpen(true)} />
+      <Sidebar onOpenAiDj={() => setIsAiDjOpen(true)} onOpenPaywall={() => setIsPaywallOpen(true)} />
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
         <TopNav />
         <div style={{ flex: 1 }}>
@@ -156,6 +157,19 @@ function App() {
       <QueueModal />
       <AIDjModal isOpen={isAiDjOpen} onClose={() => setIsAiDjOpen(false)} />
       <AuthModal />
+      {isPaywallOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}>
+          <Paywall 
+            onClose={() => setIsPaywallOpen(false)}
+            onAccessGranted={(u, sub) => {
+              setUser(u);
+              setSubscription(sub);
+              setHasAccess(true);
+              setIsPaywallOpen(false);
+            }} 
+          />
+        </div>
+      )}
     </div>
   );
 }

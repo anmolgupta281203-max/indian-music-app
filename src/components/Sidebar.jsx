@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Search, Library, ListMusic, Heart, Film, Sparkles } from 'lucide-react';
+import { Home, Search, Library, ListMusic, Heart, Film, Sparkles, Crown } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import './Sidebar.css';
 
-const Sidebar = ({ onOpenAiDj }) => {
+const Sidebar = ({ onOpenAiDj, onOpenPaywall }) => {
   const navigate = useNavigate();
   const { openQueueModal, queue } = usePlayer();
 
@@ -46,6 +46,10 @@ const Sidebar = ({ onOpenAiDj }) => {
           <Heart size={24} className="heart-icon" />
           <span>Liked Songs</span>
         </NavLink>
+        <button className="action-btn" onClick={onOpenPaywall} style={{ background: 'rgba(236, 72, 153, 0.15)', borderRadius: '8px', marginTop: '6px' }}>
+          <Crown size={24} style={{ color: '#ec4899' }} />
+          <span style={{ color: '#ec4899', fontWeight: '700' }}>Upgrade Plan</span>
+        </button>
       </div>
       
       <div className="divider"></div>
