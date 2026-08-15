@@ -134,8 +134,6 @@ const Videos = () => {
         </div>
       </div>
 
-      <CategoryNav activeFilter={activeFilter} onFilterChange={setActiveFilter} />
-
       {query.trim() && searchLoading && (
         <div className="loading-state">
           <div className="spinner"></div>
