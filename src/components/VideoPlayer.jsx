@@ -16,7 +16,7 @@ const SERVERS = [
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [iframeSrc, setIframeSrc] = useState(null);
-  const [server, setServer] = useState('vidlink');
+  const [server, setServer] = useState('2embed');
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [seriesDetails, setSeriesDetails] = useState(null);
@@ -163,7 +163,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
         case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/movie/${video.id}`; break;
         case '2embed': default: src = `https://www.2embed.cc/embed/${video.id}`; break;
       }
-    } else if (video.media_type === 'tv') {
+    } else {
       switch (server) {
         case 'vidsrc.me': src = `https://vidsrc.me/embed/tv?tmdb=${video.id}&season=${season}&episode=${episode}`; break;
         case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
