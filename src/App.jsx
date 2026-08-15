@@ -13,6 +13,7 @@ import Videos from './pages/Videos';
 import AuthModal from './components/AuthModal';
 import Paywall from './components/Paywall';
 import AdminPanel from './pages/AdminPanel';
+import LandingPage from './pages/LandingPage';
 import { useLocation } from 'react-router-dom';
 
 const Library = () => {
@@ -112,6 +113,9 @@ const Library = () => {
 };
 
 function App() {
+  const [hasVisited, setHasVisited] = useState(() => {
+    return localStorage.getItem('svar_has_visited') === 'true';
+  });
   const [hasAccess, setHasAccess] = useState(() => {
     return localStorage.getItem('svar_skipped_paywall') === 'true';
   });
@@ -125,6 +129,17 @@ function App() {
 
   if (isAdminRoute) {
     return <AdminPanel />;
+  }
+
+  if (!hasVisited) {
+    return (
+      <LandingPage 
+        onContinue={() => {
+          localStorage.setItem('svar_has_visited', 'true');
+          setHasVisited(true);
+        }} 
+      />
+    );
   }
 
   if (!hasAccess) {

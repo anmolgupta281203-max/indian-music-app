@@ -44,7 +44,7 @@
 
 /* Hero Banner */
 .hero-banner {
-  height: 300px;
+  min-height: 300px;
   border-radius: 24px;
   background: linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.2)), url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80') center/cover;
   display: flex;
@@ -55,6 +55,7 @@
 
 .hero-content {
   max-width: 500px;
+  width: 100%;
 }
 
 .hero-subtitle {
@@ -130,9 +131,22 @@
 }
 
 .cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
   gap: 1.5rem;
+  padding-bottom: 1rem;
+  /* Hide scrollbar for cleaner look */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.cards-grid::-webkit-scrollbar {
+  display: none;
+}
+.cards-grid > * {
+  flex: 0 0 auto;
+  width: 180px;
+  scroll-snap-align: start;
 }
 
 .album-card {
@@ -206,9 +220,10 @@
   }
   
   .hero-banner {
-    height: 250px;
+    min-height: 220px;
     padding: 1.5rem;
     border-radius: 16px;
+    align-items: center;
   }
   
   .hero-title {
@@ -216,7 +231,9 @@
   }
   
   .cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 1rem;
+  }
+  .cards-grid > * {
+    width: 140px; /* Slightly smaller on mobile to peek next card */
   }
 }
