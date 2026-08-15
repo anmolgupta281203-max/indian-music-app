@@ -7,11 +7,11 @@ import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmd
 import './VideoPlayer.css';
 
 const SERVERS = [
-  { id: 'vidsrc.me', name: 'Server 1 (VidSrc)' },
-  { id: 'vidsrc.cc', name: 'Server 2 (VidSrc CC)' },
+  { id: '2embed', name: 'Server 1 (2Embed)' },
+  { id: 'vidsrc.me', name: 'Server 2 (VidSrc)' },
   { id: 'multiembed', name: 'Server 3 (MultiEmbed)' },
   { id: 'superembed', name: 'Server 4 (SuperEmbed)' },
-  { id: '2embed', name: 'Server 5 (2Embed)' }
+  { id: 'vidsrc.cc', name: 'Server 5 (VidSrc CC)' }
 ];
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
@@ -157,19 +157,19 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     let src = '';
     if (video.media_type === 'movie') {
       switch (server) {
-        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/movie/${video.id}`; break;
+        case 'vidsrc.me': src = `https://vidsrc.me/embed/movie?tmdb=${video.id}`; break;
         case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1`; break;
         case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1`; break;
-        case '2embed': src = `https://www.2embed.cc/embed/${video.id}`; break;
-        case 'vidsrc.me': default: src = `https://vidsrc.me/embed/movie?tmdb=${video.id}`; break;
+        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/movie/${video.id}`; break;
+        case '2embed': default: src = `https://www.2embed.cc/embed/${video.id}`; break;
       }
     } else if (video.media_type === 'tv') {
       switch (server) {
-        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/tv/${video.id}/${season}/${episode}`; break;
+        case 'vidsrc.me': src = `https://vidsrc.me/embed/tv?tmdb=${video.id}&season=${season}&episode=${episode}`; break;
         case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
         case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
-        case '2embed': src = `https://www.2embed.cc/embedtv/${video.id}&s=${season}&e=${episode}`; break;
-        case 'vidsrc.me': default: src = `https://vidsrc.me/embed/tv?tmdb=${video.id}&season=${season}&episode=${episode}`; break;
+        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/tv/${video.id}/${season}/${episode}`; break;
+        case '2embed': default: src = `https://www.2embed.cc/embedtv/${video.id}&s=${season}&e=${episode}`; break;
       }
     }
     setIframeSrc(src);

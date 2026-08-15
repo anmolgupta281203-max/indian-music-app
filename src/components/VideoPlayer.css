@@ -55,8 +55,9 @@
 
 .video-modal-content {
   width: 100%;
-  max-width: 1000px;
-  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  max-width: 850px;
+  aspect-ratio: 16 / 9;
+  max-height: 75vh;
   position: relative;
   background-color: #000;
   border-radius: 8px;
