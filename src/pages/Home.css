@@ -51,6 +51,7 @@
   align-items: flex-end;
   padding: 3rem;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  flex-shrink: 0;
 }
 
 .hero-content {
@@ -220,14 +221,23 @@
   }
   
   .hero-banner {
-    min-height: 220px;
+    min-height: 240px;
+    height: auto;
     padding: 1.5rem;
     border-radius: 16px;
     align-items: center;
+    flex-shrink: 0;
   }
   
   .hero-title {
-    font-size: 2rem;
+    font-size: 1.8rem;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+  
+  .hero-desc {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
   }
   
   .cards-grid {
