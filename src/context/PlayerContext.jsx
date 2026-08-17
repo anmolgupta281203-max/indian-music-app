@@ -592,6 +592,49 @@ export const PlayerProvider = ({ children }) => {
     }
   };
 
+  const downloadSongToDevice = async (song) => {
+    try {
+      let mediaUrls = song.downloadUrl || song.media_url || song.url;
+      if (!mediaUrls) {
+        throw new Error("No download URL found for this song.");
+      }
+      
+      let mediaUrl = '';
+      if (Array.isArray(mediaUrls)) {
+        // Find highest quality
+        const highestQuality = mediaUrls.reduce((prev, current) => {
+          const pQ = parseInt(prev.quality) || 0;
+          const cQ = parseInt(current.quality) || 0;
+          return (pQ > cQ) ? prev : current;
+        });
+        mediaUrl = highestQuality.url || highestQuality.link;
+      } else if (typeof mediaUrls === 'string') {
+        mediaUrl = mediaUrls;
+      }
+
+      if (!mediaUrl) throw new Error("Invalid media URL.");
+
+      const response = await fetch(mediaUrl);
+      const blob = await response.blob();
+      
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      const cleanTitle = String(song.name || song.title || 'Unknown Song').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+      const cleanArtist = String(song.primaryArtists || 'Unknown Artist').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+      // Defaulting to m4a as it is common for Saavn/API returns. Browser will handle it fine.
+      a.download = `${cleanTitle} - ${cleanArtist}.m4a`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Device download error:", err);
+      throw err;
+    }
+  };
+
   return (
     <PlayerContext.Provider value={{ 
       currentSong, 
@@ -627,6 +670,7 @@ export const PlayerProvider = ({ children }) => {
       toggleLoop,
       toggleFavorite,
       handleDownloadToggle,
+      downloadSongToDevice,
       currentUrl,
       youtubeVideoId,
       ytPlayerRef,

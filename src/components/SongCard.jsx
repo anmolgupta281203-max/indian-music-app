@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, Heart, Download, ListPlus } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
+import DownloadOptionsModal from './DownloadOptionsModal';
 import './SongCard.css';
 
 const SongCard = ({ song, queueContext }) => {
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const { 
     playSong, 
     currentSong, 
@@ -11,7 +13,8 @@ const SongCard = ({ song, queueContext }) => {
     favorites, 
     toggleFavorite, 
     downloadedSongs, 
-    handleDownloadToggle, 
+    handleDownloadToggle,
+    downloadSongToDevice,
     addToQueue 
   } = usePlayer();
 
@@ -51,8 +54,8 @@ const SongCard = ({ song, queueContext }) => {
         
         <button 
           className="download-btn" 
-          onClick={(e) => { e.stopPropagation(); handleDownloadToggle(song); }}
-          title="Download MP3"
+          onClick={(e) => { e.stopPropagation(); setIsDownloadModalOpen(true); }}
+          title="Download Options"
         >
           <Download size={18} color="white" />
         </button>
@@ -85,6 +88,14 @@ const SongCard = ({ song, queueContext }) => {
       </div>
       <h4 dangerouslySetInnerHTML={{ __html: songTitle }}></h4>
       <p dangerouslySetInnerHTML={{ __html: artistName }}></p>
+      
+      <DownloadOptionsModal 
+        song={song}
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+        onDownloadInApp={handleDownloadToggle}
+        onDownloadToDevice={downloadSongToDevice}
+      />
     </div>
   );
 };
