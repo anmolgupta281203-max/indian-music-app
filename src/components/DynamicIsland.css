@@ -1,0 +1,218 @@
+/* 🏝️ DynamicIsland.css */
+
+.dynamic-island-container {
+  position: fixed;
+  top: 15px; /* Adjust based on your top nav */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  pointer-events: none; /* Let clicks pass through container */
+}
+
+.dynamic-island {
+  pointer-events: auto;
+  background-color: #000;
+  border-radius: 30px;
+  width: 140px;
+  height: 35px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  /* Apple bouncy transition */
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1.2), 
+              height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1.2),
+              border-radius 0.4s cubic-bezier(0.2, 0.8, 0.2, 1.2);
+}
+
+/* Expanded State */
+.dynamic-island.expanded {
+  width: 320px;
+  height: 140px;
+  border-radius: 36px;
+  background-color: rgba(15, 15, 20, 0.95);
+  backdrop-filter: blur(20px);
+}
+
+/* Compact Idle Content */
+.island-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 10px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dynamic-island.expanded .island-compact {
+  opacity: 0;
+  transform: translateY(-50%) scale(0.9);
+  pointer-events: none;
+}
+
+.island-art-wrapper {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.island-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.island-art.spin {
+  animation: spinArt 4s linear infinite;
+}
+
+@keyframes spinArt {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Audio Waveform */
+.island-waveform {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+
+.island-waveform .bar {
+  width: 3px;
+  height: 4px;
+  background-color: var(--primary-color);
+  border-radius: 2px;
+  transition: height 0.2s ease;
+}
+
+.island-waveform .bar.anim {
+  animation: waveAnim 1s ease-in-out infinite alternate;
+}
+
+@keyframes waveAnim {
+  0% { height: 4px; }
+  100% { height: 14px; }
+}
+
+/* Expanded Content */
+.island-expanded-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+  transition: opacity 0.3s ease 0.1s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1.2) 0.1s;
+}
+
+.dynamic-island.expanded .island-expanded-content {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.expanded-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.expanded-art {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.expanded-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.expanded-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+
+.expanded-title {
+  color: white;
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expanded-artist {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.expanded-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 10px;
+}
+
+.island-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.island-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.island-btn.play {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+@media (max-width: 768px) {
+  .dynamic-island-container {
+    top: 10px;
+  }
+  
+  .dynamic-island.expanded {
+    width: 280px;
+  }
+}

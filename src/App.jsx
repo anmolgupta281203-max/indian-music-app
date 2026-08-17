@@ -15,6 +15,7 @@ import Paywall from './components/Paywall';
 import AdminPanel from './pages/AdminPanel';
 import LandingPage from './pages/LandingPage';
 import { useLocation } from 'react-router-dom';
+import DynamicIsland from './components/DynamicIsland';
 
 const Library = () => {
   const { favorites, downloadedSongs, openQueueModal, queue } = usePlayer();
@@ -156,6 +157,7 @@ function App() {
 
   return (
     <div className="app-container">
+      <DynamicIsland />
       <Sidebar onOpenAiDj={() => setIsAiDjOpen(true)} onOpenPaywall={() => setIsPaywallOpen(true)} />
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
         <TopNav />
