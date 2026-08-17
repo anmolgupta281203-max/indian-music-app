@@ -178,7 +178,7 @@ const MusicPlayer = () => {
           if (e.target.closest('button')) return;
           setIsFullScreen(true);
         }} style={{cursor: 'pointer'}}>
-          <img src={imageUrl} alt={songTitle} className="song-art" />
+          <img src={imageUrl} alt={songTitle} className={`song-art ${isPlaying ? 'playing' : ''}`} />
           <div className="song-info">
             <h4>{songTitle}</h4>
             <p>{primaryArtist}</p>

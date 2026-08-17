@@ -1,41 +1,110 @@
+/* 🎬 VideoPlayer.css - Cinematic Mode Redesign */
+
 .video-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: #0b0b0c;
+  height: 100dvh;
+  background-color: #000; /* Pure black for cinematic immersion */
   z-index: 9999;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  overflow-y: auto;
-  padding: 80px 20px 40px 20px;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Base structural layout for the theater */
+.video-theater {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  background-color: #000;
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.video-main-content {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: padding-right 0.3s;
+}
+
+.video-iframe-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  max-width: 100%;
 }
 
 .video-iframe {
   width: 100%;
   height: 100%;
   border: none;
+  object-fit: cover;
 }
 
-.video-controls-header {
+/* Hover Overlays & Controls (Slide in on hover) */
+.video-controls-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 20px;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 100;
+}
+
+.video-theater:hover .video-controls-overlay,
+.video-theater.controls-active .video-controls-overlay {
+  opacity: 1;
+}
+
+/* Top Gradient & Header */
+.video-top-controls {
+  padding: 30px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  z-index: 10000;
-  pointer-events: none;
+  align-items: flex-start;
+  pointer-events: auto;
+  transform: translateY(-20px);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.video-theater:hover .video-top-controls,
+.video-theater.controls-active .video-top-controls {
+  transform: translateY(0);
+}
+
+.video-title-area {
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+}
+
+.video-title-area h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.video-subtitle {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  font-weight: 500;
 }
 
 .video-modal-close {
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent;
   border: none;
-  border-radius: 50%;
   width: 48px;
   height: 48px;
   display: flex;
@@ -43,288 +112,230 @@
   justify-content: center;
   color: white;
   cursor: pointer;
-  pointer-events: auto;
   transition: all 0.2s;
-  backdrop-filter: blur(10px);
 }
 
 .video-modal-close:hover {
-  background: rgba(255, 255, 255, 0.25);
   transform: scale(1.1);
+  color: var(--primary-color);
 }
 
-.video-modal-content {
-  width: 100%;
-  max-width: 850px;
-  aspect-ratio: 16 / 9;
-  max-height: 75vh;
-  flex-shrink: 0;
-  position: relative;
-  background-color: #000;
+/* Bottom Controls & Server Selectors */
+.video-bottom-controls {
+  padding: 30px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: auto;
+  transform: translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.video-theater:hover .video-bottom-controls,
+.video-theater.controls-active .video-bottom-controls {
+  transform: translateY(0);
+}
+
+.server-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(20, 20, 25, 0.6);
+  backdrop-filter: blur(10px);
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.server-label {
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.server-selector select {
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+.server-selector select option { background: #111; }
+
+.toolbar-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.toggle-sidebar-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+.toggle-sidebar-btn:hover { background: rgba(255,255,255,0.2); }
+.toggle-sidebar-btn.active { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
+
+/* AdBlocker Switch */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--primary-color); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Slide-out Episodes Sidebar */
+.episodes-sidebar {
+  width: 380px;
+  background-color: rgba(15, 15, 18, 0.95);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  z-index: 1000;
+}
+
+.episodes-sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  padding: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.ep-nav-btns {
+  display: flex;
+  margin-top: 16px;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.ep-nav-btns button {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: rgba(255,255,255,0.7);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ep-nav-btns button:hover { background: rgba(255,255,255,0.2); color: #fff; }
+.ep-nav-btns button.active { background: var(--primary-color); color: #fff; }
+
+.episodes-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.episode-card {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  align-items: center;
+}
+.episode-card:hover { background: rgba(255,255,255,0.05); }
+.episode-card.active { background: rgba(250, 36, 60, 0.1); }
+
+.episode-card-thumb {
+  width: 120px;
+  aspect-ratio: 16/9;
+  background: #222;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  position: relative;
+  flex-shrink: 0;
+}
+.episode-card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.episode-card.active .episode-card-thumb { border: 2px solid var(--primary-color); }
+
+.play-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.episode-card:hover .play-overlay { opacity: 1; }
+
+.episode-card-info {
+  flex: 1;
+  overflow: hidden;
 }
 
-.video-modal-content > * {
-  position: absolute !important;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+.episode-card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.episode-card.active .episode-card-title { color: var(--primary-color); }
+
+.episode-card-meta {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
 }
 
-/* Floating Reaction Emojis */
+/* Floating Emoji */
 .floating-emoji {
   position: absolute;
   bottom: 60px;
   font-size: 32px;
   animation: floatUp 2s ease-out forwards;
-  z-index: 45;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  z-index: 2000;
+  pointer-events: none;
 }
-
 @keyframes floatUp {
   0% { opacity: 1; transform: translateY(0) scale(0.8); }
   50% { opacity: 0.9; transform: translateY(-120px) scale(1.3); }
   100% { opacity: 0; transform: translateY(-250px) scale(1); }
 }
 
-.server-selector {
-  pointer-events: auto;
-  background: rgba(18, 18, 18, 0.8);
-  backdrop-filter: blur(12px);
-  padding: 8px 16px;
-  border-radius: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
-.server-label {
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.server-selector select {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  outline: none;
-  cursor: pointer;
-}
-
-.ep-selector {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ep-nav-btns button {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  margin-left: 4px;
-}
-
-.ep-nav-btns button:hover {
-  background: var(--primary-color);
-  color: black;
-}
-
-/* Episodes List UI */
-.episodes-list-container {
-  width: 100%;
-  max-width: 1000px;
-  margin-top: 24px;
-  background: #141416;
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.season-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.season-badge {
-  background: var(--primary-color);
-  color: black;
-  font-weight: 800;
-  font-size: 20px;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.season-info h3 {
-  margin: 0;
-  font-size: 18px;
-  color: white;
-}
-
-.season-date {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-left: 10px;
-  font-weight: normal;
-}
-
-.season-rating {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 4px;
-}
-
-.episodes-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.episode-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.episode-row:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.episode-row.active {
-  background: rgba(30, 215, 96, 0.15);
-  border: 1px solid var(--primary-color);
-}
-
-.episode-thumb {
-  width: 100px;
-  aspect-ratio: 16/9;
-  background: #222;
-  border-radius: 6px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.episode-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.episode-number {
-  font-weight: 700;
-  color: var(--text-secondary);
-  font-size: 14px;
-  min-width: 40px;
-}
-
-.episode-details {
-  flex: 1;
-}
-
-.episode-title {
-  margin: 0;
-  font-size: 14px;
-  color: white;
-  font-weight: 600;
-}
-
-.episode-date {
-  margin: 4px 0 0 0;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-/* Custom range slider in Video Player */
-.custom-video-slider {
-  -webkit-appearance: none;
-  height: 4px;
-  border-radius: 2px;
-  outline: none;
-}
-
-.custom-video-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  cursor: pointer;
-  box-shadow: 0 0 10px var(--primary-color);
-}
-
-/* Switch styling for AdBlocker toggle */
-.switch {
-  position: relative;
-  display: inline-block;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  transition: .4s;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 14px;
-  width: 14px;
-  left: 3px;
-  bottom: 3px;
-  background-weight: bold;
-  background-color: white;
-  transition: .4s;
-}
-
-input:checked + .slider:before {
-  transform: translateX(14px);
-}
-
-.slider.round {
-  border-radius: 34px;
-}
-
-.slider.round:before {
-  border-radius: 50%;
+@media (max-width: 768px) {
+  .episodes-sidebar { width: 100%; }
+  .video-top-controls { padding: 16px; }
+  .video-bottom-controls { padding: 16px; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .video-title-area h2 { font-size: 18px; }
+  .toggle-sidebar-btn { width: 100%; justify-content: center; }
 }
