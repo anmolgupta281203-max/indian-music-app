@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import ReactPlayer from 'react-player/youtube';
-import DownloadOptionsModal from './DownloadOptionsModal';
 import './MusicPlayer.css';
 
 const formatTime = (time) => {
@@ -34,7 +33,6 @@ const MusicPlayer = () => {
     toggleFavorite, 
     downloadedSongs, 
     handleDownloadToggle, 
-    downloadSongToDevice,
     currentUrl, 
     openQueueModal, 
     nativeAudioRef, 
@@ -60,7 +58,6 @@ const MusicPlayer = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
-  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   
   // Popovers
   const [showSleepMenu, setShowSleepMenu] = useState(false);
@@ -205,8 +202,8 @@ const MusicPlayer = () => {
           <button 
             className="control-btn hide-on-mobile" 
             style={{marginLeft: '0.5rem'}} 
-            onClick={() => setIsDownloadModalOpen(true)}
-            title="Download Options"
+            onClick={() => handleDownloadToggle(currentSong)}
+            title="Download MP3"
           >
             <Download size={20} color="var(--text-secondary)" />
           </button>
@@ -311,10 +308,10 @@ const MusicPlayer = () => {
             <div className="fs-quick-actions">
               <button 
                 className="fs-action-circle"
-                onClick={() => setIsDownloadModalOpen(true)}
-                title="Download Options"
+                onClick={() => handleDownloadToggle(currentSong)}
+                title="Download MP3"
               >
-                <Download size={20} color={isDownloaded ? "#1ed760" : "#fff"} />
+                <Download size={20} color="#fff" />
               </button>
               <button 
                 className={`fs-action-circle ${isFavorite ? 'active' : ''}`}
