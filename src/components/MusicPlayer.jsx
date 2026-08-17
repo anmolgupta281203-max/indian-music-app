@@ -167,6 +167,7 @@ const MusicPlayer = () => {
   const imageUrl = getPlayerImage();
   const hqImageUrl = imageUrl.replace('150x150', '500x500').replace('50x50', '500x500');
   const isFavorite = favorites.some(s => s.id === currentSong.id);
+  const isDownloaded = downloadedSongs.some(s => s.id === currentSong.id);
   const primaryArtist = decodeHtml(currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
   const songTitle = decodeHtml(currentSong.name);
 
