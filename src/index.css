@@ -61,7 +61,7 @@ img {
   height: auto;
 }
 
-body {
+html, body {
   font-family: var(--font-family);
   background-color: var(--md-sys-color-background);
   color: var(--md-sys-color-on-background);
