@@ -547,17 +547,35 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
 /* Mobile */
 @media (max-width: 768px) {
   .music-player {
-    height: var(--player-height, 88px);
-    padding: 0 1rem;
-    border-radius: 0;
+    height: 60px;
+    padding: 0 0.5rem;
+    border-radius: 8px;
+    margin: 0 0.5rem 0.5rem 0.5rem;
+    background-color: var(--md-sys-color-surface-container-highest);
+    box-shadow: var(--md-elevation-2);
   }
   
-  .now-playing { width: auto; flex: 1; min-width: 0; margin-right: 1rem; }
-  .song-art { width: 44px; height: 44px; margin-right: 12px; }
+  .now-playing { width: auto; flex: 1; min-width: 0; margin-right: 0.5rem; }
+  .song-art { width: 44px; height: 44px; margin-right: 12px; border-radius: 6px; }
   
   .player-controls-container { width: auto; flex-shrink: 0; }
-  .player-buttons { margin: 0; gap: 0.75rem; }
-  .play-btn { width: 40px; height: 40px; }
+  .player-buttons { margin: 0; gap: 0.25rem; }
+  
+  .play-btn { 
+    width: 44px; 
+    height: 44px; 
+    background-color: transparent; 
+    color: var(--md-sys-color-on-surface); 
+    box-shadow: none;
+  }
+  .play-btn:hover {
+    background-color: transparent;
+    box-shadow: none;
+    transform: scale(1.1);
+  }
+  .play-btn:active {
+    transform: scale(0.9);
+  }
   
   .progress-container, .volume-control, .fs-toolbar-actions { display: none; }
   .hide-on-mobile { display: none !important; }
