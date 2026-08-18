@@ -192,9 +192,15 @@
 
 .spotify-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .spotify-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (min-width: 1024px) {

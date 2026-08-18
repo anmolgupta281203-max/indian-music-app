@@ -13,7 +13,19 @@ const Home = () => {
   const [punjabiHits, setPunjabiHits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingAlbumId, setLoadingAlbumId] = useState(null);
-  const { playSong } = usePlayer();
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const { playSong, downloadedSongs } = usePlayer();
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const filterDuplicates = (songs) => {
@@ -106,6 +118,42 @@ const Home = () => {
       setLoadingAlbumId(null);
     }
   };
+
+  if (isOffline) {
+    return (
+      <div className="home-container animate-fade-in" style={{ paddingTop: '2rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--text-secondary)' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', opacity: 0.5 }}>
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+          </svg>
+          <h2 style={{ color: '#fff', fontSize: '1.5rem', marginBottom: '0.5rem' }}>You are Offline</h2>
+          <p>Playing from downloaded songs only.</p>
+        </div>
+        
+        <section className="music-section">
+          <h2>Downloaded Songs</h2>
+          {downloadedSongs && downloadedSongs.length > 0 ? (
+            <div className="spotify-grid">
+              {downloadedSongs.map((song, index) => (
+                <CompactSongCard key={song.id || index} song={song} queueContext={downloadedSongs} />
+              ))}
+            </div>
+          ) : (
+            <div className="empty-queue" style={{ height: 'auto', padding: '3rem 0', background: 'var(--md-sys-color-surface-container)', borderRadius: '16px' }}>
+              <p>No songs downloaded yet.</p>
+              <span style={{ fontSize: '0.85rem' }}>Download some songs while online to listen anywhere.</span>
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="home-container animate-fade-in">
