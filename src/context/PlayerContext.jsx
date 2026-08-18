@@ -68,6 +68,7 @@ export const PlayerProvider = ({ children }) => {
   const silentAudioRef = useRef(null);
   // Track whether keepalive has been started (needs user gesture on mobile)
   const keepaliveStartedRef = useRef(false);
+  const playbackSessionIdRef = useRef(0);
 
   useEffect(() => {
     getAllOfflineSongs().then(songs => setDownloadedSongs(songs));
@@ -272,6 +273,9 @@ export const PlayerProvider = ({ children }) => {
   }, [isPlaying, currentSong, startSilentKeepalive]);
 
   const playSong = (song, newQueue = null) => {
+    playbackSessionIdRef.current += 1;
+    const currentSession = playbackSessionIdRef.current;
+
     if (nativeAudioRef.current) {
       const audio = nativeAudioRef.current;
       audio.pause();
@@ -365,6 +369,7 @@ export const PlayerProvider = ({ children }) => {
         fetch(`/api/yt-search?q=${encodeURIComponent(fallbackQuery)}&limit=1`)
           .then(res => res.json())
           .then(data => {
+            if (playbackSessionIdRef.current !== currentSession) return;
             const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
             if (vid) {
               setYoutubeVideoId(vid);
@@ -374,6 +379,7 @@ export const PlayerProvider = ({ children }) => {
             }
           })
           .catch(e => {
+            if (playbackSessionIdRef.current !== currentSession) return;
             console.error('YT fallback failed:', e);
             setIsPlaying(false);
           });
@@ -414,6 +420,8 @@ export const PlayerProvider = ({ children }) => {
     if (isDownloaded) {
       // Prioritize the offline blob
       getOfflineSong(song.id).then(offlineSong => {
+        if (playbackSessionIdRef.current !== currentSession) return;
+        
         if (offlineSong && offlineSong.blob && nativeAudioRef.current) {
           const blobUrl = URL.createObjectURL(offlineSong.blob);
           setYoutubeVideoId(null); // Disable YouTube player
@@ -422,12 +430,18 @@ export const PlayerProvider = ({ children }) => {
           nativeAudioRef.current.removeAttribute('crossOrigin');
           nativeAudioRef.current.src = blobUrl;
           nativeAudioRef.current.currentTime = 0;
-          nativeAudioRef.current.play().catch(e => console.log('Offline play error:', e));
+          nativeAudioRef.current.play().catch(e => {
+            if (playbackSessionIdRef.current !== currentSession) return;
+            console.log('Offline play error:', e);
+            // Fallback to network stream if offline blob is broken/unsupported
+            streamNetwork();
+          });
         } else {
           // If blob is corrupt or missing, fallback to network
           streamNetwork();
         }
       }).catch(e => {
+        if (playbackSessionIdRef.current !== currentSession) return;
         console.error("Error loading offline song", e);
         streamNetwork();
       });
