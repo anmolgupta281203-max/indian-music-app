@@ -287,6 +287,7 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   transition: background 0.2s, transform 0.2s;
 }
 .fs-close-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+.fs-close-btn:active { transform: scale(0.96); }
 
 /* Artwork Card */
 .fs-art-container {
@@ -411,6 +412,7 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   transition: transform 0.2s;
 }
 .fs-action-circle:hover { transform: scale(1.2); }
+.fs-action-circle:active { transform: scale(0.96); }
 
 /* Progress Slider */
 .fs-progress-section {
@@ -447,6 +449,7 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   transition: transform 0.2s, background 0.2s;
 }
 .fs-nav-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+.fs-nav-btn:active { transform: scale(0.96); }
 
 .fs-scallop-play-btn {
   width: 80px; height: 80px;

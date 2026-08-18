@@ -9,7 +9,7 @@
   z-index: 2000;
   display: flex;
   justify-content: flex-end;
-  animation: fadeIn 0.25s ease-out;
+  animation: fadeIn 0.25s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .queue-modal-container {
@@ -23,6 +23,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  animation: slideInRight 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .queue-header {
@@ -208,4 +209,9 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }

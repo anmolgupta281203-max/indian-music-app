@@ -163,3 +163,30 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* MD3 Active Scale & Ripple Effects */
+.md-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.md-ripple::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background-color: var(--md-sys-color-on-surface);
+  opacity: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1), opacity 0.4s;
+  pointer-events: none;
+}
+
+.md-ripple:active::after {
+  transform: translate(-50%, -50%) scale(2);
+  opacity: 0.12;
+  transition: transform 0.1s ease-out, opacity 0.1s;
+}
