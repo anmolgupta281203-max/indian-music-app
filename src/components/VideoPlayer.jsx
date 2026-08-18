@@ -332,7 +332,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                 className="video-iframe"
                 src={iframeSrc}
                 allowFullScreen
-                sandbox={adBlockEnabled ? "allow-scripts allow-same-origin" : "allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation"}
+                sandbox={adBlockEnabled ? "allow-scripts allow-same-origin allow-forms allow-presentation" : undefined}
               ></iframe>
             )}
           </div>
