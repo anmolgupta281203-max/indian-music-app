@@ -1,243 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
-import ReactDOM from 'react-dom';
-import { X, Maximize, Play, Pause, Users, Heart, Flame, ThumbsUp, Copy, Check } from 'lucide-react';
-import ReactPlayer from 'react-player/youtube';
-import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmdbApi';
+import re
 
-import './VideoPlayer.css';
+with open('src/components/VideoPlayer.jsx', 'r', encoding='utf-8') as f:
+    content = f.read()
 
-const SERVERS = [
-  { id: '2embed', name: 'Server 1 (2Embed)' },
-  { id: 'vidsrc.me', name: 'Server 2 (VidSrc)' },
-  { id: 'multiembed', name: 'Server 3 (MultiEmbed)' },
-  { id: 'superembed', name: 'Server 4 (SuperEmbed)' },
-  { id: 'vidsrc.cc', name: 'Server 5 (VidSrc CC)' }
-];
-
-const VideoPlayer = ({ video, onClose, onEnded }) => {
-  const [iframeSrc, setIframeSrc] = useState(null);
-  const [server, setServer] = useState('2embed');
-  const [season, setSeason] = useState(1);
-  const [episode, setEpisode] = useState(1);
-  const [seriesDetails, setSeriesDetails] = useState(null);
-  const [isVideoLoading, setIsVideoLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [adBlockEnabled, setAdBlockEnabled] = useState(false);
-  
-  // Watch Party & Reactions State
-  const [showWatchParty, setShowWatchParty] = useState(false);
-  const [roomCode] = useState(() => `SVAR-${Math.floor(1000 + Math.random() * 9000)}`);
-  const [copied, setCopied] = useState(false);
-  const [reactions, setReactions] = useState([]);
-
-  const playerRef = useRef(null);
-  const containerRef = useRef(null);
-  const [playedSeconds, setPlayedSeconds] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isSeeking, setIsSeeking] = useState(false);
-  const [musicVideoId, setMusicVideoId] = useState(null);
-  const [controlsActive, setControlsActive] = useState(true);
-  const [showSidebar, setShowSidebar] = useState(false);
-  const hideControlsTimeout = useRef(null);
-
-  const handleMouseMove = () => {
-    setControlsActive(true);
-    if (hideControlsTimeout.current) clearTimeout(hideControlsTimeout.current);
-    if (isPlaying) {
-      hideControlsTimeout.current = setTimeout(() => setControlsActive(false), 3500);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (isPlaying) setControlsActive(false);
-  };
-
-
-  const handleProgress = (state) => {
-    if (!isSeeking) {
-      setPlayedSeconds(state.playedSeconds);
-    }
-  };
-
-  const handleDuration = (dur) => {
-    setDuration(dur);
-  };
-
-  const handleSeekChange = (e) => {
-    setIsSeeking(true);
-    setPlayedSeconds(parseFloat(e.target.value));
-  };
-
-  const handleSeekMouseUp = (e) => {
-    setIsSeeking(false);
-    if (playerRef.current) {
-      playerRef.current.seekTo(parseFloat(e.target.value), 'seconds');
-    }
-  };
-
-  const toggleFullScreen = () => {
-    if (!document.fullscreenElement) {
-      if (containerRef.current.requestFullscreen) {
-        containerRef.current.requestFullscreen();
-      } else if (containerRef.current.webkitRequestFullscreen) {
-        containerRef.current.webkitRequestFullscreen();
-      } else if (containerRef.current.msRequestFullscreen) {
-        containerRef.current.msRequestFullscreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
-    }
-  };
-
-  const formatTime = (seconds) => {
-    if (!seconds) return '0:00';
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  const addReaction = (emoji) => {
-    const id = Date.now() + Math.random();
-    const left = Math.floor(20 + Math.random() * 60);
-    setReactions(prev => [...prev, { id, emoji, left }]);
-    setTimeout(() => {
-      setReactions(prev => prev.filter(r => r.id !== id));
-    }, 2000);
-  };
-
-  const copyRoomCode = () => {
-    navigator.clipboard.writeText(roomCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  useEffect(() => {
-    if (video?.media_type === 'tv') {
-      getSeriesDetails(video.id).then(details => {
-        if (details) {
-          setSeriesDetails(details);
-        }
-      });
-    }
-  }, [video]);
-
-  const [seasonData, setSeasonData] = useState(null);
-  
-  useEffect(() => {
-    if (video?.media_type === 'tv' && season) {
-      getSeasonDetails(video.id, season).then(data => {
-        if (data) {
-          setSeasonData(data);
-        }
-      });
-    }
-  }, [video, season]);
-
-  useEffect(() => {
-    setIsVideoLoading(true);
-    setPlayedSeconds(0);
-    setDuration(0);
-
-    // Music video: search YouTube for the official video
-    if (video.type === 'music-video') {
-      setIsVideoLoading(true);
-      setIsPlaying(false);
-      const query = `${video.name || video.title} ${video.artist || ''} official video`;
-      fetch(`/api/yt-search?q=${encodeURIComponent(query)}&limit=1`)
-        .then(r => r.json())
-        .then(data => {
-          const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
-          if (vid) {
-            // Reuse the 'youtube' rendering path by patching video id in state
-            setMusicVideoId(vid);
-          }
-          setIsVideoLoading(false);
-          setIsPlaying(true);
-        })
-        .catch(() => setIsVideoLoading(false));
-      return;
-    }
-
-    if (video.type === 'youtube') {
-      setIsVideoLoading(false);
-      setIsPlaying(true);
-      return;
-    }
-
-    let src = '';
-    if (video.media_type === 'movie') {
-      switch (server) {
-        case 'vidsrc.me': src = `https://vidsrc.me/embed/movie?tmdb=${video.id}`; break;
-        case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1`; break;
-        case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1`; break;
-        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/movie/${video.id}`; break;
-        case '2embed': default: src = `https://www.2embed.cc/embed/${video.id}?server=vcr`; break;
-      }
-    } else {
-      switch (server) {
-        case 'vidsrc.me': src = `https://vidsrc.me/embed/tv?tmdb=${video.id}&season=${season}&episode=${episode}`; break;
-        case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
-        case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
-        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/tv/${video.id}/${season}/${episode}`; break;
-        case '2embed': default: src = `https://www.2embed.cc/embedtv/${video.id}?s=${season}&e=${episode}&server=vcr`; break;
-      }
-    }
-    setIframeSrc(src);
-  }, [video, server, season, episode]);
-
-  const [needsFullscreen, setNeedsFullscreen] = useState(false);
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
-        setNeedsFullscreen(true);
-      } else {
-        setNeedsFullscreen(false);
-      }
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-
-  const handleReenterFullscreen = () => {
-    setNeedsFullscreen(false);
-    try {
-      const el = document.documentElement;
-      if (el.requestFullscreen) {
-        el.requestFullscreen().then(() => {
-          if (window.screen?.orientation?.lock) {
-            window.screen.orientation.lock('landscape').catch(() => {});
-          }
-        }).catch(() => {});
-      } else if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen();
-      }
-    } catch (e) {}
-  };
-
-  useEffect(() => {
-    if (isPlaying) {
-      if (hideControlsTimeout.current) clearTimeout(hideControlsTimeout.current);
-      hideControlsTimeout.current = setTimeout(() => setControlsActive(false), 3500);
-    } else {
-      setControlsActive(true);
-    }
-  }, [isPlaying]);
-
-  if (!video) return null;
-
-  return ReactDOM.createPortal(
+# Define the new JSX return block
+new_return = """  return ReactDOM.createPortal(
     <div className="video-modal-overlay">
       <div 
         className={`video-theater ${controlsActive ? 'controls-active' : ''}`}
@@ -330,7 +97,17 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
             ) : (
               <iframe
                 className="video-iframe"
-                src={iframeSrc}
+                src={
+                  server === '2embed' 
+                    ? (video.media_type === 'tv' ? `https://www.2embed.cc/embedtv/${video.id}&s=${season}&e=${episode}` : `https://www.2embed.cc/embed/${video.id}`)
+                    : server === 'vidsrc.me'
+                    ? (video.media_type === 'tv' ? `https://vidsrc.me/embed/tv?tmdb=${video.id}&season=${season}&episode=${episode}` : `https://vidsrc.me/embed/movie?tmdb=${video.id}`)
+                    : server === 'vidsrc.cc'
+                    ? (video.media_type === 'tv' ? `https://vidsrc.cc/v3/embed/tv/${video.id}/${season}/${episode}` : `https://vidsrc.cc/v3/embed/movie/${video.id}`)
+                    : server === 'multiembed'
+                    ? (video.media_type === 'tv' ? `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}` : `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1`)
+                    : (video.media_type === 'tv' ? `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}` : `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1`)
+                }
                 allowFullScreen
                 sandbox={adBlockEnabled ? "allow-scripts allow-same-origin" : "allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation"}
               ></iframe>
@@ -480,4 +257,14 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   );
 };
 
-export default VideoPlayer;
+export default VideoPlayer;"""
+
+# Split the file at "return ReactDOM.createPortal("
+parts = content.split("  return ReactDOM.createPortal(", 1)
+if len(parts) == 2:
+    new_content = parts[0] + new_return
+    with open('src/components/VideoPlayer.jsx', 'w', encoding='utf-8') as f:
+        f.write(new_content)
+    print("Success")
+else:
+    print("Could not find return statement")

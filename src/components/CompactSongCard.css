@@ -1,0 +1,71 @@
+.compact-song-card {
+  display: flex;
+  align-items: center;
+  background-color: var(--md-sys-color-surface-container);
+  border-radius: 8px; /* Slightly less rounded than 16px to match YouTube Music list items */
+  overflow: hidden;
+  cursor: pointer;
+  transition: background-color 0.2s cubic-bezier(0.2, 0, 0, 1);
+  position: relative;
+  height: 60px;
+}
+
+.compact-song-card:hover {
+  background-color: var(--md-sys-color-surface-container-highest);
+}
+
+.compact-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.compact-info {
+  flex: 1;
+  padding: 0 1rem;
+  overflow: hidden;
+}
+
+.compact-info h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-play-btn {
+  background-color: var(--md-sys-color-primary-container);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.compact-song-card:hover .compact-play-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.compact-song-card.active h4 {
+  color: var(--md-sys-color-primary);
+}
+
+.compact-bars {
+  height: 12px;
+}
+.compact-bars span {
+  width: 3px;
+  background-color: var(--md-sys-color-on-primary-container);
+}

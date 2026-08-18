@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchAlbumDetails, searchSongs, fetchTrending } from '../services/api';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/SongCard';
+import CompactSongCard from '../components/CompactSongCard';
 import './Home.css';
 
 const Home = () => {
@@ -124,9 +125,9 @@ const Home = () => {
       <section className="music-section">
         <h2>Trending Songs</h2>
         {trendingSongs.length > 0 ? (
-          <div className="cards-grid">
-            {trendingSongs.map((song, index) => (
-              <SongCard key={song.id || index} song={song} queueContext={trendingSongs} />
+          <div className="spotify-grid">
+            {trendingSongs.slice(0, 6).map((song, index) => (
+              <CompactSongCard key={song.id || index} song={song} queueContext={trendingSongs} />
             ))}
           </div>
         ) : (

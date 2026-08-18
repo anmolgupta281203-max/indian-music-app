@@ -1,36 +1,23 @@
 /* 🎵 MusicPlayer.css - Floating Pill & Cinematic Fullscreen Redesign */
 
 .music-player {
-  /* No longer grid-area, it floats! */
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 48px);
-  max-width: 850px;
-  height: 80px;
+  grid-area: player;
+  width: 100%;
+  height: 100%;
   
-  /* Pill Shape */
-  border-radius: 40px;
-  
-  /* Glassmorphism */
-  background-color: rgba(20, 20, 25, 0.75);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05) inset;
+  background-color: var(--md-sys-color-surface-container-highest);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
   
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.5rem 0 1rem;
+  padding: 0 2rem;
   z-index: 2000;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .music-player:hover {
-  transform: translateX(-50%) translateY(-4px);
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.1) inset;
+  /* No hover lift for a docked bar */
 }
 
 /* Now Playing Area */
@@ -111,37 +98,39 @@
 .control-btn {
   background: transparent;
   border: none;
-  color: rgba(255,255,255,0.6);
+  color: var(--md-sys-color-on-surface-variant);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .control-btn:hover {
-  color: #fff;
+  color: var(--md-sys-color-on-surface);
   transform: scale(1.1);
 }
 
 .play-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background-color: var(--primary-color);
-  color: #fff;
+  width: 56px; /* MD3 FAB size */
+  height: 56px;
+  border-radius: 16px; /* FAB shape */
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(250, 36, 60, 0.4);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.2s;
+  box-shadow: var(--md-elevation-1);
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1), background-color 0.2s;
+  border: none;
+  cursor: pointer;
 }
 
 .play-btn:hover {
-  transform: scale(1.15);
-  box-shadow: 0 12px 24px rgba(250, 36, 60, 0.6);
-  background-color: #ff3b53;
-  color: #fff;
+  transform: scale(1.05);
+  box-shadow: var(--md-elevation-2);
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
 }
 
 .play-btn:active {
@@ -157,10 +146,10 @@
 }
 
 .time {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.5);
-  min-width: 40px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  min-width: 45px;
   font-variant-numeric: tabular-nums;
 }
 .time:first-child { text-align: right; }
@@ -169,9 +158,9 @@
 input[type=range].progress-bar, input[type=range].fs-progress-slider {
   -webkit-appearance: none;
   width: 100%;
-  height: 4px;
-  background: rgba(255,255,255,0.15);
-  border-radius: 2px;
+  height: 6px;
+  background: var(--md-sys-color-surface-container);
+  border-radius: 3px;
   outline: none;
   cursor: pointer;
   position: relative;
@@ -183,7 +172,7 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 0px; 
   height: 0px;
-  box-shadow: -400px 0 0 400px var(--primary-color); /* Fills the left side */
+  box-shadow: -400px 0 0 400px var(--md-sys-color-primary); /* Fills the left side */
 }
 
 /* Volume */
