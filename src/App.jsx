@@ -113,6 +113,7 @@ const Library = () => {
 };
 
 function App() {
+  const { currentSong } = usePlayer();
   const [hasVisited, setHasVisited] = useState(() => {
     return localStorage.getItem('svar_has_visited') === 'true';
   });
@@ -156,6 +157,12 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Dynamic Ambient Background */}
+      {currentSong && currentSong.image && (
+        <div className="app-ambient-bg" style={{ backgroundImage: `url(${currentSong.image[2]?.link || currentSong.image[1]?.link || currentSong.image[0]?.link})` }}></div>
+      )}
+      <div className="app-ambient-overlay"></div>
+
       <Sidebar onOpenAiDj={() => setIsAiDjOpen(true)} onOpenPaywall={() => setIsPaywallOpen(true)} />
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
         <TopNav />

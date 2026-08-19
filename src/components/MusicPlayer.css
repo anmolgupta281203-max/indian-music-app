@@ -581,10 +581,13 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   .progress-container, .volume-control, .fs-toolbar-actions { display: none; }
   .hide-on-mobile { display: none !important; }
   
-  .fs-content { padding: 1.5rem; }
-  .fs-art-container { margin: 1rem 0; }
-  .fs-track-info-row { margin-bottom: 1.5rem; }
+  .fs-content { padding: 1.5rem; overflow-y: auto; overflow-x: hidden; }
+  .fs-art-container { margin: 1rem 0; flex: 0 0 auto; }
+  .fs-art { max-height: 35vh; width: auto; max-width: 100%; aspect-ratio: 1/1; }
+  .fs-track-info-row { margin-bottom: 1.5rem; flex-shrink: 0; }
   .fs-track-details h2 { font-size: 24px; }
-  .fs-main-controls { gap: 1rem; }
+  .fs-progress-section { flex-shrink: 0; }
+  .fs-main-controls { gap: 1rem; flex-shrink: 0; }
   .fs-scallop-play-btn { width: 70px; height: 70px; }
+  .fs-toolbar-actions { flex-shrink: 0; }
 }

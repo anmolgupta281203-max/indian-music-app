@@ -119,23 +119,24 @@
 }
 
 .video-card {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
+  background: var(--md-sys-color-surface-container);
+  border-radius: 16px;
   padding: 0.8rem;
   cursor: pointer;
-  transition: transform 0.3s ease, background-color 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1), background-color 0.2s;
+  border: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .video-card:hover {
-  transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-8px) scale(1.02);
+  background: var(--md-sys-color-surface-container-highest);
+  box-shadow: var(--md-elevation-2);
 }
 
 .video-card-img-container {
   width: 100%;
   aspect-ratio: 2 / 3; /* Standard movie poster ratio */
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   margin-bottom: 0.8rem;
   position: relative;
@@ -273,11 +274,12 @@
 }
 
 .hero-content h2 {
-  font-size: 2.5rem;
-  font-weight: 800;
+  font-size: 3rem;
+  font-weight: 900;
   color: white;
   margin: 0 0 0.5rem 0;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+  letter-spacing: -1px;
 }
 
 @media (max-width: 768px) {
@@ -323,17 +325,22 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: white;
-  color: black;
+  background: var(--md-sys-color-on-surface);
+  color: var(--md-sys-color-background);
   border: none;
-  padding: 0.6rem 1.5rem;
-  border-radius: 4px;
-  font-weight: 700;
-  font-size: 1rem;
+  padding: 0.8rem 2rem;
+  border-radius: 50px;
+  font-weight: 800;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), background-color 0.2s;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 
 .hero-play-btn:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: white;
+  transform: scale(1.05);
+}
+.hero-play-btn:active {
+  transform: scale(0.95);
 }

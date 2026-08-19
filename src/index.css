@@ -95,6 +95,31 @@ html, body {
   grid-template-rows: 1fr auto;
   height: 100vh;
   width: 100%;
+  background-color: transparent; /* Fallback */
+  position: relative;
+}
+
+.app-ambient-bg {
+  position: fixed;
+  top: -10%; left: -10%;
+  width: 120%; height: 120%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(100px) brightness(0.6) saturate(2);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.6;
+  transition: background-image 1s ease-in-out;
+  animation: pulse-bg 20s ease-in-out infinite alternate;
+}
+
+.app-ambient-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: linear-gradient(180deg, rgba(20,18,24,0.7) 0%, rgba(20,18,24,0.95) 100%);
+  z-index: 0;
+  pointer-events: none;
 }
 
 @media (max-width: 768px) {
@@ -113,11 +138,12 @@ html, body {
   grid-area: main;
   overflow-y: auto;
   overflow-x: hidden;
-  background-color: var(--bg-dark);
+  background-color: transparent; /* Let ambient show through */
   border-radius: 8px;
   margin: 0.5rem 0.5rem 0 0;
   position: relative;
   min-width: 0;
+  z-index: 1;
 }
 
 @media (max-width: 768px) {
