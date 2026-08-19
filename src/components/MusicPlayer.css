@@ -553,6 +553,7 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
     margin: 0 0.5rem 0.5rem 0.5rem;
     background-color: var(--md-sys-color-surface-container-highest);
     box-shadow: var(--md-elevation-2);
+    min-width: 0;
   }
   
   .now-playing { width: auto; flex: 1; min-width: 0; margin-right: 0.5rem; }
