@@ -65,6 +65,7 @@ const MusicPlayer = () => {
   const [showEqMenu, setShowEqMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
+  const isSeekingRef = useRef(false);
   const playerRef = useRef(null); // local ref just for seeking on the global YT player
 
   // Track progress from native audio (for offline/downloaded songs)
@@ -72,7 +73,7 @@ const MusicPlayer = () => {
     const audio = nativeAudioRef.current;
     if (!audio) return;
     const updateProgress = () => {
-      if (!youtubeVideoId) {
+      if (!youtubeVideoId && !isSeekingRef.current) {
         setProgress(audio.currentTime || 0);
         setDuration(audio.duration || 0);
       }
@@ -111,10 +112,14 @@ const MusicPlayer = () => {
     }
   }, [isFullScreen]);
 
-  const handleSeek = (e) => {
+  const handleSeekChange = (e) => {
+    isSeekingRef.current = true;
+    setProgress(Number(e.target.value));
+  };
+
+  const handleSeekMouseUp = (e) => {
+    isSeekingRef.current = false;
     const time = Number(e.target.value);
-    setProgress(time);
-    // Seek on the global YouTube player in context
     if (youtubeVideoId && ytPlayerRef?.current) {
       ytPlayerRef.current.seekTo(time, 'seconds');
     } else if (nativeAudioRef.current) {
@@ -226,7 +231,9 @@ const MusicPlayer = () => {
               min="0" 
               max={duration || 100} 
               value={progress} 
-              onChange={handleSeek}
+              onChange={handleSeekChange}
+              onMouseUp={handleSeekMouseUp}
+              onTouchEnd={handleSeekMouseUp}
               className="progress-bar"
               style={{ '--progress': `${duration ? (progress / duration) * 100 : 0}%` }}
             />
@@ -330,7 +337,9 @@ const MusicPlayer = () => {
               min="0" 
               max={duration || 100} 
               value={progress} 
-              onChange={handleSeek}
+              onChange={handleSeekChange}
+              onMouseUp={handleSeekMouseUp}
+              onTouchEnd={handleSeekMouseUp}
               className="fs-progress-slider"
               style={{ '--progress': `${duration ? (progress / duration) * 100 : 0}%` }}
             />
@@ -444,7 +453,9 @@ const MusicPlayer = () => {
           onPlay={() => resumePlayback()}
           onPause={() => pause()}
           onProgress={({ playedSeconds }) => {
-            setProgress(playedSeconds);
+            if (!isSeekingRef.current) {
+              setProgress(playedSeconds);
+            }
             // Update MediaSession position state for lock screen progress bar
             if ('mediaSession' in navigator && duration > 0) {
               try {

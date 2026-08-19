@@ -65,13 +65,15 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
 
   const handleSeekChange = (e) => {
     setIsSeeking(true);
-    setPlayedSeconds(parseFloat(e.target.value));
+    const fraction = parseFloat(e.target.value);
+    setPlayedSeconds(fraction * duration);
   };
 
   const handleSeekMouseUp = (e) => {
     setIsSeeking(false);
     if (playerRef.current) {
-      playerRef.current.seekTo(parseFloat(e.target.value), 'seconds');
+      const fraction = parseFloat(e.target.value);
+      playerRef.current.seekTo(fraction, 'fraction');
     }
   };
 
