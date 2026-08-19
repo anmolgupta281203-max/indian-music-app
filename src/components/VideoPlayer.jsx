@@ -77,22 +77,31 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     }
   };
 
-  const toggleFullScreen = () => {
+  const toggleFullScreen = async () => {
     if (!document.fullscreenElement) {
-      if (containerRef.current.requestFullscreen) {
-        containerRef.current.requestFullscreen();
-      } else if (containerRef.current.webkitRequestFullscreen) {
-        containerRef.current.webkitRequestFullscreen();
-      } else if (containerRef.current.msRequestFullscreen) {
-        containerRef.current.msRequestFullscreen();
+      const elem = containerRef.current;
+      const requestFS = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
+      if (requestFS) {
+        try {
+          await requestFS.call(elem);
+          if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+            await window.screen.orientation.lock('landscape').catch(() => {});
+          }
+        } catch (e) {
+          console.warn("Fullscreen or orientation lock failed", e);
+        }
       }
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
+      const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (exitFS) {
+        try {
+          await exitFS.call(document);
+          if (window.screen && window.screen.orientation && window.screen.orientation.unlock) {
+            window.screen.orientation.unlock();
+          }
+        } catch (e) {
+          console.warn("Exit fullscreen failed", e);
+        }
       }
     }
   };
@@ -192,6 +201,25 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     }
     setIframeSrc(src);
   }, [video, server, season, episode]);
+
+  // Attempt to auto-fullscreen and lock to landscape when a video is opened on mobile
+  useEffect(() => {
+    if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+      const elem = containerRef.current;
+      if (elem) {
+        const requestFS = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
+        if (requestFS) {
+          requestFS.call(elem).then(() => {
+            if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+              window.screen.orientation.lock('landscape').catch(() => {});
+            }
+          }).catch(() => {
+            // Silently fail if gesture token expired
+          });
+        }
+      }
+    }
+  }, []);
 
   const [needsFullscreen, setNeedsFullscreen] = useState(false);
 
