@@ -73,9 +73,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  pointer-events: auto;
+  pointer-events: none; /* Let clicks pass through empty space */
   transform: translateY(-20px);
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.video-top-controls > div {
+  pointer-events: auto; /* Re-enable clicks for children */
 }
 
 .video-theater:hover .video-top-controls,
@@ -127,9 +131,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  pointer-events: auto;
+  pointer-events: none; /* Let clicks pass through empty space */
   transform: translateY(20px);
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.video-bottom-controls > div {
+  pointer-events: auto; /* Re-enable clicks for children */
 }
 
 .video-theater:hover .video-bottom-controls,
