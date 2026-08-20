@@ -83,7 +83,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       const requestFS = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
       if (requestFS) {
         try {
-          await requestFS.call(elem);
+          await Promise.resolve(requestFS.call(elem));
           if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
             await window.screen.orientation.lock('landscape').catch(() => {});
           }
@@ -95,7 +95,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
       if (exitFS) {
         try {
-          await exitFS.call(document);
+          await Promise.resolve(exitFS.call(document));
           if (window.screen && window.screen.orientation && window.screen.orientation.unlock) {
             window.screen.orientation.unlock();
           }
@@ -209,13 +209,15 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       if (elem) {
         const requestFS = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
         if (requestFS) {
-          requestFS.call(elem).then(() => {
-            if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-              window.screen.orientation.lock('landscape').catch(() => {});
-            }
-          }).catch(() => {
-            // Silently fail if gesture token expired
-          });
+          try {
+            Promise.resolve(requestFS.call(elem)).then(() => {
+              if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+                window.screen.orientation.lock('landscape').catch(() => {});
+              }
+            }).catch(() => {
+              // Silently fail if gesture token expired
+            });
+          } catch (err) {}
         }
       }
     }
@@ -362,7 +364,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                 className="video-iframe"
                 src={iframeSrc}
                 allowFullScreen
-                sandbox={adBlockEnabled ? "allow-scripts allow-same-origin allow-forms allow-presentation" : undefined}
+                sandbox={adBlockEnabled ? "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox" : undefined}
               ></iframe>
             )}
           </div>
