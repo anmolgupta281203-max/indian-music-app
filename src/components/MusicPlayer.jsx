@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
-  Heart, Download, Share2, ChevronDown, ListMusic, Moon, SlidersHorizontal, MoreVertical, Check, Mic
+  Heart, Download, ChevronDown, ListMusic, Moon, MoreVertical, Check, Mic
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import ReactPlayer from 'react-player/youtube';
@@ -33,7 +33,6 @@ const MusicPlayer = () => {
     toggleFavorite, 
     downloadedSongs, 
     handleDownloadToggle, 
-    currentUrl, 
     openQueueModal, 
     nativeAudioRef, 
     ytPlayerRef,
@@ -42,10 +41,6 @@ const MusicPlayer = () => {
     isLooping, 
     toggleShuffle, 
     toggleLoop,
-    audioQuality,
-    setAudioQuality,
-    eqPreset,
-    setEqPreset,
     lyrics,
     loadingLyrics,
     sleepTimerMinutes,
@@ -61,12 +56,9 @@ const MusicPlayer = () => {
   
   // Popovers
   const [showSleepMenu, setShowSleepMenu] = useState(false);
-  const [showQualityMenu, setShowQualityMenu] = useState(false);
-  const [showEqMenu, setShowEqMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const isSeekingRef = useRef(false);
-  const playerRef = useRef(null); // local ref just for seeking on the global YT player
 
   // Track progress from native audio (for offline/downloaded songs)
   useEffect(() => {

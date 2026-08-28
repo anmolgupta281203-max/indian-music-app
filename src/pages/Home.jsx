@@ -1,9 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Play } from 'lucide-react';
 import { fetchAlbumDetails, searchSongs, fetchTrending } from '../services/api';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/SongCard';
 import CompactSongCard from '../components/CompactSongCard';
 import './Home.css';
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};
 
 const Home = () => {
   const [trendingSongs, setTrendingSongs] = useState([]);
@@ -12,8 +20,8 @@ const Home = () => {
   const [hindiHits, setHindiHits] = useState([]);
   const [punjabiHits, setPunjabiHits] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingAlbumId, setLoadingAlbumId] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [heroIndex, setHeroIndex] = useState(0);
   const { playSong, downloadedSongs } = usePlayer();
 
   useEffect(() => {
@@ -44,33 +52,37 @@ const Home = () => {
 
     const loadData = async () => {
       setLoading(true);
+      let loadedTrending = [];
 
       // 1. Fetch Trending Songs & Albums
       try {
         const trendingData = await fetchTrending();
         if (trendingData && trendingData.trending) {
           if (trendingData.trending.songs && Array.isArray(trendingData.trending.songs)) {
-            setTrendingSongs(filterDuplicates(trendingData.trending.songs));
+            loadedTrending = filterDuplicates(trendingData.trending.songs);
+            setTrendingSongs(loadedTrending);
           }
           if (trendingData.trending.albums && Array.isArray(trendingData.trending.albums) && trendingData.trending.albums.length > 0) {
             setTrendingAlbums(filterDuplicates(trendingData.trending.albums));
           }
         } else if (Array.isArray(trendingData)) {
-          setTrendingSongs(filterDuplicates(trendingData));
+          loadedTrending = filterDuplicates(trendingData);
+          setTrendingSongs(loadedTrending);
         }
       } catch (e) {
         console.warn("Trending fetch error:", e);
       }
 
-      // Ensure Trending Songs is populated
-      if (trendingSongs.length === 0) {
+      // Fallback if no trending songs loaded
+      if (loadedTrending.length === 0) {
         try {
           const fallback = await searchSongs('Arijit Singh');
-          setTrendingSongs(filterDuplicates(fallback || []));
+          loadedTrending = filterDuplicates(fallback || []);
+          setTrendingSongs(loadedTrending);
         } catch (e) {}
       }
 
-      // Ensure Trending Albums is populated
+      // Trending Albums
       try {
         const albums = await searchSongs('Pritam');
         setTrendingAlbums(filterDuplicates(albums || []));
@@ -83,7 +95,6 @@ const Home = () => {
         console.warn("Latest releases error:", e);
       }
 
-      // 3. Load Top Hindi Hits
       try {
         const hindi = await searchSongs('Hindi');
         setHindiHits(filterDuplicates(hindi || []));
@@ -91,7 +102,6 @@ const Home = () => {
         console.warn("Hindi hits error:", e);
       }
 
-      // 4. Load Top Punjabi Hits
       try {
         const punjabi = await searchSongs('Punjabi');
         setPunjabiHits(filterDuplicates(punjabi || []));
@@ -105,35 +115,33 @@ const Home = () => {
     loadData();
   }, []);
 
-  const handleAlbumClick = async (albumId) => {
-    setLoadingAlbumId(albumId);
-    try {
-      const albumData = await fetchAlbumDetails(albumId);
-      if (albumData && albumData.songs && albumData.songs.length > 0) {
-        playSong(albumData.songs[0], albumData.songs);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingAlbumId(null);
+  // Auto-rotate hero carousel
+  useEffect(() => {
+    if (trendingSongs.length <= 1) return;
+    const interval = setInterval(() => {
+      setHeroIndex(prev => (prev + 1) % Math.min(trendingSongs.length, 5));
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [trendingSongs.length]);
+
+  const getImage = useCallback((song) => {
+    if (!song?.image) return 'https://via.placeholder.com/600x300/1c2128/25D1DA?text=Sv%C4%81r';
+    if (typeof song.image === 'string') return song.image;
+    if (Array.isArray(song.image) && song.image.length > 0) {
+      const last = song.image[song.image.length - 1];
+      return typeof last === 'string' ? last : (last?.url || song.image[0]?.url || 'https://via.placeholder.com/600');
     }
-  };
+    return 'https://via.placeholder.com/600';
+  }, []);
+
+  const heroSongs = trendingSongs.slice(0, 5);
 
   if (isOffline) {
     return (
-      <div className="home-container animate-fade-in" style={{ paddingTop: '2rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--text-secondary)' }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', opacity: 0.5 }}>
-            <line x1="1" y1="1" x2="23" y2="23"></line>
-            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
-            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
-            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
-            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
-            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
-            <line x1="12" y1="20" x2="12.01" y2="20"></line>
-          </svg>
-          <h2 style={{ color: '#fff', fontSize: '1.5rem', marginBottom: '0.5rem' }}>You are Offline</h2>
-          <p>Playing from downloaded songs only.</p>
+      <div className="home-container animate-fade-in">
+        <div className="greeting-header">
+          <h1>{getGreeting()}</h1>
+          <p>You're offline — playing downloaded songs</p>
         </div>
         
         <section className="music-section">
@@ -145,9 +153,8 @@ const Home = () => {
               ))}
             </div>
           ) : (
-            <div className="empty-queue" style={{ height: 'auto', padding: '3rem 0', background: 'var(--md-sys-color-surface-container)', borderRadius: '16px' }}>
-              <p>No songs downloaded yet.</p>
-              <span style={{ fontSize: '0.85rem' }}>Download some songs while online to listen anywhere.</span>
+            <div className="loading-state">
+              <p>No songs downloaded yet. Download some while online.</p>
             </div>
           )}
         </section>
@@ -157,21 +164,48 @@ const Home = () => {
 
   return (
     <div className="home-container animate-fade-in">
-      <div className="hero-banner">
-        <div className="hero-content">
-          <div className="hero-subtitle">NEW RELEASE</div>
-          <h1 className="hero-title">Discover Premium Indian Music</h1>
-          <p className="hero-desc">Stream your favorite hits across genres, eras, and regions in high fidelity.</p>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <button className="hero-play-btn" onClick={() => trendingSongs.length > 0 && playSong(trendingSongs[0], trendingSongs)}>
-              Start Listening
-            </button>
-          </div>
-        </div>
+      {/* Greeting */}
+      <div className="greeting-header">
+        <h1>{getGreeting()}</h1>
       </div>
 
+      {/* Hero Carousel */}
+      {heroSongs.length > 0 && (
+        <div className="hero-carousel" onClick={() => playSong(heroSongs[heroIndex], trendingSongs)}>
+          {heroSongs.map((song, idx) => {
+            const img = getImage(song).replace('150x150', '500x500').replace('50x50', '500x500');
+            const title = String(song.name || song.title || '');
+            const artist = String(song.primaryArtists || '');
+            return (
+              <div key={song.id || idx} className={`hero-carousel-slide ${idx === heroIndex ? 'active' : ''}`}>
+                <img src={img} alt={title} />
+                <div className="hero-carousel-gradient" />
+                <div className="hero-carousel-content">
+                  <span className="hero-carousel-badge">Trending Now</span>
+                  <h2>{title}</h2>
+                  <p>{artist}</p>
+                  <button className="hero-play-btn" onClick={(e) => { e.stopPropagation(); playSong(song, trendingSongs); }}>
+                    <Play size={18} fill="currentColor" /> Play
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          <div className="hero-carousel-dots">
+            {heroSongs.map((_, idx) => (
+              <button
+                key={idx}
+                className={`hero-dot ${idx === heroIndex ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setHeroIndex(idx); }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Picks */}
       <section className="music-section">
-        <h2>Trending Songs</h2>
+        <h2>Quick Picks</h2>
         {trendingSongs.length > 0 ? (
           <div className="spotify-grid">
             {trendingSongs.slice(0, 6).map((song, index) => (
@@ -179,10 +213,11 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading top hits..." : "Loading recommendations..."}</div>
+          <div className="loading-state">{loading ? "Loading..." : "No songs available"}</div>
         )}
       </section>
 
+      {/* Trending Albums */}
       <section className="music-section">
         <h2>Trending Albums</h2>
         {trendingAlbums.length > 0 ? (
@@ -197,21 +232,21 @@ const Home = () => {
                 <div 
                   key={album.id || index} 
                   className="album-card" 
-                  onClick={() => album.type === 'album' || album.songs ? handleAlbumClick(album.id) : playSong(album, trendingAlbums)}
-                  style={{ position: 'relative', cursor: 'pointer' }}
+                  onClick={() => album.type === 'album' || album.songs ? null : playSong(album, trendingAlbums)}
                 >
                   <img src={imgSrc} alt={albumName} />
-                  <h4 dangerouslySetInnerHTML={{ __html: albumName }}></h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px' }}>{album.artist || album.primaryArtists || 'Featured Album'}</p>
+                  <h4>{albumName}</h4>
+                  <p>{album.artist || album.primaryArtists || 'Various Artists'}</p>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading albums..." : "Loading albums..."}</div>
+          <div className="loading-state">{loading ? "Loading albums..." : "Loading..."}</div>
         )}
       </section>
 
+      {/* Latest Releases */}
       <section className="music-section">
         <h2>Latest Releases</h2>
         {latestAlbums.length > 0 ? (
@@ -221,10 +256,11 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading latest..." : "Loading latest..."}</div>
+          <div className="loading-state">{loading ? "Loading..." : "Loading..."}</div>
         )}
       </section>
 
+      {/* Top Hindi Hits */}
       <section className="music-section">
         <h2>Top Hindi Hits</h2>
         {hindiHits.length > 0 ? (
@@ -234,10 +270,11 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading Hindi hits..." : "Loading Hindi hits..."}</div>
+          <div className="loading-state">{loading ? "Loading..." : "Loading..."}</div>
         )}
       </section>
 
+      {/* Top Punjabi Hits */}
       <section className="music-section">
         <h2>Top Punjabi Hits</h2>
         {punjabiHits.length > 0 ? (
@@ -247,7 +284,7 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="loading-state">{loading ? "Loading Punjabi hits..." : "Loading Punjabi hits..."}</div>
+          <div className="loading-state">{loading ? "Loading..." : "Loading..."}</div>
         )}
       </section>
     </div>

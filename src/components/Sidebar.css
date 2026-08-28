@@ -1,7 +1,7 @@
-/* Material Design 3 Navigation Rail & Bottom Nav */
+/* ═══ Sidebar — Dark Rail with Teal Accent ═══ */
 .nav-rail {
   grid-area: sidebar;
-  background-color: var(--md-sys-color-surface-container);
+  background-color: rgba(13, 17, 23, 0.95);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -10,13 +10,14 @@
   height: 100%;
   border-right: 1px solid var(--md-sys-color-outline-variant);
   z-index: 50;
+  backdrop-filter: blur(10px);
 }
 
 .nav-rail-group {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .nav-rail-item {
@@ -24,34 +25,40 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
   padding: 8px 0;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
   text-decoration: none;
   background: transparent;
   border: none;
   cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: color 0.2s ease;
 }
 
 .nav-rail-icon {
-  width: 56px;
+  width: 48px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16px; /* Pill shape */
-  transition: background-color 0.2s cubic-bezier(0.2, 0, 0, 1);
+  border-radius: 12px;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .nav-rail-item:hover .nav-rail-icon {
   background-color: var(--md-sys-color-surface-container-highest);
 }
 
-.nav-rail-item.active {
+.nav-rail-item:hover {
   color: var(--md-sys-color-on-surface);
+}
+
+.nav-rail-item.active {
+  color: var(--primary-color);
 }
 
 .nav-rail-item.active .nav-rail-icon {
@@ -59,7 +66,15 @@
   color: var(--md-sys-color-on-primary-container);
 }
 
-/* Bottom Nav for Mobile */
+.ai-dj-icon {
+  color: var(--primary-color);
+}
+
+.liked-icon {
+  color: #FF6B81;
+}
+
+/* ─── Mobile Bottom Nav ─── */
 @media (max-width: 768px) {
   .nav-rail {
     flex-direction: row;
@@ -68,7 +83,8 @@
     padding: 0;
     border-right: none;
     border-top: 1px solid var(--md-sys-color-outline-variant);
-    background-color: var(--md-sys-color-surface-container);
+    background-color: rgba(13, 17, 23, 0.98);
+    backdrop-filter: blur(20px);
     z-index: 1000;
   }
 
@@ -79,10 +95,16 @@
   }
 
   .nav-rail-bottom {
-    display: none; /* Hide extra actions on mobile bottom nav */
+    display: none;
   }
 
   .nav-rail-item {
-    padding: 12px 0;
+    padding: 8px 0;
+    font-size: 9px;
+  }
+
+  .nav-rail-icon {
+    width: 40px;
+    height: 28px;
   }
 }

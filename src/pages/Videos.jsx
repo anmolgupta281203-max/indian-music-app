@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon, Play } from 'lucide-react';
-import axios from 'axios';
 import { getTrendingMovies, getPopularSeries, searchMoviesAndSeries, getImageUrl, discoverByGenre, discoverByNetwork, getTrendingAnime, getPopularHindiMovies } from '../services/tmdbApi';
+import { usePlayer } from '../context/PlayerContext';
 import VideoPlayer from '../components/VideoPlayer';
 import CategoryNav from '../components/CategoryNav';
 import './Videos.css';
 
 const Videos = () => {
+  const { pause: pauseMusic } = usePlayer();
   const [query, setQuery] = useState('');
   const [movies, setMovies] = useState([]);
   const [series, setSeries] = useState([]);
@@ -96,6 +97,7 @@ const Videos = () => {
   }, [activeFilter]);
 
   const handlePlay = (item, type = null) => {
+    pauseMusic();
     // Attempt to force fullscreen and landscape mode immediately on click for mobile devices
     if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
       try {

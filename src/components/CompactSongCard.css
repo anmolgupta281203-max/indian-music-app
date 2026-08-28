@@ -1,41 +1,47 @@
+/* ═══ CompactSongCard — Amazon Music Quick Pick Pill ═══ */
 .compact-song-card {
   display: flex;
   align-items: center;
   background-color: var(--md-sys-color-surface-container);
-  border-radius: 8px; /* Slightly less rounded than 16px to match YouTube Music list items */
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), background-color 0.2s cubic-bezier(0.2, 0, 0, 1);
+  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
   position: relative;
-  height: 60px;
+  height: 56px;
 }
 
 .compact-song-card:hover {
   background-color: var(--md-sys-color-surface-container-highest);
+  box-shadow: 0 0 0 1px rgba(37, 209, 218, 0.15);
 }
 
 .compact-song-card:active {
-  transform: scale(0.97);
-  background-color: var(--md-sys-color-surface-container-highest);
+  transform: scale(0.98);
+}
+
+.compact-song-card.active {
+  background: linear-gradient(135deg, var(--md-sys-color-primary-container), var(--md-sys-color-surface-container-highest));
+  box-shadow: 0 0 0 1px rgba(37, 209, 218, 0.25);
 }
 
 .compact-img {
-  width: 60px;
-  height: 60px;
+  width: 56px;
+  height: 56px;
   object-fit: cover;
   flex-shrink: 0;
 }
 
 .compact-info {
   flex: 1;
-  padding: 0 1rem;
+  padding: 0 0.75rem;
   overflow: hidden;
 }
 
 .compact-info h4 {
   margin: 0;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--md-sys-color-on-surface);
   white-space: nowrap;
   overflow: hidden;
@@ -43,19 +49,20 @@
 }
 
 .compact-play-btn {
-  background-color: var(--md-sys-color-primary-container);
+  background-color: transparent;
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
+  margin-right: 8px;
   opacity: 0;
   transform: scale(0.9);
-  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-  color: var(--md-sys-color-on-primary-container);
+  transition: all 0.2s ease;
+  color: var(--primary-color);
+  cursor: pointer;
 }
 
 .compact-song-card:hover .compact-play-btn {
@@ -64,7 +71,12 @@
 }
 
 .compact-song-card.active h4 {
-  color: var(--md-sys-color-primary);
+  color: var(--primary-color);
+}
+
+.compact-song-card.active .compact-play-btn {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .compact-bars {
@@ -72,5 +84,5 @@
 }
 .compact-bars span {
   width: 3px;
-  background-color: var(--md-sys-color-on-primary-container);
+  background-color: var(--primary-color);
 }

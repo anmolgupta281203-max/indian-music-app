@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Maximize, Play, Pause, Users, Heart, Flame, ThumbsUp, Copy, Check } from 'lucide-react';
+import { X, Maximize, Play, Pause, Users, Copy, Check } from 'lucide-react';
 import ReactPlayer from 'react-player/youtube';
 import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmdbApi';
+import { usePlayer } from '../context/PlayerContext';
 
 import './VideoPlayer.css';
 
@@ -15,6 +16,7 @@ const SERVERS = [
 ];
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
+  const { pause: pauseMusic } = usePlayer();
   const [iframeSrc, setIframeSrc] = useState(null);
   const [server, setServer] = useState('2embed');
   const [season, setSeason] = useState(1);
@@ -127,6 +129,10 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  useEffect(() => {
+    pauseMusic();
+  }, []);
 
   useEffect(() => {
     if (video?.media_type === 'tv') {

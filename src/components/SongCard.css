@@ -1,8 +1,9 @@
+/* ═══ SongCard — Amazon Music Aesthetic ═══ */
 .song-card {
-  background-color: transparent; /* Usually list items have no background unless hovered in MD3, but let's give it surface */
-  border-radius: 16px;
-  padding: 12px;
-  transition: background-color 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+  background-color: transparent;
+  border-radius: 12px;
+  padding: 10px;
+  transition: background-color 0.2s ease, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   cursor: pointer;
   position: relative;
   border: none;
@@ -11,13 +12,12 @@
 }
 
 .song-card:hover {
-  background-color: var(--md-sys-color-surface-container-highest);
+  background-color: var(--md-sys-color-surface-container-high);
   transform: translateY(-4px);
 }
 
 .song-card:active {
-  transform: scale(0.96);
-  background-color: var(--md-sys-color-surface-container-highest);
+  transform: scale(0.97);
 }
 
 .song-card.active {
@@ -25,29 +25,29 @@
 }
 
 .song-card.active h4 {
-  color: var(--md-sys-color-primary);
+  color: var(--primary-color);
 }
 
 .img-container {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 12px;
-  box-shadow: var(--md-elevation-1);
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1);
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: box-shadow 0.3s ease;
 }
 
 .song-card:hover .img-container {
-  box-shadow: var(--md-elevation-2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(37, 209, 218, 0.1);
 }
 
 .img-container img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .song-card:hover .img-container img {
@@ -58,34 +58,34 @@
 .download-btn,
 .playlist-btn {
   position: absolute;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
   border: none;
   border-radius: 50%;
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   opacity: 0;
   transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
   z-index: 5;
 }
 
 .fav-btn {
-  top: 8px;
-  right: 8px;
+  top: 6px;
+  right: 6px;
 }
 
 .playlist-btn {
-  top: 48px;
-  right: 8px;
+  top: 42px;
+  right: 6px;
 }
 
 .download-btn {
-  top: 8px;
-  left: 8px;
+  top: 6px;
+  left: 6px;
 }
 
 .song-card:hover .fav-btn,
@@ -97,28 +97,30 @@
   opacity: 1;
 }
 
-.fav-btn:hover {
-  transform: scale(1.1);
-  background: rgba(0, 0, 0, 0.6);
+.fav-btn:hover,
+.download-btn:hover,
+.playlist-btn:hover {
+  transform: scale(1.15);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .play-overlay {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 45px;
-  height: 45px;
+  bottom: 6px;
+  right: 6px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: var(--primary-color);
-  color: var(--bg-dark);
+  color: var(--md-sys-color-on-primary);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transform: translateY(10px);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transform: translateY(8px);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 4px 12px rgba(37, 209, 218, 0.4);
   cursor: pointer;
 }
 
@@ -129,13 +131,13 @@
 }
 
 .play-overlay:hover {
-  transform: scale(1.1) translateY(0);
-  background-color: #ff5252;
+  transform: scale(1.1);
 }
 
 .song-card h4 {
-  font-size: 1rem;
-  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -143,7 +145,7 @@
 }
 
 .song-card p {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -162,7 +164,7 @@
 .playing-bars span {
   display: block;
   width: 3px;
-  background-color: var(--bg-dark);
+  background-color: var(--md-sys-color-on-primary);
   border-radius: 2px;
   animation: bounce 1.2s ease infinite alternate;
 }
@@ -178,29 +180,24 @@
   100% { height: 20%; }
 }
 
-/* Mobile Responsiveness */
+/* Mobile */
 @media (max-width: 768px) {
   .song-card {
     max-width: 100%;
+    padding: 6px;
   }
-  
+
   .fav-btn,
   .download-btn,
   .playlist-btn {
-    opacity: 1; /* Always show buttons on mobile */
+    opacity: 1;
     background: rgba(0, 0, 0, 0.6);
   }
-  
+
   .play-overlay {
-    width: 35px;
-    height: 35px;
-    bottom: 4px;
-    right: 4px;
-  }
-  
-  /* Show play overlay slightly on mobile to indicate playability */
-  .play-overlay {
-    opacity: 0.8;
+    width: 34px;
+    height: 34px;
+    opacity: 0.85;
     transform: translateY(0);
   }
 }

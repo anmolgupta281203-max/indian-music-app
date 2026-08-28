@@ -16,6 +16,7 @@ const Paywall = ({ onAccessGranted, onClose }) => {
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [isChecking, setIsChecking] = useState(false);
+  const [pendingSubInfo, setPendingSubInfo] = useState(null);
 
   const plans = {
     '1_month': { title: '1 Month', originalPrice: 60, discountedPrice: 39 },
@@ -30,6 +31,24 @@ const Paywall = ({ onAccessGranted, onClose }) => {
       checkSubscriptionStatus(savedPhone);
     }
   }, []);
+
+  useEffect(() => {
+    if (!pendingSubInfo) return;
+
+    const interval = setInterval(async () => {
+      const { data: checkSub } = await supabase
+        .from('subscriptions')
+        .select('status, expires_at')
+        .eq('id', pendingSubInfo.subId)
+        .single();
+      
+      if (checkSub?.status === 'approved') {
+        onAccessGranted(pendingSubInfo.user, checkSub);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [pendingSubInfo, onAccessGranted]);
 
   const checkSubscriptionStatus = async (phoneNumber) => {
     try {
@@ -65,20 +84,7 @@ const Paywall = ({ onAccessGranted, onClose }) => {
             localStorage.setItem('svar_user_phone', phoneNumber);
             setStep(3);
             setStatus('pending');
-            
-            const interval = setInterval(async () => {
-              const { data: checkSub } = await supabase
-                .from('subscriptions')
-                .select('status, expires_at')
-                .eq('id', sub.id)
-                .single();
-              
-              if (checkSub?.status === 'approved') {
-                clearInterval(interval);
-                onAccessGranted(user, checkSub);
-              }
-            }, 10000);
-            
+            setPendingSubInfo({ user, subId: sub.id });
             return 'pending';
           }
         }

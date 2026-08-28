@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { searchSongs, searchArtists } from '../services/api';
+import { useSearchParams } from 'react-router-dom';
+import { searchSongs } from '../services/api';
 import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
 import SongCard from '../components/SongCard';
@@ -11,7 +11,6 @@ import './Home.css'; // For .cards-grid and .album-card shared styles
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const { pause } = usePlayer();
   const initialQuery = searchParams.get('q') || '';
   
@@ -232,11 +231,11 @@ const Search = () => {
                 { label: 'Indie', query: 'Indie Hits' },
                 { label: 'New Albums', query: 'New Albums 2026' },
                 { label: 'New Release Songs', query: 'New Songs 2026' }
-              ].map(category => (
+              ].map((category, index) => (
                 <div 
                   key={category.label} 
                   className="genre-card hover-scale" 
-                  style={{backgroundColor: `hsl(${Math.random() * 360}, 70%, 30%)`, cursor: 'pointer'}}
+                  style={{backgroundColor: `hsl(${(index * 47) % 360}, 70%, 30%)`, cursor: 'pointer'}}
                   onClick={() => setQuery(category.query)}
                 >
                   <h3>{category.label}</h3>
