@@ -14,6 +14,7 @@ import AuthModal from './components/AuthModal';
 import Paywall from './components/Paywall';
 import AdminPanel from './pages/AdminPanel';
 import LandingPage from './pages/LandingPage';
+import Artist from './pages/Artist';
 import { useLocation } from 'react-router-dom';
 
 const Library = () => {
@@ -171,6 +172,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<Search />} />
             <Route path="/videos" element={<Videos />} />
+            <Route path="/artist/:id" element={<Artist />} />
             <Route path="/library" element={<Library />} />
           </Routes>
         </div>

@@ -395,16 +395,18 @@ export const PlayerProvider = ({ children }) => {
         setCurrentUrl(rawUrl);
         
         // Use direct URL since JioSaavn CDN allows CORS
-        nativeAudioRef.current.crossOrigin = "anonymous";
-        nativeAudioRef.current.src = rawUrl;
-        nativeAudioRef.current.currentTime = 0;
-        nativeAudioRef.current.play().catch(e => {
-          console.log('Native play error:', e);
-          if (e.name !== 'AbortError') {
-            console.log('Falling back to YouTube due to playback error');
-            fallbackToYouTube();
-          }
-        });
+        if (nativeAudioRef.current) {
+          nativeAudioRef.current.crossOrigin = "anonymous";
+          nativeAudioRef.current.src = rawUrl;
+          nativeAudioRef.current.currentTime = 0;
+          nativeAudioRef.current.play().catch(e => {
+            console.log('Native play error:', e);
+            if (e.name !== 'AbortError') {
+              console.log('Falling back to YouTube due to playback error');
+              fallbackToYouTube();
+            }
+          });
+        }
       } 
       // Only use YouTube player if explicitly a YouTube video (e.g. from Video tab)
       else if (song.youtubeId) {

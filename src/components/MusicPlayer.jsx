@@ -317,7 +317,7 @@ const MusicPlayer = () => {
                 onClick={() => toggleFavorite(currentSong)}
                 title={isFavorite ? "Liked" : "Like"}
               >
-                <Heart size={20} fill={isFavorite ? "#1ed760" : "none"} color={isFavorite ? "#1ed760" : "#fff"} />
+                <Heart size={20} fill={isFavorite ? "var(--primary-color)" : "none"} color={isFavorite ? "var(--primary-color)" : "#fff"} />
               </button>
             </div>
           </div>
@@ -379,10 +379,10 @@ const MusicPlayer = () => {
             <div style={{ position: 'relative' }}>
               <button 
                 className={`fs-tool-btn ${sleepTimerMinutes > 0 ? 'active' : ''}`}
-                onClick={() => { setShowSleepMenu(!showSleepMenu); setShowQualityMenu(false); setShowEqMenu(false); setShowMoreMenu(false); }}
+                onClick={() => { setShowSleepMenu(!showSleepMenu); setShowMoreMenu(false); }}
                 title="Sleep Timer"
               >
-                <Moon size={22} color={sleepTimerMinutes > 0 ? "#1ed760" : "#fff"} />
+                <Moon size={22} color={sleepTimerMinutes > 0 ? "var(--primary-color)" : "#fff"} />
                 {sleepTimerMinutes > 0 && <span className="badge-dot">{sleepTimerMinutes}m</span>}
               </button>
               {showSleepMenu && (
@@ -405,17 +405,17 @@ const MusicPlayer = () => {
             {/* Equalizer is hidden as it requires Web Audio API which is incompatible with YouTube Iframe cross-origin policies */}
 
             <button className="fs-tool-btn" onClick={toggleShuffle} title="Shuffle">
-              <Shuffle size={22} color={isShuffling ? "#1ed760" : "#fff"} />
+              <Shuffle size={22} color={isShuffling ? "var(--primary-color)" : "#fff"} />
             </button>
 
             <button className="fs-tool-btn" onClick={toggleLoop} title="Repeat">
-              <Repeat size={22} color={isLooping ? "#1ed760" : "#fff"} />
+              <Repeat size={22} color={isLooping ? "var(--primary-color)" : "#fff"} />
             </button>
 
             <div style={{ position: 'relative' }}>
               <button 
                 className="fs-tool-btn"
-                onClick={() => { setShowMoreMenu(!showMoreMenu); setShowSleepMenu(false); setShowQualityMenu(false); setShowEqMenu(false); }}
+                onClick={() => { setShowMoreMenu(!showMoreMenu); setShowSleepMenu(false); }}
                 title="More Options"
               >
                 <MoreVertical size={22} color="#fff" />

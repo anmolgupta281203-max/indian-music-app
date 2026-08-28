@@ -162,3 +162,24 @@ export const searchArtists = async (query) => {
     return [];
   }
 };
+
+export const fetchArtistTopSongs = async (artistId, artistName = '') => {
+  try {
+    const response = await apiClient.get('/artists', { params: { id: artistId } });
+    if (response.data?.topSongs?.length > 0) {
+      return response.data.topSongs.map(normalizeSong).filter(Boolean);
+    }
+    if (response.data?.songs?.length > 0) {
+      return response.data.songs.map(normalizeSong).filter(Boolean);
+    }
+  } catch (error) {
+    console.warn('Error fetching artist top songs by ID:', error);
+  }
+
+  if (artistName || artistId) {
+    return await searchSongs(artistName || artistId);
+  }
+  return [];
+};
+
+

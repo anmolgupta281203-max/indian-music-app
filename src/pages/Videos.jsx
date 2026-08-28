@@ -134,6 +134,7 @@ const Videos = () => {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+        <CategoryNav activeFilter={activeFilter} onFilterChange={setActiveFilter} />
       </div>
 
       {query.trim() && searchLoading && (
