@@ -414,7 +414,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
               <div className="video-title-area">
                 <h2>{video.name || video.title || 'Playing Video'}</h2>
                 <div className="video-subtitle">
-                  {video.media_type === 'tv' ? `Season ${season} • Episode ${episode} ${seasonData?.episodes ? '• ' + (seasonData.episodes.find(e => e.episode_number === episode)?.name || '') : ''}` : 'Feature Film'}
+                  {(video.media_type === 'tv' || (!video.title && !!video.name) || !!video.first_air_date) ? `Season ${season} • Episode ${episode} ${seasonData?.episodes ? '• ' + (seasonData.episodes.find(e => e.episode_number === episode)?.name || '') : ''}` : 'Movie'}
                 </div>
                 {video.type !== 'youtube' && video.type !== 'music-video' && (
                   <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>

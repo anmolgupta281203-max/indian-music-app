@@ -124,12 +124,12 @@ const Videos = () => {
   return (
     <div className="videos-page animate-fade-in">
       <div className="videos-header">
-        <h1>Movies & Series</h1>
+        <h1>Movies & Web Series</h1>
         <div className="video-search-bar">
           <SearchIcon size={24} color="var(--text-secondary)" />
           <input 
             type="text" 
-            placeholder="Search for movies or TV shows..."
+            placeholder="Search for movies or web series..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -157,7 +157,7 @@ const Videos = () => {
                 </div>
                 <h3>{item.title || item.name}</h3>
                 <div className="video-meta">
-                  <span>{item.media_type === 'tv' ? 'TV Series' : 'Movie'}</span>
+                  <span>{item.media_type === 'tv' ? 'Web Series' : 'Movie'}</span>
                   <span className="rating">★ {item.vote_average?.toFixed(1)}</span>
                 </div>
               </div>
@@ -183,7 +183,7 @@ const Videos = () => {
                   </div>
                   <h3>{item.title || item.name}</h3>
                   <div className="video-meta">
-                    <span>{item.media_type === 'tv' ? 'TV Series' : 'Movie'}</span>
+                    <span>{item.media_type === 'tv' ? 'Web Series' : 'Movie'}</span>
                     <span className="rating">★ {item.vote_average?.toFixed(1)}</span>
                   </div>
                 </div>
@@ -238,13 +238,13 @@ const Videos = () => {
           </div>
 
           <div className="video-section">
-            <h2>Popular Hindi Series</h2>
+            <h2>Trending Hindi Web Series</h2>
             <div className="video-row">
               {hindiSeries.map(show => (
                 <div key={show.id} className="video-card" onClick={() => handlePlay(show, 'tv')}>
                   <div className="video-card-img-container">
                     <img src={getImageUrl(show.poster_path)} alt={show.name} loading="lazy" />
-                    <div className="media-badge tv">TV</div>
+                    <div className="media-badge tv">WEB SERIES</div>
                     <div className="play-overlay">
                       <div className="play-button-small"><Play fill="black" size={24} /></div>
                     </div>
@@ -276,13 +276,13 @@ const Videos = () => {
           </div>
 
           <div className="video-section">
-            <h2>Global Popular Series</h2>
+            <h2>Top Global Web Series</h2>
             <div className="video-row">
               {series.map(show => (
                 <div key={show.id} className="video-card" onClick={() => handlePlay(show, 'tv')}>
                   <div className="video-card-img-container">
                     <img src={getImageUrl(show.poster_path)} alt={show.name} loading="lazy" />
-                    <div className="media-badge tv">TV</div>
+                    <div className="media-badge tv">WEB SERIES</div>
                     <div className="play-overlay">
                       <div className="play-button-small"><Play fill="black" size={24} /></div>
                     </div>
