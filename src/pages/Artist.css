@@ -40,7 +40,7 @@
   border-radius: 50%;
   object-fit: cover;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  border: 4px solid var(--bg-surface);
+  border: 4px solid var(--md-sys-color-surface-container);
 }
 
 .artist-hero-info h1 {
@@ -78,7 +78,7 @@
 
 .artist-play-btn:hover {
   transform: scale(1.05);
-  background-color: #1fdf64;
+  background-color: var(--primary-color);
 }
 
 @media (max-width: 768px) {

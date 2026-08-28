@@ -17,6 +17,7 @@ const Paywall = ({ onAccessGranted, onClose }) => {
   const [status, setStatus] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const [pendingSubInfo, setPendingSubInfo] = useState(null);
+  const [qrError, setQrError] = useState(false);
 
   const plans = {
     '1_month': { title: '1 Month', originalPrice: 60, discountedPrice: 39 },
@@ -353,14 +354,19 @@ const Paywall = ({ onAccessGranted, onClose }) => {
             <p style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>You will see <strong>Svar (or State Bank of India)</strong> as the payment receiver.</p>
             
             <div className="qr-container" style={{margin: '1.5rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-              <img src="/qrcode.png" alt="UPI QR Code" style={{maxWidth: '250px', borderRadius: '12px', marginBottom: '1rem'}} onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }} />
-              <div className="qr-fallback" style={{display: 'none', flexDirection: 'column', alignItems: 'center', padding: '2rem', background: '#222', borderRadius: '12px', marginBottom: '1rem'}}>
-                <QrCode size={64} color="var(--primary-color)" />
-                <p style={{marginTop: '1rem'}}>UPI ID: 6005806900@nyes</p>
-              </div>
+              {!qrError ? (
+                <img 
+                  src="/qrcode.png" 
+                  alt="UPI QR Code" 
+                  style={{maxWidth: '250px', borderRadius: '12px', marginBottom: '1rem'}} 
+                  onError={() => setQrError(true)} 
+                />
+              ) : (
+                <div className="qr-fallback" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem', background: '#222', borderRadius: '12px', marginBottom: '1rem'}}>
+                  <QrCode size={64} color="var(--primary-color)" />
+                  <p style={{marginTop: '1rem'}}>UPI ID: 6005806900@nyes</p>
+                </div>
+              )}
               
               <a 
                 href={`upi://pay?pa=6005806900@nyes&pn=Svar&am=${finalPrice.toFixed(2)}&cu=INR`}

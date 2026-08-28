@@ -382,7 +382,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
               <div className="video-title-area">
                 <h2>{video.name || video.title || 'Playing Video'}</h2>
                 <div className="video-subtitle">
-                  {video.media_type === 'tv' ? `Season ${season} • Episode ${episode} ${seasonData ? '• ' + seasonData.episodes.find(e => e.episode_number === episode)?.name : ''}` : 'Feature Film'}
+                  {video.media_type === 'tv' ? `Season ${season} • Episode ${episode} ${seasonData?.episodes ? '• ' + (seasonData.episodes.find(e => e.episode_number === episode)?.name || '') : ''}` : 'Feature Film'}
                 </div>
               </div>
               

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './LandingPage.css';
 
 const LandingPage = ({ onContinue }) => {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstallable, setIsInstallable] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredPrompt || null);
+  const [isInstallable, setIsInstallable] = useState(() => !!window.deferredPrompt);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {

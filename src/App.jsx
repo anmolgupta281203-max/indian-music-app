@@ -159,9 +159,12 @@ function App() {
   return (
     <div className="app-container">
       {/* Dynamic Ambient Background */}
-      {currentSong && currentSong.image && (
-        <div className="app-ambient-bg" style={{ backgroundImage: `url(${currentSong.image[2]?.link || currentSong.image[1]?.link || currentSong.image[0]?.link})` }}></div>
-      )}
+      {currentSong && currentSong.image && (() => {
+        const bgUrl = typeof currentSong.image === 'string'
+          ? currentSong.image
+          : (currentSong.image[2]?.url || currentSong.image[1]?.url || currentSong.image[0]?.url || currentSong.image[2]?.link || '');
+        return bgUrl ? <div className="app-ambient-bg" style={{ backgroundImage: `url(${bgUrl})` }}></div> : null;
+      })()}
       <div className="app-ambient-overlay"></div>
 
       <Sidebar onOpenAiDj={() => setIsAiDjOpen(true)} onOpenPaywall={() => setIsPaywallOpen(true)} />

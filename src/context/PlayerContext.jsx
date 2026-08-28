@@ -345,9 +345,13 @@ export const PlayerProvider = ({ children }) => {
 
     // Update MediaSession metadata immediately (album art etc.)
     if ('mediaSession' in navigator) {
-      const artworkUrl = song.image?.[song.image.length - 1]?.url
-        || song.image?.[0]?.url
-        || 'https://via.placeholder.com/512';
+      const artworkUrl = typeof song.image === 'string'
+        ? song.image
+        : (song.image?.[song.image.length - 1]?.url
+          || song.image?.[song.image.length - 1]?.link
+          || song.image?.[0]?.url
+          || song.image?.[0]?.link
+          || 'https://via.placeholder.com/512');
       const highResArt = artworkUrl.replace('150x150', '500x500').replace('50x50', '500x500');
       navigator.mediaSession.metadata = new window.MediaMetadata({
         title: songTitle,
