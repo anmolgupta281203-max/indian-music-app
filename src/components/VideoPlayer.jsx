@@ -8,17 +8,17 @@ import { usePlayer } from '../context/PlayerContext';
 import './VideoPlayer.css';
 
 const SERVERS = [
-  { id: '2embed', name: 'Server 1 (2Embed)' },
-  { id: 'vidsrc.me', name: 'Server 2 (VidSrc)' },
-  { id: 'multiembed', name: 'Server 3 (MultiEmbed)' },
-  { id: 'superembed', name: 'Server 4 (SuperEmbed)' },
-  { id: 'vidsrc.cc', name: 'Server 5 (VidSrc CC)' }
+  { id: 'vidlink', name: 'Server 1 (VidLink - Ultra Fast)' },
+  { id: 'autoembed', name: 'Server 2 (AutoEmbed - Multi-Source)' },
+  { id: 'vidsrc.pm', name: 'Server 3 (VidSrc PM)' },
+  { id: '2embed', name: 'Server 4 (2Embed)' },
+  { id: 'smashy', name: 'Server 5 (SmashyStream)' }
 ];
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
   const { pause: pauseMusic } = usePlayer();
   const [iframeSrc, setIframeSrc] = useState(null);
-  const [server, setServer] = useState('2embed');
+  const [server, setServer] = useState('vidlink');
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [seriesDetails, setSeriesDetails] = useState(null);
@@ -190,19 +190,19 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     let src = '';
     if (video.media_type === 'movie') {
       switch (server) {
-        case 'vidsrc.me': src = `https://vidsrc.me/embed/movie?tmdb=${video.id}`; break;
-        case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1`; break;
-        case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1`; break;
-        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/movie/${video.id}`; break;
-        case '2embed': default: src = `https://www.2embed.cc/embed/${video.id}?server=vcr`; break;
+        case 'vidlink': default: src = `https://vidlink.pro/movie/${video.id}`; break;
+        case 'autoembed': src = `https://autoembed.co/movie/tmdb/${video.id}`; break;
+        case 'vidsrc.pm': src = `https://vidsrc.pm/embed/movie?tmdb=${video.id}`; break;
+        case '2embed': src = `https://www.2embed.cc/embed/${video.id}`; break;
+        case 'smashy': src = `https://embed.smashystream.com/playere.php?tmdb=${video.id}`; break;
       }
     } else {
       switch (server) {
-        case 'vidsrc.me': src = `https://vidsrc.me/embed/tv?tmdb=${video.id}&season=${season}&episode=${episode}`; break;
-        case 'multiembed': src = `https://multiembed.mov/?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
-        case 'superembed': src = `https://multiembed.mov/directstream.php?video_id=${video.id}&tmdb=1&s=${season}&e=${episode}`; break;
-        case 'vidsrc.cc': src = `https://vidsrc.cc/v2/embed/tv/${video.id}/${season}/${episode}`; break;
-        case '2embed': default: src = `https://www.2embed.cc/embedtv/${video.id}?s=${season}&e=${episode}&server=vcr`; break;
+        case 'vidlink': default: src = `https://vidlink.pro/tv/${video.id}/${season}/${episode}`; break;
+        case 'autoembed': src = `https://autoembed.co/tv/tmdb/${video.id}-${season}-${episode}`; break;
+        case 'vidsrc.pm': src = `https://vidsrc.pm/embed/tv?tmdb=${video.id}&season=${season}&episode=${episode}`; break;
+        case '2embed': src = `https://www.2embed.cc/embedtv/${video.id}?s=${season}&e=${episode}`; break;
+        case 'smashy': src = `https://embed.smashystream.com/playere.php?tmdb=${video.id}&season=${season}&episode=${episode}`; break;
       }
     }
     setIframeSrc(src);
@@ -370,7 +370,10 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                 className="video-iframe"
                 src={iframeSrc}
                 allowFullScreen
-                sandbox={adBlockEnabled ? "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox" : undefined}
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                referrerPolicy="origin"
+                loading="eager"
+                sandbox={adBlockEnabled ? "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox allow-downloads allow-pointer-lock" : undefined}
               ></iframe>
             )}
           </div>

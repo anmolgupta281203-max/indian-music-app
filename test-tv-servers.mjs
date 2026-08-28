@@ -6,7 +6,11 @@ const servers = [
   { id: 'vidlink', url: 'https://vidlink.pro/tv/1399/1/1' },
   { id: 'autoembed', url: 'https://autoembed.co/tv/tmdb/1399-1-1' },
   { id: 'vidsrc.pm', url: 'https://vidsrc.pm/embed/tv?tmdb=1399&season=1&episode=1' },
-  { id: '2embed', url: 'https://www.2embed.cc/embedtv/1399?s=1&e=1' }, // Fixed format
+  { id: 'vidsrc.xyz', url: 'https://vidsrc.xyz/embed/tv?tmdb=1399&season=1&episode=1' },
+  { id: 'vidsrc.vip', url: 'https://vidsrc.vip/embed/tv/1399/1/1' },
+  { id: 'embedsu', url: 'https://embed.su/embed/tv/1399/1/1' },
+  { id: 'multiembed', url: 'https://multiembed.mov/?video_id=1399&tmdb=1&s=1&e=1' },
+  { id: '2embed', url: 'https://www.2embed.cc/embedtv/1399?s=1&e=1' },
 ];
 
 async function checkServer(server) {
