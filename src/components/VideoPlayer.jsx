@@ -12,7 +12,8 @@ const SERVERS = [
   { id: 'autoembed', name: 'Server 2 (AutoEmbed - Multi-Source)' },
   { id: 'vidsrc.pm', name: 'Server 3 (VidSrc PM)' },
   { id: '2embed', name: 'Server 4 (2Embed)' },
-  { id: 'smashy', name: 'Server 5 (SmashyStream)' }
+  { id: 'smashy', name: 'Server 5 (SmashyStream)' },
+  { id: 'youtube', name: 'Server 6 (YouTube Official Stream)' }
 ];
 
 const VideoPlayer = ({ video, onClose, onEnded }) => {
@@ -38,6 +39,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [musicVideoId, setMusicVideoId] = useState(null);
+  const [youtubeEpisodeId, setYoutubeEpisodeId] = useState(null);
   const [controlsActive, setControlsActive] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);
   const hideControlsTimeout = useRef(null);
@@ -187,6 +189,29 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       return;
     }
 
+    if (server === 'youtube') {
+      setIsVideoLoading(true);
+      setIsPlaying(false);
+      const isTv = video.media_type === 'tv' || (!video.title && !!video.name) || !!video.first_air_date;
+      const epTitle = seasonData?.episodes?.find(e => e.episode_number === episode)?.name || '';
+      const query = isTv 
+        ? `${video.name || video.title} Season ${season} Episode ${episode} ${epTitle} full episode`
+        : `${video.name || video.title} full movie hindi`;
+
+      fetch(`/api/yt-search?q=${encodeURIComponent(query)}&limit=1`)
+        .then(r => r.json())
+        .then(data => {
+          const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
+          if (vid) {
+            setYoutubeEpisodeId(vid);
+          }
+          setIsVideoLoading(false);
+          setIsPlaying(true);
+        })
+        .catch(() => setIsVideoLoading(false));
+      return;
+    }
+
     let src = '';
     const isTv = video.media_type === 'tv' || (!video.title && !!video.name) || !!video.first_air_date;
     if (!isTv) {
@@ -207,7 +232,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       }
     }
     setIframeSrc(src);
-  }, [video, server, season, episode]);
+  }, [video, server, season, episode, seasonData]);
 
   // Attempt to auto-fullscreen and lock to landscape when a video is opened on mobile
   useEffect(() => {
@@ -287,14 +312,17 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
           
           <div className="video-iframe-container" ref={containerRef}>
             {/* The actual video player */}
-            {(video.type === 'youtube' || video.type === 'music-video') ? (
+            {(video.type === 'youtube' || video.type === 'music-video' || server === 'youtube') ? (
               (() => {
-                const ytId = video.type === 'music-video' ? musicVideoId : video.id;
+                const ytId = video.type === 'music-video' 
+                  ? musicVideoId 
+                  : (server === 'youtube' ? youtubeEpisodeId : video.id);
+
                 if (!ytId) {
                   return (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 16, color: '#fff' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 16, color: '#fff', backgroundColor: '#000' }}>
                       <div className="spinner" />
-                      <span>Searching for video...</span>
+                      <span>Searching for Official Episode Stream...</span>
                     </div>
                   );
                 }
@@ -389,25 +417,30 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                   {video.media_type === 'tv' ? `Season ${season} • Episode ${episode} ${seasonData?.episodes ? '• ' + (seasonData.episodes.find(e => e.episode_number === episode)?.name || '') : ''}` : 'Feature Film'}
                 </div>
                 {video.type !== 'youtube' && video.type !== 'music-video' && (
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                     {SERVERS.map(s => (
                       <button
                         key={s.id}
                         onClick={() => setServer(s.id)}
                         style={{
-                          background: server === s.id ? 'var(--netflix-red, #E50914)' : 'rgba(255,255,255,0.15)',
+                          background: server === s.id 
+                            ? (s.id === 'youtube' ? '#FF0000' : 'var(--netflix-red, #E50914)') 
+                            : (s.id === 'youtube' ? 'rgba(255, 0, 0, 0.25)' : 'rgba(255,255,255,0.15)'),
                           color: '#fff',
-                          border: 'none',
-                          padding: '4px 10px',
+                          border: s.id === 'youtube' ? '1px solid rgba(255,0,0,0.5)' : 'none',
+                          padding: '5px 12px',
                           borderRadius: '16px',
                           fontSize: '11px',
                           fontWeight: '700',
                           cursor: 'pointer',
                           backdropFilter: 'blur(8px)',
-                          transition: 'all 0.2s ease'
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
                         }}
                       >
-                        {s.name.split('(')[0].trim()}
+                        {s.id === 'youtube' ? '📺 Server 6 (YouTube Stream)' : s.name.split('(')[0].trim()}
                       </button>
                     ))}
                   </div>
