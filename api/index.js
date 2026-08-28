@@ -142,9 +142,19 @@ export default async function handler(req, res) {
          id: artist.id,
          name: artist.title || artist.name,
          url: artist.url,
-         image: [{ quality: '500x500', url: (artist.image || '').replace('150x150', '500x500') }]
+         image: [{ quality: '500x500', url: (artist.image || '').replace('150x150', '500x500').replace('50x50', '500x500') }]
       }));
       return res.json({ results });
+    }
+
+    // ── SAAVN ARTIST DETAILS & TOP SONGS ─────────────────────────────────────
+    if (url.includes('/artists') && !url.includes('/search')) {
+      const artistId = searchParams.get('id');
+      const q = searchParams.get('q') || searchParams.get('query') || '';
+      const searchQuery = q || artistId;
+      const rawData = await fetchJioSaavnRaw({ __call: 'search.getResults', q: searchQuery, p: 1, n: 50 });
+      const songs = (rawData.results || []).map(normalizeRawSong).filter(Boolean);
+      return res.json({ id: artistId, name: q || 'Artist', songs, topSongs: songs });
     }
 
     // ── SAAVN ALBUM DETAILS ──────────────────────────────────────────────────

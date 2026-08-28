@@ -188,7 +188,8 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
     }
 
     let src = '';
-    if (video.media_type === 'movie') {
+    const isTv = video.media_type === 'tv' || (!video.title && !!video.name) || !!video.first_air_date;
+    if (!isTv) {
       switch (server) {
         case 'vidlink': default: src = `https://vidlink.pro/movie/${video.id}`; break;
         case 'autoembed': src = `https://autoembed.co/movie/tmdb/${video.id}`; break;
@@ -387,9 +388,33 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                 <div className="video-subtitle">
                   {video.media_type === 'tv' ? `Season ${season} • Episode ${episode} ${seasonData?.episodes ? '• ' + (seasonData.episodes.find(e => e.episode_number === episode)?.name || '') : ''}` : 'Feature Film'}
                 </div>
+                {video.type !== 'youtube' && video.type !== 'music-video' && (
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                    {SERVERS.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => setServer(s.id)}
+                        style={{
+                          background: server === s.id ? 'var(--netflix-red, #E50914)' : 'rgba(255,255,255,0.15)',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '4px 10px',
+                          borderRadius: '16px',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          backdropFilter: 'blur(8px)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {s.name.split('(')[0].trim()}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               
-              <div style={{ display: 'flex', gap: '16px' }}>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                 <button 
                   onClick={() => setShowWatchParty(!showWatchParty)}
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '10px 16px', borderRadius: '30px', fontWeight: 'bold', backdropFilter: 'blur(10px)', cursor: 'pointer' }}

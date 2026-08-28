@@ -1,26 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Search as SearchIcon } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import { searchSongs } from '../services/api';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search as SearchIcon, X, Play, Music, User, Film, Tv, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { searchSongs, searchArtists } from '../services/api';
+import { searchMoviesAndSeries, getImageUrl } from '../services/tmdbApi';
 import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
 import SongCard from '../components/SongCard';
 import { usePlayer } from '../context/PlayerContext';
 import './Search.css';
-import './Home.css'; // For .cards-grid and .album-card shared styles
+import './Home.css';
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { pause } = usePlayer();
+  const navigate = useNavigate();
+  const { playSong, pause } = usePlayer();
   const initialQuery = searchParams.get('q') || '';
   
   const [query, setQuery] = useState(initialQuery);
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'songs' | 'artists' | 'videos' | 'movies'
   const [results, setResults] = useState([]);
+  const [artists, setArtists] = useState([]);
   const [ytResults, setYtResults] = useState([]);
+  const [movieResults, setMovieResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const [searchMode, setSearchMode] = useState('songs');
+  const inputRef = useRef(null);
 
   useEffect(() => {
     const q = searchParams.get('q') || '';
@@ -30,96 +35,95 @@ const Search = () => {
   }, [searchParams]);
 
   useEffect(() => {
-    if (query.trim()) {
-      setSearchParams({ q: query }, { replace: true });
+    const trimmed = query.trim();
+    if (trimmed) {
+      setSearchParams({ q: trimmed }, { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }
     
     const delayDebounceFn = setTimeout(async () => {
-      if (query.trim()) {
+      if (trimmed) {
         setLoading(true);
-        if (searchMode === 'songs') {
-          let data = await searchSongs(query);
-          
-          if (data && Array.isArray(data)) {
+        setHasSearched(true);
+
+        try {
+          // Parallel fetch for comprehensive Amazon Music / Netflix unified search
+          const [songsRes, artistsRes, ytRes, moviesRes] = await Promise.allSettled([
+            searchSongs(trimmed),
+            searchArtists(trimmed),
+            (async () => {
+              try {
+                const res = await axios.get(`/api/yt-search?q=${encodeURIComponent(trimmed)}&limit=12`);
+                if (res.data?.results?.length > 0) return res.data.results;
+              } catch (e) {
+                // client fallback
+                const instances = ['https://iv.melmac.space', 'https://invidious.jing.rocks', 'https://vid.puffyan.us'];
+                for (const url of instances) {
+                  try {
+                    const invRes = await axios.get(`${url}/api/v1/search?q=${encodeURIComponent(trimmed)}&type=video`, { timeout: 4000 });
+                    if (invRes.data && Array.isArray(invRes.data) && invRes.data.length > 0) {
+                      return invRes.data.map(v => {
+                        const m = Math.floor((v.lengthSeconds || 0) / 60);
+                        const s = (v.lengthSeconds || 0) % 60;
+                        let bestThumb = 'https://via.placeholder.com/320x180';
+                        if (v.videoThumbnails && v.videoThumbnails.length > 0) {
+                          const targetThumb = v.videoThumbnails.find(t => t.quality === 'medium' || t.quality === 'high' || t.quality === 'maxresdefault');
+                          bestThumb = targetThumb ? targetThumb.url : v.videoThumbnails[0].url;
+                        }
+                        return {
+                          videoId: v.videoId,
+                          title: v.title,
+                          author: { name: v.author },
+                          thumbnail: bestThumb,
+                          timestamp: `${m}:${s < 10 ? '0' : ''}${s}`
+                        };
+                      });
+                    }
+                  } catch (err) {}
+                }
+              }
+              return [];
+            })(),
+            searchMoviesAndSeries(trimmed)
+          ]);
+
+          let foundSongs = songsRes.status === 'fulfilled' ? (songsRes.value || []) : [];
+          let foundArtists = artistsRes.status === 'fulfilled' ? (artistsRes.value || []) : [];
+          let foundVideos = ytRes.status === 'fulfilled' ? (ytRes.value || []) : [];
+          let foundMovies = moviesRes.status === 'fulfilled' ? (moviesRes.value || []) : [];
+
+          // Deduplicate songs
+          if (Array.isArray(foundSongs)) {
             const seen = new Set();
-            data = data.filter(song => {
+            foundSongs = foundSongs.filter(song => {
               if (!song || !song.id) return false;
               if (seen.has(song.id)) return false;
               seen.add(song.id);
               return true;
             });
           }
-          
-          setResults(data || []);
-          setYtResults([]);
-        } else if (searchMode === 'videos') {
-          // Search YouTube directly from client to bypass Vercel IP blocks
-          let foundVideos = [];
-          
-          try {
-            // First try our backend (which tries yt-search)
-            const ytRes = await axios.get(`/api/yt-search?q=${encodeURIComponent(query)}`);
-            if (ytRes && ytRes.data && ytRes.data.results && ytRes.data.results.length > 0) {
-              foundVideos = ytRes.data.results;
-            }
-          } catch (e) {
-            console.warn('Backend YT search failed, trying client-side fallback...');
-          }
 
-          if (foundVideos.length === 0) {
-            // Fallback to client-side Invidious API
-            const instances = [
-              'https://iv.melmac.space',
-              'https://invidious.jing.rocks',
-              'https://vid.puffyan.us',
-              'https://invidious.nerdvpn.de'
-            ];
-            
-            for (const url of instances) {
-              try {
-                const invRes = await axios.get(`${url}/api/v1/search?q=${encodeURIComponent(query)}&type=video`, { timeout: 5000 });
-                if (invRes.data && Array.isArray(invRes.data) && invRes.data.length > 0) {
-                  foundVideos = invRes.data.map(v => {
-                    const m = Math.floor((v.lengthSeconds || 0) / 60);
-                    const s = (v.lengthSeconds || 0) % 60;
-                    let bestThumb = 'https://via.placeholder.com/320x180';
-                    if (v.videoThumbnails && v.videoThumbnails.length > 0) {
-                      const targetThumb = v.videoThumbnails.find(t => t.quality === 'medium' || t.quality === 'high' || t.quality === 'maxresdefault');
-                      bestThumb = targetThumb ? targetThumb.url : v.videoThumbnails[0].url;
-                    }
-                    return {
-                      videoId: v.videoId,
-                      title: v.title,
-                      author: { name: v.author },
-                      thumbnail: bestThumb,
-                      timestamp: `${m}:${s < 10 ? '0' : ''}${s}`
-                    };
-                  });
-                  break; // stop trying if success
-                }
-              } catch (e) {
-                console.warn(`Client-side Invidious ${url} failed:`, e.message);
-              }
-            }
-          }
-          
+          setResults(foundSongs);
+          setArtists(foundArtists);
           setYtResults(foundVideos);
-          setResults([]);
+          setMovieResults(foundMovies);
+        } catch (err) {
+          console.error('Search error:', err);
+        } finally {
+          setLoading(false);
         }
-        
-        setHasSearched(true);
-        setLoading(false);
       } else {
         setResults([]);
+        setArtists([]);
         setYtResults([]);
+        setMovieResults([]);
         setHasSearched(false);
       }
-    }, 500); // 500ms debounce
+    }, 400);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [query, searchMode]);
+  }, [query]);
 
   const handleVideoEnd = () => {
     if (ytResults && ytResults.length > 1 && selectedVideo) {
@@ -130,115 +134,260 @@ const Search = () => {
         return;
       }
     }
-    // fallback to close if no other videos
     setSelectedVideo(null);
   };
 
+  const handlePlayArtistTop = (artist) => {
+    navigate(`/artist/${artist.id}`);
+  };
+
+  const categories = [
+    { label: 'Trending Bollywood', query: 'Bollywood Hits 2026', gradient: 'linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%)', icon: '🔥' },
+    { label: 'Punjabi Pop', query: 'Punjabi Hits', gradient: 'linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%)', icon: '⚡' },
+    { label: 'Lo-Fi Chill', query: 'Indian Lo-Fi Chill', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', icon: '🎧' },
+    { label: 'Romantic 90s', query: '90s Romantic Bollywood', gradient: 'linear-gradient(135deg, #ee0979 0%, #ff6a00 100%)', icon: '❤️' },
+    { label: 'Devotional & Bhakti', query: 'Top Bhakti Devotional', gradient: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)', icon: '🪔' },
+    { label: 'Indie & Acoustic', query: 'Indian Indie Hits', gradient: 'linear-gradient(135deg, #4776E6 0%, #8E54E9 100%)', icon: '✨' },
+    { label: 'South Indian Hits', query: 'South Indian Hits Telugu Tamil', gradient: 'linear-gradient(135deg, #00b09b 0%, #96c93d 100%)', icon: '🎵' },
+    { label: 'Hip-Hop / Rap', query: 'Desi Hip Hop', gradient: 'linear-gradient(135deg, #2b5876 0%, #4e4376 100%)', icon: '🎤' },
+    { label: 'International Hits', query: 'Global Billboard Hits', gradient: 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)', icon: '🌍' },
+    { label: 'Workout Energy', query: 'Gym Workout Hindi', gradient: 'linear-gradient(135deg, #f857a6 0%, #ff5858 100%)', icon: '💪' },
+  ];
+
+  const totalFound = results.length + artists.length + ytResults.length + movieResults.length;
+
   return (
     <div className="search-container animate-fade-in">
-      <div className="search-header">
-        <div className="search-bar glass">
-          <SearchIcon size={24} color="var(--text-secondary)" />
+      {/* Search Header Bar */}
+      <div className="search-header-section">
+        <div className="search-bar-wrapper">
+          <SearchIcon size={22} className="search-bar-icon" />
           <input 
+            ref={inputRef}
             type="text" 
-            placeholder="Search for Indian songs, artists, or web series..."
+            placeholder="Search songs, artists, music videos, movies & series..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            className="search-input"
+            autoFocus
           />
+          {query && (
+            <button className="search-clear-btn" onClick={() => { setQuery(''); inputRef.current?.focus(); }}>
+              <X size={18} />
+            </button>
+          )}
         </div>
         
-        <div className="search-tabs" style={{display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap'}}>
-          <button 
-            className={`tab-btn ${searchMode === 'songs' ? 'active' : ''}`}
-            onClick={() => setSearchMode('songs')}
-            style={{padding: '0.5rem 1.5rem', borderRadius: '20px', border: 'none', background: searchMode === 'songs' ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', fontWeight: 'bold'}}
-          >
-            Audio Songs
-          </button>
-          <button 
-            className={`tab-btn ${searchMode === 'videos' ? 'active' : ''}`}
-            onClick={() => setSearchMode('videos')}
-            style={{padding: '0.5rem 1.5rem', borderRadius: '20px', border: 'none', background: searchMode === 'videos' ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', fontWeight: 'bold'}}
-          >
-            Video Music (YouTube)
-          </button>
-        </div>
+        {/* Amazon Music Filter Pills */}
+        {hasSearched && (
+          <div className="search-filter-pills">
+            <button 
+              className={`filter-pill ${activeTab === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveTab('all')}
+            >
+              <Sparkles size={14} /> All ({totalFound})
+            </button>
+            <button 
+              className={`filter-pill ${activeTab === 'songs' ? 'active' : ''}`}
+              onClick={() => setActiveTab('songs')}
+            >
+              <Music size={14} /> Songs ({results.length})
+            </button>
+            <button 
+              className={`filter-pill ${activeTab === 'artists' ? 'active' : ''}`}
+              onClick={() => setActiveTab('artists')}
+            >
+              <User size={14} /> Artists ({artists.length})
+            </button>
+            <button 
+              className={`filter-pill ${activeTab === 'videos' ? 'active' : ''}`}
+              onClick={() => setActiveTab('videos')}
+            >
+              <Film size={14} /> Music Videos ({ytResults.length})
+            </button>
+            <button 
+              className={`filter-pill ${activeTab === 'movies' ? 'active' : ''}`}
+              onClick={() => setActiveTab('movies')}
+            >
+              <Tv size={14} /> Movies & Shows ({movieResults.length})
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="search-results">
+      {/* Main Results Body */}
+      <div className="search-body">
         {loading && (
           <div className="loading-state">
             <div className="spinner"></div>
+            <p>Searching everywhere...</p>
           </div>
         )}
         
-        {!loading && hasSearched && results.length === 0 && ytResults.length === 0 && (
+        {!loading && hasSearched && totalFound === 0 && (
           <div className="empty-state">
+            <div className="empty-icon"><SearchIcon size={48} /></div>
             <h3>No results found for "{query}"</h3>
-            <p>Please make sure your words are spelled correctly or use less or different keywords.</p>
+            <p>Try searching with different keywords, artist name, or check the spelling.</p>
           </div>
         )}
 
-        {!loading && searchMode === 'songs' && results.length > 0 && (
-          <>
-            <h2>Top Audio Results</h2>
-            <div className="cards-grid">
-              {results.map(item => (
-                <SongCard key={item.id} song={item} queueContext={results} />
-              ))}
+        {/* 1. TOP MATCH ARTIST HERO (Shown in 'all' or 'artists' tab) */}
+        {!loading && (activeTab === 'all' || activeTab === 'artists') && artists.length > 0 && (
+          <section className="search-section artist-section">
+            <div className="section-title-row">
+              <h2>Top Artists</h2>
             </div>
-          </>
-        )}
-
-        {!loading && searchMode === 'videos' && ytResults.length > 0 && (
-          <>
-            <h2>Top Music Videos</h2>
-            <div className="cards-grid albums-grid">
-              {ytResults.map(v => (
-                <div key={v.videoId} className="album-card" onClick={() => { pause(); setSelectedVideo({ ...v, id: v.videoId, type: 'youtube' }); }} style={{cursor: 'pointer'}}>
-                  <div style={{ position: 'relative' }}>
-                    <img src={v.thumbnail} alt={v.title} loading="lazy" style={{borderRadius: '8px', width: '100%', aspectRatio: '16/9', objectFit: 'cover'}} />
-                    <div style={{ 
-                      position: 'absolute', 
-                      bottom: '8px', 
-                      right: '8px', 
-                      backgroundColor: 'rgba(0,0,0,0.8)', 
-                      color: 'white', 
-                      fontSize: '0.75rem', 
-                      padding: '2px 6px', 
-                      borderRadius: '4px',
-                      fontWeight: 'bold'
-                    }}>
-                      {v.timestamp || (v.duration && v.duration.timestamp)}
+            <div className="artist-cards-grid">
+              {artists.slice(0, activeTab === 'artists' ? 12 : 3).map(artist => (
+                <div 
+                  key={artist.id} 
+                  className="artist-card-item hover-glow"
+                  onClick={() => handlePlayArtistTop(artist)}
+                >
+                  <div className="artist-avatar-wrap">
+                    <img 
+                      src={artist.image} 
+                      alt={artist.name} 
+                      loading="lazy" 
+                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=60'; }}
+                    />
+                    <div className="artist-play-btn-circle">
+                      <Play size={20} fill="#000" color="#000" />
                     </div>
                   </div>
-                  <h4 style={{marginTop: '0.5rem', fontSize: '0.9rem'}}>{v.title}</h4>
-                  <p style={{color: 'var(--text-secondary)', fontSize: '0.8rem'}}>{v.author?.name}</p>
+                  <div className="artist-card-details">
+                    <div className="artist-name-row">
+                      <span className="artist-name">{artist.name}</span>
+                      <CheckCircle2 size={16} className="verified-badge" />
+                    </div>
+                    <span className="artist-tag">Artist • View Discography</span>
+                  </div>
                 </div>
               ))}
             </div>
-          </>
+          </section>
+        )}
+
+        {/* 2. AUDIO SONGS (Shown in 'all' or 'songs' tab) */}
+        {!loading && (activeTab === 'all' || activeTab === 'songs') && results.length > 0 && (
+          <section className="search-section songs-section">
+            <div className="section-title-row">
+              <h2>Audio Songs</h2>
+              {activeTab === 'all' && results.length > 8 && (
+                <button className="see-more-link" onClick={() => setActiveTab('songs')}>
+                  See all ({results.length}) <ChevronRight size={16} />
+                </button>
+              )}
+            </div>
+            <div className="cards-grid">
+              {(activeTab === 'all' ? results.slice(0, 10) : results).map(item => (
+                <SongCard key={item.id} song={item} queueContext={results} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 3. MUSIC VIDEOS (YOUTUBE) (Shown in 'all' or 'videos' tab) */}
+        {!loading && (activeTab === 'all' || activeTab === 'videos') && ytResults.length > 0 && (
+          <section className="search-section videos-section">
+            <div className="section-title-row">
+              <h2>Music Videos (HD)</h2>
+              {activeTab === 'all' && ytResults.length > 6 && (
+                <button className="see-more-link" onClick={() => setActiveTab('videos')}>
+                  See all ({ytResults.length}) <ChevronRight size={16} />
+                </button>
+              )}
+            </div>
+            <div className="video-cards-grid">
+              {(activeTab === 'all' ? ytResults.slice(0, 6) : ytResults).map(v => (
+                <div 
+                  key={v.videoId} 
+                  className="search-video-card" 
+                  onClick={() => { pause(); setSelectedVideo({ ...v, id: v.videoId, type: 'youtube' }); }}
+                >
+                  <div className="video-thumb-container">
+                    <img src={v.thumbnail} alt={v.title} loading="lazy" />
+                    <div className="video-duration-pill">
+                      {v.timestamp || (v.duration && v.duration.timestamp) || 'HD'}
+                    </div>
+                    <div className="video-hover-play">
+                      <Play size={24} fill="#fff" color="#fff" />
+                    </div>
+                  </div>
+                  <div className="video-info-meta">
+                    <h4 className="video-title" title={v.title}>{v.title}</h4>
+                    <p className="video-author">{v.author?.name || 'Official Video'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 4. MOVIES & TV SERIES (Shown in 'all' or 'movies' tab) */}
+        {!loading && (activeTab === 'all' || activeTab === 'movies') && movieResults.length > 0 && (
+          <section className="search-section movies-section">
+            <div className="section-title-row">
+              <h2>Movies & TV Series</h2>
+              {activeTab === 'all' && movieResults.length > 6 && (
+                <button className="see-more-link" onClick={() => setActiveTab('movies')}>
+                  See all ({movieResults.length}) <ChevronRight size={16} />
+                </button>
+              )}
+            </div>
+            <div className="movie-posters-grid">
+              {(activeTab === 'all' ? movieResults.slice(0, 6) : movieResults).map(item => (
+                <div 
+                  key={item.id} 
+                  className="search-movie-card"
+                  onClick={() => { pause(); setSelectedVideo({ ...item, media_type: item.media_type || 'movie', type: 'tmdb' }); }}
+                >
+                  <div className="movie-poster-box">
+                    <img 
+                      src={getImageUrl(item.poster_path, 'w500')} 
+                      alt={item.title || item.name} 
+                      loading="lazy" 
+                      onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Poster'; }}
+                    />
+                    <div className="movie-badge-tag">{item.media_type === 'tv' ? 'SERIES' : 'MOVIE'}</div>
+                    <div className="movie-hover-play">
+                      <Play size={28} fill="#fff" color="#fff" />
+                    </div>
+                  </div>
+                  <div className="movie-card-info">
+                    <h4 className="movie-title">{item.title || item.name}</h4>
+                    <span className="movie-year">
+                      {item.release_date ? new Date(item.release_date).getFullYear() : (item.first_air_date ? new Date(item.first_air_date).getFullYear() : '')}
+                      {item.vote_average ? ` • ⭐ ${item.vote_average.toFixed(1)}` : ''}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
         
-        {!hasSearched && !loading && searchMode === 'songs' && (
-          <div className="browse-all">
-            <h2>Browse All</h2>
-            <div className="genre-grid">
-              {[
-                { label: 'Bollywood', query: 'Bollywood Hits' },
-                { label: 'Punjabi', query: 'Punjabi Hits' },
-                { label: 'Devotional', query: 'Devotional Hits' },
-                { label: 'Indie', query: 'Indie Hits' },
-                { label: 'New Albums', query: 'New Albums 2026' },
-                { label: 'New Release Songs', query: 'New Songs 2026' }
-              ].map((category, index) => (
+        {/* 5. ZERO-STATE: BROWSE ALL GENRES & QUICK PICKS */}
+        {!hasSearched && !loading && (
+          <div className="browse-categories-wrapper">
+            <div className="browse-section-header">
+              <h2>Explore Categories & Playlists</h2>
+              <p>Discover trending soundtracks, regional hits, and viral moods</p>
+            </div>
+            <div className="browse-genre-grid">
+              {categories.map((category) => (
                 <div 
                   key={category.label} 
-                  className="genre-card hover-scale" 
-                  style={{backgroundColor: `hsl(${(index * 47) % 360}, 70%, 30%)`, cursor: 'pointer'}}
+                  className="browse-genre-tile" 
+                  style={{ background: category.gradient }}
                   onClick={() => setQuery(category.query)}
                 >
-                  <h3>{category.label}</h3>
+                  <div className="tile-text">
+                    <h3>{category.label}</h3>
+                    <span>Explore songs & videos</span>
+                  </div>
+                  <div className="tile-icon">{category.icon}</div>
                 </div>
               ))}
             </div>
