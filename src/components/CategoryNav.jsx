@@ -55,6 +55,21 @@ const CategoryNav = ({ activeFilter, onFilterChange }) => {
           )}
         </li>
 
+        {/* Language Dropdown */}
+        <li className={`nav-item dropdown-toggle ${openDropdown === 'language' || activeFilter?.type === 'language' ? 'active-text' : ''}`} onClick={() => toggleDropdown('language')}>
+          Language <ChevronDown size={14} />
+          {openDropdown === 'language' && (
+            <ul className="dropdown-menu">
+              <li onClick={(e) => { e.stopPropagation(); handleSelect('language', 'hi', '🇮🇳 Hindi (हिंदी / Dubbed)'); }}>
+                🇮🇳 Hindi (हिंदी / Dubbed)
+              </li>
+              <li onClick={(e) => { e.stopPropagation(); handleSelect('language', 'en', '🌐 English (Original)'); }}>
+                🌐 English (Original)
+              </li>
+            </ul>
+          )}
+        </li>
+
         {/* OTT Dropdown */}
         <li className={`nav-item dropdown-toggle ${openDropdown === 'ott' || activeFilter?.type === 'ott' ? 'active-text' : ''}`} onClick={() => toggleDropdown('ott')}>
           OTT <ChevronDown size={14} />
@@ -68,17 +83,24 @@ const CategoryNav = ({ activeFilter, onFilterChange }) => {
         </li>
 
         <li 
-          className={`nav-item ${activeFilter?.type === 'genz' ? 'active-text' : ''}`}
-          onClick={() => handleSelect('genz', 'animation', 'Gen Z')}
+          className={`nav-item ${activeFilter?.type === 'language' && activeFilter?.value === 'hi' ? 'active-red' : ''}`}
+          onClick={() => handleSelect('language', 'hi', 'Hindi Movies & Web Series')}
         >
-          Gen Z <ChevronDown size={14} />
+          🇮🇳 Hindi
         </li>
 
         <li 
-          className={`nav-item ${activeFilter?.type === 'collection' ? 'active-text' : ''}`}
-          onClick={() => handleSelect('collection', 'popular', 'Collection')}
+          className={`nav-item ${activeFilter?.type === 'language' && activeFilter?.value === 'en' ? 'active-red' : ''}`}
+          onClick={() => handleSelect('language', 'en', 'English Movies & Web Series')}
         >
-          Collection <ChevronDown size={14} />
+          🌐 English
+        </li>
+
+        <li 
+          className={`nav-item ${activeFilter?.type === 'genz' ? 'active-text' : ''}`}
+          onClick={() => handleSelect('genz', 'animation', 'Anime & Gen Z')}
+        >
+          Anime / Gen Z
         </li>
       </ul>
     </div>

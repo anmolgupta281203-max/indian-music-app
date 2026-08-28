@@ -25,6 +25,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [adBlockEnabled, setAdBlockEnabled] = useState(false);
+  const [audioLanguage, setAudioLanguage] = useState('hi'); // 'hi' (Hindi) or 'en' (English)
   
   // Watch Party & Reactions State
   const [showWatchParty, setShowWatchParty] = useState(false);
@@ -387,7 +388,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
               <div className="video-title-area">
                 <h2>{video.name || video.title || 'Playing Video'}</h2>
                 <div className="video-subtitle">
-                  {(video.media_type === 'tv' || (!video.title && !!video.name) || !!video.first_air_date) ? `Season ${season} • Episode ${episode} ${seasonData?.episodes ? '• ' + (seasonData.episodes.find(e => e.episode_number === episode)?.name || '') : ''}` : 'Movie'}
+                  {(video.media_type === 'tv' || (!video.title && !!video.name) || !!video.first_air_date) ? `Season ${season} • Episode ${episode} ${seasonData?.episodes ? '• ' + (seasonData.episodes.find(e => e.episode_number === episode)?.name || '') : ''}` : 'Movie'} • {audioLanguage === 'hi' ? '🇮🇳 Hindi Audio / Sub' : '🌐 English Audio / Sub'}
                 </div>
                 {video.type !== 'youtube' && video.type !== 'music-video' && (
                   <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -415,10 +416,62 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                 )}
               </div>
               
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Audio Language Switcher Pill */}
+                {video.type !== 'youtube' && video.type !== 'music-video' && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: 'rgba(0,0,0,0.6)',
+                    borderRadius: '24px',
+                    padding: '3px',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <button
+                      onClick={() => setAudioLanguage('hi')}
+                      style={{
+                        background: audioLanguage === 'hi' ? 'var(--netflix-red, #E50914)' : 'transparent',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      🇮🇳 Hindi
+                    </button>
+                    <button
+                      onClick={() => setAudioLanguage('en')}
+                      style={{
+                        background: audioLanguage === 'en' ? 'var(--netflix-red, #E50914)' : 'transparent',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      🌐 English
+                    </button>
+                  </div>
+                )}
+
                 <button 
                   onClick={() => setShowWatchParty(!showWatchParty)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '10px 16px', borderRadius: '30px', fontWeight: 'bold', backdropFilter: 'blur(10px)', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 14px', borderRadius: '30px', fontWeight: 'bold', backdropFilter: 'blur(10px)', cursor: 'pointer', fontSize: '12px' }}
                 >
                   <Users size={16} /> Watch Party
                 </button>

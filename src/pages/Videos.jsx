@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon, Play } from 'lucide-react';
-import { getTrendingMovies, getPopularSeries, searchMoviesAndSeries, getImageUrl, discoverByGenre, discoverByNetwork, getTrendingAnime, getPopularHindiMovies } from '../services/tmdbApi';
+import { getTrendingMovies, getPopularSeries, searchMoviesAndSeries, getImageUrl, discoverByGenre, discoverByNetwork, getTrendingAnime, getPopularHindiMovies, discoverByLanguage } from '../services/tmdbApi';
 import { usePlayer } from '../context/PlayerContext';
 import VideoPlayer from '../components/VideoPlayer';
 import CategoryNav from '../components/CategoryNav';
@@ -73,7 +73,9 @@ const Videos = () => {
       
       try {
         let results = [];
-        if (activeFilter.type === 'genre') {
+        if (activeFilter.type === 'language') {
+          results = await discoverByLanguage(activeFilter.value);
+        } else if (activeFilter.type === 'genre') {
           results = await discoverByGenre(activeFilter.value);
         } else if (activeFilter.type === 'ott') {
           results = await discoverByNetwork(activeFilter.value);

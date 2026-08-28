@@ -150,6 +150,48 @@ export const discoverByNetwork = async (networkId) => {
   }
 };
 
+export const getPopularEnglishMovies = async () => {
+  try {
+    const res = await axios.get(`${BASE_URL}/discover/movie?with_original_language=en&sort_by=popularity.desc&page=1`);
+    return res.data.results || [];
+  } catch (err) {
+    console.error('Error fetching english movies', err);
+    return [];
+  }
+};
+
+export const getPopularEnglishSeries = async () => {
+  try {
+    const res = await axios.get(`${BASE_URL}/discover/tv?with_original_language=en&with_networks=213|1024|2739|2552|49&without_genres=10766,10767,10763,10764&sort_by=popularity.desc&page=1`);
+    return filterOnlyWebSeries(res.data.results || []);
+  } catch (err) {
+    console.error('Error fetching english series', err);
+    return [];
+  }
+};
+
+export const discoverByLanguage = async (langCode = 'hi') => {
+  try {
+    const isHindi = langCode === 'hi';
+    const [movies, tv] = await Promise.all([
+      isHindi ? getPopularHindiMovies() : getPopularEnglishMovies(),
+      isHindi ? getPopularHindiSeries() : getPopularEnglishSeries()
+    ]);
+    const m = (movies || []).map(item => ({ ...item, media_type: 'movie' }));
+    const t = (tv || []).map(item => ({ ...item, media_type: 'tv' }));
+    const mixed = [];
+    const maxLen = Math.max(m.length, t.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (m[i]) mixed.push(m[i]);
+      if (t[i]) mixed.push(t[i]);
+    }
+    return mixed;
+  } catch (err) {
+    console.error('Error fetching by language', err);
+    return [];
+  }
+};
+
 export const getImageUrl = (path, size = 'w500') => {
   if (!path) return 'https://via.placeholder.com/500x750?text=No+Image';
   return `https://image.tmdb.org/t/p/${size}${path}`;
