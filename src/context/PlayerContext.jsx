@@ -54,6 +54,10 @@ export const PlayerProvider = ({ children }) => {
   const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
   const [downloadedSongs, setDownloadedSongs] = useState([]);
   const [currentUrl, setCurrentUrl] = useState('');
+  const [crossfadeSeconds, setCrossfadeSeconds] = useState(() => {
+    const saved = localStorage.getItem('svar_crossfade');
+    return saved ? parseInt(saved, 10) : 3;
+  });
 
   // YouTube playback state
   const [youtubeVideoId, setYoutubeVideoId] = useState(null);
@@ -86,6 +90,10 @@ export const PlayerProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('svar_audio_quality', audioQuality);
   }, [audioQuality]);
+
+  useEffect(() => {
+    localStorage.setItem('svar_crossfade', crossfadeSeconds);
+  }, [crossfadeSeconds]);
 
   useEffect(() => {
     localStorage.setItem('svar_eq_preset', eqPreset);
@@ -210,6 +218,7 @@ export const PlayerProvider = ({ children }) => {
     if (!audio) return;
 
     const handleEnded = () => {
+      audio.volume = isMuted ? 0 : vol;
       playNext();
     };
 
@@ -232,16 +241,29 @@ export const PlayerProvider = ({ children }) => {
       }
     };
 
+    const handleTimeUpdate = () => {
+      // Crossfade fade-out during final seconds of song
+      if (crossfadeSeconds > 0 && audio.duration > 0 && isFinite(audio.duration)) {
+        const remaining = audio.duration - audio.currentTime;
+        if (remaining <= crossfadeSeconds && remaining > 0) {
+          const factor = Math.max(0.05, remaining / crossfadeSeconds);
+          audio.volume = (isMuted ? 0 : vol) * factor;
+        }
+      }
+    };
+
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
 
     return () => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
-  }, [queue, currentIndex, isShuffling, isLooping]);
+  }, [queue, currentIndex, isShuffling, isLooping, crossfadeSeconds, isMuted, vol]);
 
   // MediaSession Handlers — controls both native audio and YouTube player from lock screen / notification
   useEffect(() => {
@@ -654,19 +676,20 @@ export const PlayerProvider = ({ children }) => {
       playSong(queue[0]);
     } else if (currentSong) {
       try {
-        const artistName = currentSong.primaryArtists ? currentSong.primaryArtists.split(',')[0].trim() : 'Bollywood Hits';
-        const related = await searchSongs(artistName);
+        const query = currentSong.primaryArtists ? currentSong.primaryArtists.split(',')[0].trim() : 'Bollywood Hits';
+        const related = await searchSongs(query);
         if (related && related.length > 0) {
           const queueIds = new Set(queue.map(s => s.id));
-          const available = related.filter(s => !queueIds.has(s.id));
-          if (available.length > 0) {
-            const nextSong = available[Math.floor(Math.random() * available.length)];
-            addToQueue(nextSong);
-            playSong(nextSong);
+          const fresh = related.filter(s => !queueIds.has(s.id)).slice(0, 6);
+          if (fresh.length > 0) {
+            const nextTrack = fresh[0];
+            setQueue(prev => [...prev, ...fresh]);
+            setCurrentIndex(queue.length);
+            playSong(nextTrack);
           }
         }
       } catch (e) {
-        console.error("Autoplay failed", e);
+        console.error("Smart Autoplay failed", e);
       }
     }
   };
@@ -691,44 +714,43 @@ export const PlayerProvider = ({ children }) => {
 
   const toggleFavorite = (song) => {
     setFavorites(prev => {
-      const exists = prev.find(s => s.id === song.id);
+      const exists = prev.some(s => s.id === song.id);
       if (exists) {
         return prev.filter(s => s.id !== song.id);
+      } else {
+        return [...prev, song];
       }
-      return [...prev, song];
     });
   };
 
   const handleDownloadToggle = async (song) => {
     const isDownloaded = downloadedSongs.some(s => s.id === song.id);
     if (isDownloaded) {
-      await deleteOfflineSong(song.id);
-      const allSongs = await getAllOfflineSongs();
-      setDownloadedSongs(allSongs);
+      await removeOfflineSong(song.id);
+      setDownloadedSongs(prev => prev.filter(s => s.id !== song.id));
     } else {
-      const success = await downloadSongToApp(song);
-      if (success) {
-        const allSongs = await getAllOfflineSongs();
-        setDownloadedSongs(allSongs);
-      } else {
-        alert("Download failed. Make sure you're connected to the internet.");
+      let downloadUrl = song.downloadUrl?.[song.downloadUrl.length - 1]?.url || song.url;
+      if (!downloadUrl && song.downloadUrl?.length > 0) {
+        downloadUrl = song.downloadUrl[0].url || song.downloadUrl[0].link;
+      }
+      if (downloadUrl) {
+        await saveOfflineSong(song, downloadUrl);
+        setDownloadedSongs(prev => [...prev, song]);
       }
     }
   };
 
   const handleYtPlayerError = (error) => {
-    console.warn('YouTube playback error:', error);
-    if (ytCandidatesRef.current && ytCandidatesRef.current.length > 0) {
-      currentYtIndexRef.current += 1;
-      if (currentYtIndexRef.current < ytCandidatesRef.current.length) {
-        const nextVid = ytCandidatesRef.current[currentYtIndexRef.current];
-        console.log('Attempting next fallback YouTube video:', nextVid);
-        setYoutubeVideoId(nextVid);
-        setCurrentUrl(`https://www.youtube.com/watch?v=${nextVid}`);
-        return;
-      }
+    console.warn('YouTube Player error encountered, trying next candidate:', error);
+    currentYtIndexRef.current += 1;
+    const candidates = ytCandidatesRef.current;
+    if (currentYtIndexRef.current < candidates.length) {
+      const nextCandidate = candidates[currentYtIndexRef.current];
+      setYoutubeVideoId(nextCandidate.videoId);
+      setCurrentUrl(`https://www.youtube.com/watch?v=${nextCandidate.videoId}`);
+      setIsPlaying(true);
+      return;
     }
-    console.warn('All playback sources exhausted for current track, advancing to next song');
     playNext();
   };
 
@@ -745,6 +767,8 @@ export const PlayerProvider = ({ children }) => {
       isLooping,
       audioQuality,
       setAudioQuality,
+      crossfadeSeconds,
+      setCrossfadeSeconds,
       eqPreset,
       setEqPreset,
       lyrics,

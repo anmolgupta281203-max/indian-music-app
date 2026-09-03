@@ -292,4 +292,15 @@ export const fetchArtistTopSongs = async (artistId, artistName = '') => {
   return [];
 };
 
-
+export const getSongDetails = async (songId) => {
+  if (!songId) return null;
+  try {
+    const res = await apiClient.get('/songs', { params: { id: songId } });
+    if (res.data) {
+      return normalizeSong(res.data);
+    }
+  } catch (e) {
+    console.warn('Error fetching song details:', e);
+  }
+  return null;
+};

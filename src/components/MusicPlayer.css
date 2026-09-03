@@ -347,17 +347,31 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
 }
 
 .lyrics-line {
-  font-size: 16px;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.75);
-  margin: 6px 0;
-  font-weight: 500;
-  transition: color 0.2s, transform 0.2s;
+  font-size: 18px;
+  line-height: 2.2;
+  color: rgba(255, 255, 255, 0.35);
+  margin: 12px 0;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px 12px;
+  user-select: none;
 }
 
 .lyrics-line:hover {
-  color: var(--primary-color);
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.05);
   transform: scale(1.02);
+}
+
+.lyrics-line.active {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+  text-shadow: 0 0 20px var(--aura-primary, var(--primary-color)), 0 0 35px var(--aura-glow, rgba(30, 215, 96, 0.5));
+  transform: scale(1.06);
+  opacity: 1;
 }
 
 .lyrics-placeholder {

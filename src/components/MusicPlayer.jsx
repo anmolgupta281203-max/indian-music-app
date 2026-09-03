@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
-  Heart, Download, ChevronDown, ListMusic, Moon, MoreVertical, Check, Mic
+  Heart, Download, ChevronDown, ListMusic, Moon, MoreVertical, Check, Mic,
+  Activity, PictureInPicture2, Share2, Sparkles
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import ReactPlayer from 'react-player/youtube';
+import AudioVisualizer from './AudioVisualizer';
+import { openPictureInPicture, updatePipContent, isPipActive } from '../utils/pipPlayer';
 import './MusicPlayer.css';
 
 const formatTime = (time) => {
@@ -54,6 +57,8 @@ const MusicPlayer = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [showVisualizer, setShowVisualizer] = useState(false);
+  const [visualizerMode, setVisualizerMode] = useState('bars'); // 'bars' | 'wave' | 'pulse'
   
   // Popovers
   const [showSleepMenu, setShowSleepMenu] = useState(false);
@@ -101,25 +106,41 @@ const MusicPlayer = () => {
     };
   }, [youtubeVideoId, nativeAudioRef, currentSong]);
 
-  // Continuous 60 FPS real-time timeline tracking for silky smooth playback progress
+  // Continuous 60 FPS real-time timeline tracking for silky smooth playback progress & PiP sync
   useEffect(() => {
     let animFrame;
     const tick = () => {
       if (isPlaying && !isSeekingRef.current) {
+        let cur = 0;
+        let dur = duration;
         if (!youtubeVideoId && nativeAudioRef.current) {
-          const cur = nativeAudioRef.current.currentTime || 0;
+          cur = nativeAudioRef.current.currentTime || 0;
           setProgress(cur);
-          const dur = nativeAudioRef.current.duration;
-          if (dur && isFinite(dur) && dur > 0) {
-            setDuration(dur);
+          const audioDur = nativeAudioRef.current.duration;
+          if (audioDur && isFinite(audioDur) && audioDur > 0) {
+            dur = audioDur;
+            setDuration(audioDur);
           }
         } else if (youtubeVideoId && ytPlayerRef?.current) {
           try {
-            const cur = ytPlayerRef.current.getCurrentTime();
-            if (cur != null && isFinite(cur)) {
-              setProgress(cur);
+            const ytCur = ytPlayerRef.current.getCurrentTime();
+            if (ytCur != null && isFinite(ytCur)) {
+              cur = ytCur;
+              setProgress(ytCur);
             }
           } catch (e) {}
+        }
+
+        if (isPipActive()) {
+          updatePipContent({
+            song: currentSong,
+            isPlaying: true,
+            progress: cur,
+            duration: dur,
+            onTogglePlay: togglePlay,
+            onPlayNext: playNext,
+            onPlayPrev: playPrev
+          });
         }
       }
       if (isPlaying) {
@@ -134,7 +155,7 @@ const MusicPlayer = () => {
     return () => {
       if (animFrame) cancelAnimationFrame(animFrame);
     };
-  }, [isPlaying, youtubeVideoId, nativeAudioRef, ytPlayerRef]);
+  }, [isPlaying, youtubeVideoId, nativeAudioRef, ytPlayerRef, currentSong, duration, togglePlay, playNext, playPrev]);
 
   // Reset progress when song changes and initialize duration immediately from metadata
   useEffect(() => {
@@ -198,23 +219,43 @@ const MusicPlayer = () => {
 
   const toggleMute = () => setIsMuted(!isMuted);
 
-  const handleShare = async () => {
+  const handleTogglePip = async () => {
+    await openPictureInPicture({
+      song: currentSong,
+      isPlaying,
+      progress,
+      duration,
+      onTogglePlay: togglePlay,
+      onPlayNext: playNext,
+      onPlayPrev: playPrev
+    });
+  };
+
+  const cycleVisualizerMode = () => {
+    setVisualizerMode(prev => prev === 'bars' ? 'wave' : prev === 'wave' ? 'pulse' : 'bars');
+  };
+
+  const handleShare = async (withTimestamp = true) => {
     if (!currentSong) return;
     const songName = decodeHtml(currentSong.name);
-    
+    const baseUrl = window.location.origin;
+    const shareUrl = withTimestamp && progress > 3
+      ? `${baseUrl}/?song=${currentSong.id}&t=${Math.floor(progress)}`
+      : `${baseUrl}/?song=${currentSong.id}`;
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Listen to ${songName} on Svar`,
           text: `Check out ${songName} on Svar Music App!`,
-          url: window.location.href
+          url: shareUrl
         });
       } catch (err) {
         console.log('Error sharing:', err);
       }
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      navigator.clipboard.writeText(shareUrl);
+      alert(`Link copied with timestamp (${formatTime(progress)}) to clipboard!`);
     }
   };
 
@@ -235,8 +276,66 @@ const MusicPlayer = () => {
   const primaryArtist = decodeHtml(currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
   const songTitle = decodeHtml(currentSong.name);
 
-  // Format lyrics lines
-  const lyricsLines = lyrics ? (typeof lyrics === 'string' ? lyrics.replace(/<br\s*[\/]?>/gi, '\n').split('\n') : []) : [];
+  // Time-Synced Karaoke Lyrics Parsing
+  const parsedLyrics = useMemo(() => {
+    if (!lyrics) return [];
+    const rawLines = typeof lyrics === 'string'
+      ? lyrics.replace(/<br\s*[\/]?>/gi, '\n').split('\n').map(l => l.trim()).filter(Boolean)
+      : [];
+
+    const lrcRegex = /^\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\]\s*(.*)$/;
+    const hasLrc = rawLines.some(l => lrcRegex.test(l));
+
+    if (hasLrc) {
+      return rawLines.map(line => {
+        const match = line.match(lrcRegex);
+        if (match) {
+          const mins = parseInt(match[1], 10);
+          const secs = parseInt(match[2], 10);
+          const ms = match[3] ? parseFloat('0.' + match[3]) : 0;
+          return { time: mins * 60 + secs + ms, text: match[4] || '' };
+        }
+        return { time: 0, text: line };
+      }).filter(item => item.text);
+    }
+
+    // Dynamic smart rhythmic distribution for unsynced plain-text lyrics
+    const totalSec = (duration && duration > 0) ? duration : (currentSong?.duration || 220);
+    const lineCount = rawLines.length;
+    return rawLines.map((line, idx) => {
+      const estimatedTime = Math.min(totalSec * 0.94, 6 + (idx / Math.max(1, lineCount)) * (totalSec * 0.86));
+      return { time: estimatedTime, text: line };
+    });
+  }, [lyrics, duration, currentSong?.duration]);
+
+  const activeLyricIndex = useMemo(() => {
+    if (!parsedLyrics || parsedLyrics.length === 0) return -1;
+    for (let i = parsedLyrics.length - 1; i >= 0; i--) {
+      if (progress >= parsedLyrics[i].time - 0.5) {
+        return i;
+      }
+    }
+    return 0;
+  }, [parsedLyrics, progress]);
+
+  useEffect(() => {
+    if (!showLyrics || activeLyricIndex < 0) return;
+    const el = document.getElementById(`lyric-line-${activeLyricIndex}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [activeLyricIndex, showLyrics]);
+
+  const handleLyricClick = (seekTime) => {
+    if (seekTime != null && isFinite(seekTime)) {
+      if (!youtubeVideoId && nativeAudioRef?.current) {
+        try { nativeAudioRef.current.currentTime = seekTime; } catch (e) {}
+      } else if (youtubeVideoId && ytPlayerRef?.current) {
+        try { ytPlayerRef.current.seekTo(seekTime, 'seconds'); } catch (e) {}
+      }
+      setProgress(seekTime);
+    }
+  };
 
   return (
     <>
@@ -280,6 +379,14 @@ const MusicPlayer = () => {
             title="Download MP3"
           >
             <Download size={20} color="var(--text-secondary)" />
+          </button>
+          <button 
+            className="control-btn hide-on-mobile" 
+            style={{marginLeft: '0.5rem'}} 
+            onClick={handleTogglePip}
+            title="Floating Mini Player (Picture in Picture)"
+          >
+            <PictureInPicture2 size={20} color="var(--text-secondary)" />
           </button>
         </div>
 
@@ -342,26 +449,52 @@ const MusicPlayer = () => {
               <span className="fs-now-playing-label">Now Playing</span>
               <span className="fs-playlist-label">Svar Queue</span>
             </div>
-            <button 
-              className={`fs-action-circle ${showLyrics ? 'active' : ''}`} 
-              onClick={() => setShowLyrics(!showLyrics)} 
-              title="Lyrics & Karaoke"
-              style={{ width: 38, height: 38 }}
-            >
-              <Mic size={20} color={showLyrics ? "#1ed760" : "#fff"} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button 
+                className={`fs-action-circle ${showVisualizer ? 'active' : ''}`} 
+                onClick={() => setShowVisualizer(!showVisualizer)} 
+                title={`Live Audio Visualizer (${visualizerMode.toUpperCase()} mode)`}
+                style={{ width: 38, height: 38 }}
+              >
+                <Activity size={20} color={showVisualizer ? "var(--aura-primary, #1ed760)" : "#fff"} />
+              </button>
+              <button 
+                className="fs-action-circle hide-on-mobile" 
+                onClick={handleTogglePip} 
+                title="Floating Picture-in-Picture Mini Player"
+                style={{ width: 38, height: 38 }}
+              >
+                <PictureInPicture2 size={20} color="#fff" />
+              </button>
+              <button 
+                className={`fs-action-circle ${showLyrics ? 'active' : ''}`} 
+                onClick={() => setShowLyrics(!showLyrics)} 
+                title="Lyrics & Synced Karaoke"
+                style={{ width: 38, height: 38 }}
+              >
+                <Mic size={20} color={showLyrics ? "var(--aura-primary, #1ed760)" : "#fff"} />
+              </button>
+            </div>
           </div>
 
-          {/* Centerpiece Artwork or Synced Lyrics */}
+          {/* Centerpiece Artwork, Audio Visualizer, or Synced Karaoke Lyrics */}
           {showLyrics ? (
             <div className="fs-lyrics-container">
-              <h3>Karaoke & Lyrics</h3>
+              <h3>Karaoke & Synced Lyrics</h3>
               {loadingLyrics ? (
                 <p className="lyrics-placeholder">Loading lyrics...</p>
-              ) : lyricsLines.length > 0 ? (
+              ) : parsedLyrics.length > 0 ? (
                 <div className="lyrics-scroll">
-                  {lyricsLines.map((line, idx) => (
-                    <p key={idx} className="lyrics-line">{line}</p>
+                  {parsedLyrics.map((item, idx) => (
+                    <p 
+                      key={idx} 
+                      id={`lyric-line-${idx}`}
+                      className={`lyrics-line ${idx === activeLyricIndex ? 'active' : ''}`}
+                      onClick={() => handleLyricClick(item.time)}
+                      title={`Jump to ${formatTime(item.time)}`}
+                    >
+                      {item.text}
+                    </p>
                   ))}
                 </div>
               ) : (
@@ -369,8 +502,13 @@ const MusicPlayer = () => {
               )}
             </div>
           ) : (
-            <div className="fs-art-container">
+            <div className="fs-art-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <img src={hqImageUrl} alt={songTitle} className="fs-art" />
+              {showVisualizer && (
+                <div style={{ width: '100%', maxWidth: '380px', marginTop: '14px' }}>
+                  <AudioVisualizer mode={visualizerMode} onToggleMode={cycleVisualizerMode} isVisible={true} />
+                </div>
+              )}
             </div>
           )}
 
@@ -382,6 +520,13 @@ const MusicPlayer = () => {
             </div>
             
             <div className="fs-quick-actions">
+              <button 
+                className="fs-action-circle"
+                onClick={() => handleShare(true)}
+                title="Share Song Link at Current Timestamp"
+              >
+                <Share2 size={20} color="#fff" />
+              </button>
               <button 
                 className="fs-action-circle"
                 onClick={() => handleDownloadToggle(currentSong)}
