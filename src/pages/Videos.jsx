@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon, Play } from 'lucide-react';
-import { getTrendingMovies, getPopularSeries, searchMoviesAndSeries, getImageUrl, discoverByGenre, discoverByNetwork, getTrendingAnime, getPopularHindiMovies, discoverByLanguage } from '../services/tmdbApi';
+import { 
+  getTrendingMovies, 
+  getPopularSeries, 
+  searchMoviesAndSeries, 
+  getImageUrl, 
+  discoverByGenre, 
+  discoverByNetwork, 
+  getTrendingAnime, 
+  getPopularHindiMovies, 
+  getPopularHindiSeries, 
+  discoverByLanguage 
+} from '../services/tmdbApi';
 import { usePlayer } from '../context/PlayerContext';
 import VideoPlayer from '../components/VideoPlayer';
 import CategoryNav from '../components/CategoryNav';
@@ -29,8 +40,8 @@ const Videos = () => {
       const [m, s, hm, hs] = await Promise.all([
         getTrendingMovies(),
         getPopularSeries(),
-        import('../services/tmdbApi').then(m => m.getPopularHindiMovies()),
-        import('../services/tmdbApi').then(m => m.getPopularHindiSeries())
+        getPopularHindiMovies(),
+        getPopularHindiSeries()
       ]);
       // Only keep top 12 for UI
       setMovies(m.slice(0, 12));

@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useRef, useEffect, useCallback } from 'react';
 import { getOfflineSong, downloadSongToApp, getAllOfflineSongs, deleteOfflineSong } from '../utils/offlineStorage';
-import { fetchLyrics } from '../services/api';
+import { fetchLyrics, searchSongs } from '../services/api';
 
 const PlayerContext = createContext();
 
@@ -550,8 +550,7 @@ export const PlayerProvider = ({ children }) => {
     } else if (currentSong) {
       try {
         const artistName = currentSong.primaryArtists ? currentSong.primaryArtists.split(',')[0].trim() : 'Bollywood Hits';
-        const { searchSongs } = await import('../services/api');
-        const related = await searchSongs(artistName, false);
+        const related = await searchSongs(artistName);
         if (related && related.length > 0) {
           const queueIds = new Set(queue.map(s => s.id));
           const available = related.filter(s => !queueIds.has(s.id));

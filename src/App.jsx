@@ -16,6 +16,7 @@ import AdminPanel from './pages/AdminPanel';
 import LandingPage from './pages/LandingPage';
 import Artist from './pages/Artist';
 import { useLocation } from 'react-router-dom';
+import { supabase } from './services/supabase';
 
 const Library = () => {
   const { favorites, downloadedSongs, openQueueModal, queue } = usePlayer();
@@ -25,7 +26,7 @@ const Library = () => {
 
   React.useEffect(() => {
     const fetchSub = async () => {
-      import('./services/supabase').then(async ({ supabase }) => {
+      try {
         const phone = localStorage.getItem('svar_user_phone');
         if (!phone) return;
         const { data: user } = await supabase.from('users').select('id, name').eq('phone_number', phone).single();
@@ -42,7 +43,9 @@ const Library = () => {
             }
           }
         }
-      });
+      } catch (e) {
+        console.warn('Subscription check error:', e);
+      }
     };
     fetchSub();
   }, []);
