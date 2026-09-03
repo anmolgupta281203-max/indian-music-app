@@ -169,13 +169,54 @@ export default async function handler(req, res) {
     // ── SAAVN SEARCH ARTISTS ─────────────────────────────────────────────────
     if (url.includes('/search/artists') || searchParams.get('__call') === 'search.getArtistResults') {
       const q = searchParams.get('q') || searchParams.get('query') || '';
-      const rawData = await fetchJioSaavnRaw({ __call: 'search.getArtistResults', q, p: 1, n: 10 });
-      const results = (rawData.results || []).map(artist => ({
-         id: artist.id,
-         name: artist.title || artist.name,
-         url: artist.url,
-         image: [{ quality: '500x500', url: (artist.image || '').replace('150x150', '500x500').replace('50x50', '500x500') }]
-      }));
+      let results = [];
+
+      try {
+        const rawData = await fetchJioSaavnRaw({ __call: 'search.getArtistResults', q, p: 1, n: 10 });
+        results = (rawData.results || []).map(artist => ({
+           id: artist.id || artist.artistid,
+           name: artist.title || artist.name,
+           url: artist.url,
+           image: [{ quality: '500x500', url: (artist.image || '').replace('150x150', '500x500').replace('50x50', '500x500') }]
+        })).filter(a => a.name);
+      } catch (e) {}
+
+      // Fallback: autocomplete.get for top artists
+      if (results.length === 0 && q.trim()) {
+        try {
+          const autoData = await fetchJioSaavnRaw({ __call: 'autocomplete.get', query: q });
+          if (autoData.artists?.data?.length > 0) {
+            results = autoData.artists.data.map(artist => ({
+              id: artist.id,
+              name: artist.title || artist.name,
+              url: artist.url,
+              image: [{ quality: '500x500', url: (artist.image || '').replace('150x150', '500x500').replace('50x50', '500x500') }]
+            })).filter(a => a.name);
+          }
+        } catch (e) {}
+      }
+
+      // Fallback: Saavn public dev API
+      if (results.length === 0 && q.trim()) {
+        try {
+          const pubRes = await axios.get(`https://saavn.dev/api/search/artists?query=${encodeURIComponent(q)}&page=1&limit=10`, { timeout: 3500 });
+          if (pubRes.data?.data?.results?.length > 0) {
+            results = pubRes.data.data.results.map(artist => {
+              let img = '';
+              if (Array.isArray(artist.image)) {
+                img = artist.image[artist.image.length - 1]?.url || '';
+              }
+              return {
+                id: artist.id,
+                name: artist.name,
+                url: artist.url,
+                image: [{ quality: '500x500', url: img }]
+              };
+            });
+          }
+        } catch (e) {}
+      }
+
       return res.json({ results });
     }
 

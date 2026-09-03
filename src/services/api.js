@@ -205,25 +205,48 @@ export const searchArtists = async (query) => {
       params: { query, page: 1, limit: 20 }
     });
     const results = response.data?.results || [];
-    return results.map(artist => {
-      let imgUrl = '';
-      if (Array.isArray(artist.image)) {
-        const hq = artist.image.find(i => i.quality === '500x500') || artist.image[artist.image.length - 1];
-        imgUrl = hq?.url || hq?.link || '';
-      } else if (typeof artist.image === 'string') {
-        imgUrl = artist.image.replace('150x150', '500x500').replace('50x50', '500x500');
-      }
-      return {
-        id: artist.id,
-        name: decodeHtml(artist.name || artist.title || ''),
-        image: imgUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=60',
-        url: artist.url,
-      };
-    });
+    if (results.length > 0) {
+      return results.map(artist => {
+        let imgUrl = '';
+        if (Array.isArray(artist.image)) {
+          const hq = artist.image.find(i => i.quality === '500x500') || artist.image[artist.image.length - 1];
+          imgUrl = hq?.url || hq?.link || '';
+        } else if (typeof artist.image === 'string') {
+          imgUrl = artist.image.replace('150x150', '500x500').replace('50x50', '500x500');
+        }
+        return {
+          id: artist.id,
+          name: decodeHtml(artist.name || artist.title || ''),
+          image: imgUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=60',
+          url: artist.url,
+        };
+      });
+    }
   } catch (error) {
-    console.error('Error searching artists:', error);
-    return [];
+    console.warn('Backend search artists failed, trying direct public fallback:', error);
   }
+
+  // Direct public fallback
+  try {
+    const pubRes = await axios.get(`https://saavn.dev/api/search/artists?query=${encodeURIComponent(query)}&page=1&limit=10`, { timeout: 3500 });
+    if (pubRes.data?.data?.results?.length > 0) {
+      return pubRes.data.data.results.map(artist => {
+        let imgUrl = '';
+        if (Array.isArray(artist.image)) {
+          const hq = artist.image[artist.image.length - 1];
+          imgUrl = hq?.url || '';
+        }
+        return {
+          id: artist.id,
+          name: decodeHtml(artist.name || ''),
+          image: imgUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=60',
+          url: artist.url,
+        };
+      });
+    }
+  } catch (e) {}
+
+  return [];
 };
 
 export const fetchArtistTopSongs = async (artistId, artistName = '') => {

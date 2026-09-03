@@ -93,31 +93,40 @@ const Search = () => {
           let foundVideos = ytRes.status === 'fulfilled' ? (ytRes.value || []) : [];
           let foundMovies = moviesRes.status === 'fulfilled' ? (moviesRes.value || []) : [];
 
-          // If foundSongs is empty or limited, map foundVideos into playable normal audio songs!
-          if (foundSongs.length === 0 && foundVideos.length > 0) {
-            foundSongs = foundVideos.map(v => {
-              let secs = 240;
-              if (v.timestamp) {
-                const parts = v.timestamp.split(':');
-                if (parts.length === 2) secs = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-                else if (parts.length === 3) secs = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(parts[2], 10);
-              }
-              return {
-                id: v.videoId,
-                name: v.title,
-                album: 'Single / Track',
-                year: new Date().getFullYear().toString(),
-                duration: secs,
-                primaryArtists: v.author?.name || 'Artist',
-                image: [{ quality: '500x500', url: v.thumbnail }],
-                downloadUrl: [],
-                youtubeId: v.videoId,
-                isYouTubeFallback: true
-              };
-            });
-          }
+          // Convert official high-relevance YouTube Music tracks into audio songs
+          const officialAudioFromYT = (foundVideos || []).slice(0, 8).map(v => {
+            let secs = 240;
+            if (v.timestamp) {
+              const parts = v.timestamp.split(':');
+              if (parts.length === 2) secs = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+              else if (parts.length === 3) secs = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(parts[2], 10);
+            }
+            let cleanTitle = v.title
+              .replace(/#\w+/g, '')
+              .replace(/\|\s*(full\s*song|official\s*video|4k\s*video|hd\s*video|lyric\s*video|audio|remastered|qawwali|ishtar\s*music|t-series).*$/gi, '')
+              .replace(/\(.*?(official|video|audio|hd|4k|song|qawwali).*?\)/gi, '')
+              .replace(/\[.*?(official|video|audio|hd|4k|song|qawwali).*?\]/gi, '')
+              .trim();
+            if (!cleanTitle || cleanTitle.length < 3) cleanTitle = v.title;
 
-          // Deduplicate songs
+            return {
+              id: v.videoId,
+              name: cleanTitle,
+              album: 'Official Release',
+              year: new Date().getFullYear().toString(),
+              duration: secs,
+              primaryArtists: v.author?.name || 'Official Artist',
+              image: [{ quality: '500x500', url: v.thumbnail }],
+              downloadUrl: [],
+              youtubeId: v.videoId,
+              isYouTubeFallback: true
+            };
+          });
+
+          // Prepend official YT tracks before generic covers so genuine official hits appear #1!
+          foundSongs = [...officialAudioFromYT, ...foundSongs];
+
+          // Deduplicate songs by unique ID
           if (Array.isArray(foundSongs)) {
             const seen = new Set();
             foundSongs = foundSongs.filter(song => {
@@ -126,6 +135,26 @@ const Search = () => {
               seen.add(song.id);
               return true;
             });
+          }
+
+          // If artists list is empty, synthesize top artist card from search or top track
+          if (foundArtists.length === 0 && (foundSongs.length > 0 || trimmed.length >= 3)) {
+            let topArtistName = trimmed;
+            let topArtistImg = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=60';
+            if (foundSongs.length > 0) {
+              const cand = foundSongs[0].primaryArtists ? foundSongs[0].primaryArtists.split(',')[0].trim() : trimmed;
+              if (cand && cand !== 'Artist' && cand !== 'Official Artist' && cand !== 'Single / Track') {
+                topArtistName = cand;
+              }
+              topArtistImg = (foundSongs[0].image && (foundSongs[0].image[1]?.url || foundSongs[0].image[0]?.url)) || topArtistImg;
+            }
+            if (topArtistName && topArtistName.length >= 3) {
+              foundArtists = [{
+                id: `artist-${encodeURIComponent(topArtistName)}`,
+                name: topArtistName,
+                image: topArtistImg
+              }];
+            }
           }
 
           setResults(foundSongs);
