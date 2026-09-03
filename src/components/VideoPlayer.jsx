@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Maximize, Minimize2, Play, Pause, Users, Copy, Check } from 'lucide-react';
+import { X, Maximize, Minimize2, Play, Pause, Users, Copy, Check, Smartphone, RotateCw } from 'lucide-react';
 import ReactPlayer from 'react-player/youtube';
 import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmdbApi';
 import { usePlayer } from '../context/PlayerContext';
@@ -27,6 +27,13 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [adBlockEnabled, setAdBlockEnabled] = useState(false);
   const [audioLanguage, setAudioLanguage] = useState('hi'); // 'hi' (Hindi) or 'en' (English)
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth <= 1024 && window.innerHeight > window.innerWidth;
+    }
+    return false;
+  });
+  const [dismissLandscapeWarning, setDismissLandscapeWarning] = useState(false);
   
   // Watch Party & Reactions State
   const [showWatchParty, setShowWatchParty] = useState(false);
@@ -268,6 +275,50 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   };
 
   useEffect(() => {
+    // Attempt automatic landscape orientation lock on mount for movies/series
+    if (video && video.type !== 'youtube' && video.type !== 'music-video') {
+      if (window.screen?.orientation?.lock) {
+        window.screen.orientation.lock('landscape').catch(() => {});
+      }
+    }
+
+    const handleOrientationChange = () => {
+      const portrait = window.innerWidth <= 1024 && window.innerHeight > window.innerWidth;
+      setIsPortrait(portrait);
+    };
+    handleOrientationChange();
+    window.addEventListener('resize', handleOrientationChange);
+    window.addEventListener('orientationchange', handleOrientationChange);
+    if (window.screen && window.screen.orientation) {
+      window.screen.orientation.addEventListener('change', handleOrientationChange);
+    }
+    return () => {
+      window.removeEventListener('resize', handleOrientationChange);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      if (window.screen && window.screen.orientation) {
+        window.screen.orientation.removeEventListener('change', handleOrientationChange);
+      }
+    };
+  }, [video]);
+
+  const handleLockLandscape = async () => {
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        await el.requestFullscreen().catch(() => {});
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      }
+      if (window.screen?.orientation?.lock) {
+        await window.screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch (e) {
+      console.warn('Orientation lock error:', e);
+    }
+    setDismissLandscapeWarning(true);
+  };
+
+  useEffect(() => {
     if (isPlaying) {
       if (hideControlsTimeout.current) clearTimeout(hideControlsTimeout.current);
       hideControlsTimeout.current = setTimeout(() => setControlsActive(false), 3500);
@@ -285,6 +336,28 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
+        {/* Landscape Mode Required Screen for Movies and Series */}
+        {isPortrait && !isMinimized && !dismissLandscapeWarning && (video.type !== 'youtube' && video.type !== 'music-video') && (
+          <div className="landscape-lock-overlay">
+            <div className="landscape-lock-card">
+              <div className="rotate-phone-anim">
+                <Smartphone size={54} className="phone-icon" />
+                <RotateCw size={26} className="rotate-arrow-icon" />
+              </div>
+              <h2>Rotate to Landscape</h2>
+              <p>Movies & Web Series are locked to Landscape mode for the ultimate cinema experience.</p>
+              <div className="landscape-btn-group">
+                <button className="rotate-now-btn" onClick={handleLockLandscape}>
+                  <RotateCw size={18} /> Rotate & Start Movie
+                </button>
+                <button className="dismiss-rotate-btn" onClick={() => setDismissLandscapeWarning(true)}>
+                  Continue in Portrait
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isMinimized && (
           <div 
             className="minimized-floating-header" 
