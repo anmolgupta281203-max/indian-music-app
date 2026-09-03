@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const apiClient = axios.create({ baseURL: '/api' });
 
-// jiosaavn-api-2.vercel.app uses `link` field (not `url`) in downloadUrl and image arrays
+// jiosaavn-api-2 uses `link` field (not `url`) in downloadUrl and image arrays
 const normalizeSong = (song) => {
   if (!song) return null;
 
@@ -13,21 +13,32 @@ const normalizeSong = (song) => {
   })).filter(d => d.url);
 
   // Normalize image: handle both {link} and {url} formats
-  const image = (song.image || []).map(img => ({
+  let image = (song.image || []).map(img => ({
     quality: img.quality,
     url: img.link || img.url || '',
-  }));
+  })).filter(img => img.url);
+
+  if (image.length === 0 && song.thumbnail) {
+    image = [
+      { quality: '150x150', url: song.thumbnail },
+      { quality: '500x500', url: song.thumbnail }
+    ];
+  }
+
+  const ytId = song.youtubeId || song.videoId || (song.isYouTubeFallback ? song.id : undefined);
 
   return {
-    id: song.id,
-    name: song.name,
-    album: typeof song.album === 'object' ? song.album?.name : (song.album || ''),
-    year: song.year,
+    id: song.id || song.song_id || ytId,
+    name: song.name || song.title || song.song,
+    album: typeof song.album === 'object' ? song.album?.name : (song.album || 'Single'),
+    year: song.year || new Date().getFullYear().toString(),
     duration: parseInt(song.duration) || 0,
-    label: song.label,
-    primaryArtists: song.primaryArtists || song.artist || '',
+    label: song.label || 'Music',
+    primaryArtists: song.primaryArtists || song.primary_artists || song.singers || song.artist || 'Artist',
     image,
     downloadUrl,
+    youtubeId: ytId,
+    isYouTubeFallback: song.isYouTubeFallback || (downloadUrl.length === 0 && !!ytId)
   };
 };
 
@@ -65,7 +76,7 @@ export const fetchTrending = async () => {
 };
 
 export const searchSongs = async (query) => {
-  // Primary: jiosaavn-api-2 via our proxy
+  // Primary: JioSaavn via backend proxy
   try {
     const response = await apiClient.get('/search/songs', {
       params: { query, page: 1, limit: 50 }
@@ -75,10 +86,25 @@ export const searchSongs = async (query) => {
       return results.map(normalizeSong).filter(Boolean);
     }
   } catch (error) {
-    console.warn('Primary search failed, trying iTunes...', error);
+    console.warn('Primary JioSaavn search failed, trying public endpoints...', error);
   }
 
-  // YouTube fallback for full songs (replacing iTunes 30s previews)
+  // Dual Fallback: direct public JioSaavn endpoints with Pakistani/Urdu catalog
+  try {
+    const directRes = await axios.get(`https://saavn.dev/api/search/songs?query=${encodeURIComponent(query)}&page=1&limit=40`, { timeout: 4000 });
+    if (directRes.data?.data?.results?.length > 0) {
+      return directRes.data.data.results.map(normalizeSong).filter(Boolean);
+    }
+  } catch (e) {}
+
+  try {
+    const directRes2 = await axios.get(`https://jiosaavn-api-privatecvc2.vercel.app/search/songs?query=${encodeURIComponent(query)}&page=1&limit=40`, { timeout: 4000 });
+    if (directRes2.data?.data?.results?.length > 0) {
+      return directRes2.data.data.results.map(normalizeSong).filter(Boolean);
+    }
+  } catch (e) {}
+
+  // YouTube / Invidious fallback for normal audio songs
   try {
     const ytRes = await axios.get(`/api/yt-search?q=${encodeURIComponent(query)}`);
     if (ytRes.data?.results?.length > 0) {
@@ -95,15 +121,15 @@ export const searchSongs = async (query) => {
         return {
           id: item.videoId,
           name: item.title,
-          album: 'YouTube',
+          album: 'Single / Track',
           year: new Date().getFullYear().toString(),
           duration: secs,
-          primaryArtists: item.author?.name || 'YouTube',
+          primaryArtists: item.author?.name || 'Artist',
           image: [
             { quality: '150x150', url: item.thumbnail },
             { quality: '500x500', url: item.thumbnail },
           ],
-          downloadUrl: [], // Force PlayerContext to use YouTube
+          downloadUrl: [],
           youtubeId: item.videoId,
           isYouTubeFallback: true
         };
@@ -111,6 +137,38 @@ export const searchSongs = async (query) => {
     }
   } catch (ytErr) {
     console.warn('YT fallback error:', ytErr);
+  }
+
+  // Direct Invidious fallback for normal audio songs
+  const instances = ['https://iv.melmac.space', 'https://invidious.jing.rocks', 'https://vid.puffyan.us'];
+  for (const url of instances) {
+    try {
+      const invRes = await axios.get(`${url}/api/v1/search?q=${encodeURIComponent(query)}&type=video`, { timeout: 3500 });
+      if (invRes.data && Array.isArray(invRes.data) && invRes.data.length > 0) {
+        return invRes.data.slice(0, 20).map(v => {
+          let bestThumb = 'https://via.placeholder.com/500x500';
+          if (v.videoThumbnails && v.videoThumbnails.length > 0) {
+            const targetThumb = v.videoThumbnails.find(t => t.quality === 'medium' || t.quality === 'high' || t.quality === 'maxresdefault');
+            bestThumb = targetThumb ? targetThumb.url : v.videoThumbnails[0].url;
+          }
+          return {
+            id: v.videoId,
+            name: v.title,
+            album: 'Single / Track',
+            year: new Date().getFullYear().toString(),
+            duration: v.lengthSeconds || 240,
+            primaryArtists: v.author || 'Artist',
+            image: [
+              { quality: '150x150', url: bestThumb },
+              { quality: '500x500', url: bestThumb }
+            ],
+            downloadUrl: [],
+            youtubeId: v.videoId,
+            isYouTubeFallback: true
+          };
+        });
+      }
+    } catch (e) {}
   }
 
   return [];

@@ -13,7 +13,6 @@ import Videos from './pages/Videos';
 import AuthModal from './components/AuthModal';
 import Paywall from './components/Paywall';
 import AdminPanel from './pages/AdminPanel';
-import LandingPage from './pages/LandingPage';
 import Artist from './pages/Artist';
 import { useLocation } from 'react-router-dom';
 import { supabase } from './services/supabase';
@@ -118,12 +117,6 @@ const Library = () => {
 
 function App() {
   const { currentSong } = usePlayer();
-  const [hasVisited, setHasVisited] = useState(() => {
-    return localStorage.getItem('svar_has_visited') === 'true';
-  });
-  const [hasAccess, setHasAccess] = useState(() => {
-    return localStorage.getItem('svar_skipped_paywall') === 'true';
-  });
   const [user, setUser] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [isAiDjOpen, setIsAiDjOpen] = useState(false);
@@ -134,29 +127,6 @@ function App() {
 
   if (isAdminRoute) {
     return <AdminPanel />;
-  }
-
-  if (!hasVisited) {
-    return (
-      <LandingPage 
-        onContinue={() => {
-          localStorage.setItem('svar_has_visited', 'true');
-          setHasVisited(true);
-        }} 
-      />
-    );
-  }
-
-  if (!hasAccess) {
-    return (
-      <Paywall 
-        onAccessGranted={(u, sub) => {
-          setUser(u);
-          setSubscription(sub);
-          setHasAccess(true);
-        }} 
-      />
-    );
   }
 
   return (

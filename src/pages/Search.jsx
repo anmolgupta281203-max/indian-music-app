@@ -93,6 +93,30 @@ const Search = () => {
           let foundVideos = ytRes.status === 'fulfilled' ? (ytRes.value || []) : [];
           let foundMovies = moviesRes.status === 'fulfilled' ? (moviesRes.value || []) : [];
 
+          // If foundSongs is empty or limited, map foundVideos into playable normal audio songs!
+          if (foundSongs.length === 0 && foundVideos.length > 0) {
+            foundSongs = foundVideos.map(v => {
+              let secs = 240;
+              if (v.timestamp) {
+                const parts = v.timestamp.split(':');
+                if (parts.length === 2) secs = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+                else if (parts.length === 3) secs = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(parts[2], 10);
+              }
+              return {
+                id: v.videoId,
+                name: v.title,
+                album: 'Single / Track',
+                year: new Date().getFullYear().toString(),
+                duration: secs,
+                primaryArtists: v.author?.name || 'Artist',
+                image: [{ quality: '500x500', url: v.thumbnail }],
+                downloadUrl: [],
+                youtubeId: v.videoId,
+                isYouTubeFallback: true
+              };
+            });
+          }
+
           // Deduplicate songs
           if (Array.isArray(foundSongs)) {
             const seen = new Set();
