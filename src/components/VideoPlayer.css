@@ -347,3 +347,96 @@ input:checked + .slider:before { transform: translateX(20px); }
   .video-title-area h2 { font-size: 18px; }
   .toggle-sidebar-btn { width: 100%; justify-content: center; }
 }
+
+/* ═══ Picture-in-Picture / Minimized Floating Video Mode ═══ */
+.video-modal-overlay.minimized-pip-mode {
+  background-color: transparent !important;
+  pointer-events: none;
+  z-index: 2500;
+  display: block;
+}
+
+.video-theater.minimized-theater {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 320px;
+  height: 180px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(37, 209, 218, 0.35);
+  pointer-events: auto;
+  z-index: 2600;
+  background: #000;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.video-theater.minimized-theater:hover {
+  transform: scale(1.03);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.9), 0 0 0 1px var(--primary-color);
+}
+
+.minimized-floating-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 10px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.3) 70%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 2700;
+  gap: 8px;
+}
+
+.pip-title-text {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.pip-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.pip-action-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pip-action-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.pip-action-btn.close-pip:hover {
+  background: #e50914;
+}
+
+@media (max-width: 768px) {
+  .video-theater.minimized-theater {
+    bottom: 130px;
+    right: 12px;
+    width: 220px;
+    height: 124px;
+    border-radius: 10px;
+  }
+}

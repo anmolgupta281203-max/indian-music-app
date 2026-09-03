@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Maximize, Play, Pause, Users, Copy, Check } from 'lucide-react';
+import { X, Maximize, Minimize2, Play, Pause, Users, Copy, Check } from 'lucide-react';
 import ReactPlayer from 'react-player/youtube';
 import { getSeriesDetails, getSeasonDetails, getImageUrl } from '../services/tmdbApi';
 import { usePlayer } from '../context/PlayerContext';
@@ -26,6 +26,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [adBlockEnabled, setAdBlockEnabled] = useState(false);
   const [audioLanguage, setAudioLanguage] = useState('hi'); // 'hi' (Hindi) or 'en' (English)
+  const [isMinimized, setIsMinimized] = useState(false);
   
   // Watch Party & Reactions State
   const [showWatchParty, setShowWatchParty] = useState(false);
@@ -278,13 +279,45 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   if (!video) return null;
 
   return ReactDOM.createPortal(
-    <div className="video-modal-overlay">
+    <div className={`video-modal-overlay ${isMinimized ? 'minimized-pip-mode' : ''}`}>
       <div 
-        className={`video-theater ${controlsActive ? 'controls-active' : ''}`}
+        className={`video-theater ${controlsActive ? 'controls-active' : ''} ${isMinimized ? 'minimized-theater' : ''}`}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="video-main-content" style={{ paddingRight: showSidebar && video.media_type === 'tv' ? '380px' : '0' }}>
+        {isMinimized && (
+          <div 
+            className="minimized-floating-header" 
+            onClick={() => setIsMinimized(false)}
+            title="Tap to expand video"
+          >
+            <div className="pip-title-text">{video.name || video.title || 'Playing Video'}</div>
+            <div className="pip-actions" onClick={(e) => e.stopPropagation()}>
+              <button 
+                onClick={() => setIsPlaying(!isPlaying)} 
+                className="pip-action-btn"
+                title={isPlaying ? "Pause" : "Play"}
+              >
+                {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+              </button>
+              <button 
+                onClick={() => setIsMinimized(false)} 
+                className="pip-action-btn"
+                title="Maximize Video"
+              >
+                <Maximize size={14} />
+              </button>
+              <button 
+                onClick={() => onClose()} 
+                className="pip-action-btn close-pip"
+                title="Close Video"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="video-main-content" style={{ paddingRight: !isMinimized && showSidebar && video.media_type === 'tv' ? '380px' : '0' }}>
           
           <div className="video-iframe-container" ref={containerRef}>
             {/* The actual video player */}
@@ -332,7 +365,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                       ></div>
                       
                       {/* Play icon overlay */}
-                      {!isPlaying && (
+                      {!isPlaying && !isMinimized && (
                         <div 
                           onClick={() => setIsPlaying(true)}
                           style={{
@@ -347,24 +380,26 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
                     </div>
                     
                     {/* Minimal internal seek bar for YT */}
-                    <div style={{
-                      height: '60px', backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', padding: '0 20px', gap: '20px', zIndex: 30
-                    }}>
-                      <button onClick={() => setIsPlaying(!isPlaying)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
-                        {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-                      </button>
-                      <div style={{ color: 'white', fontSize: '13px', minWidth: '45px', fontWeight: 'bold' }}>{formatTime(playedSeconds)}</div>
-                      <input 
-                        type="range" min={0} max={0.999999} step="any"
-                        value={duration ? playedSeconds / duration : 0}
-                        onChange={handleSeekChange}
-                        onMouseUp={handleSeekMouseUp}
-                        onTouchEnd={handleSeekMouseUp}
-                        className="custom-video-slider"
-                        style={{ flex: 1 }}
-                      />
-                      <div style={{ color: 'white', fontSize: '13px', minWidth: '45px', fontWeight: 'bold' }}>{formatTime(duration)}</div>
-                    </div>
+                    {!isMinimized && (
+                      <div style={{
+                        height: '60px', backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', padding: '0 20px', gap: '20px', zIndex: 30
+                      }}>
+                        <button onClick={() => setIsPlaying(!isPlaying)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                          {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                        </button>
+                        <div style={{ color: 'white', fontSize: '13px', minWidth: '45px', fontWeight: 'bold' }}>{formatTime(playedSeconds)}</div>
+                        <input 
+                          type="range" min={0} max={0.999999} step="any"
+                          value={duration ? playedSeconds / duration : 0}
+                          onChange={handleSeekChange}
+                          onMouseUp={handleSeekMouseUp}
+                          onTouchEnd={handleSeekMouseUp}
+                          className="custom-video-slider"
+                          style={{ flex: 1 }}
+                        />
+                        <div style={{ color: 'white', fontSize: '13px', minWidth: '45px', fontWeight: 'bold' }}>{formatTime(duration)}</div>
+                      </div>
+                    )}
                   </div>
                 );
               })()
@@ -382,116 +417,141 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
           </div>
 
           {/* Cinematic Overlay (Slides in on hover) */}
-          <div className="video-controls-overlay">
-            {/* Top Bar */}
-            <div className="video-top-controls">
-              <div className="video-title-area">
-                <h2>{video.name || video.title || 'Playing Video'}</h2>
-                <div className="video-subtitle">
-                  {(video.media_type === 'tv' || (!video.title && !!video.name) || !!video.first_air_date) ? `Season ${season} • Episode ${episode} ${seasonData?.episodes ? '• ' + (seasonData.episodes.find(e => e.episode_number === episode)?.name || '') : ''}` : 'Movie'} • {audioLanguage === 'hi' ? '🇮🇳 Hindi Audio / Sub' : '🌐 English Audio / Sub'}
+          {!isMinimized && (
+            <div className="video-controls-overlay">
+              {/* Top Bar */}
+              <div className="video-top-controls">
+                <div className="video-title-area">
+                  <h2>{video.name || video.title || 'Playing Video'}</h2>
+                  <div className="video-subtitle">
+                    {(video.media_type === 'tv' || (!video.title && !!video.name) || !!video.first_air_date) ? `Season ${season} • Episode ${episode} ${seasonData?.episodes ? '• ' + (seasonData.episodes.find(e => e.episode_number === episode)?.name || '') : ''}` : 'Movie'} • {audioLanguage === 'hi' ? '🇮🇳 Hindi Audio / Sub' : '🌐 English Audio / Sub'}
+                  </div>
+                  {video.type !== 'youtube' && video.type !== 'music-video' && (
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      {SERVERS.map(s => (
+                        <button
+                          key={s.id}
+                          onClick={() => setServer(s.id)}
+                          style={{
+                            background: server === s.id ? 'var(--netflix-red, #E50914)' : 'rgba(255,255,255,0.15)',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '5px 12px',
+                            borderRadius: '16px',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            backdropFilter: 'blur(8px)',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {s.name.split('(')[0].trim()}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {video.type !== 'youtube' && video.type !== 'music-video' && (
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    {SERVERS.map(s => (
+                
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Audio Language Switcher Pill */}
+                  {video.type !== 'youtube' && video.type !== 'music-video' && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      background: 'rgba(0,0,0,0.6)',
+                      borderRadius: '24px',
+                      padding: '3px',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      backdropFilter: 'blur(10px)'
+                    }}>
                       <button
-                        key={s.id}
-                        onClick={() => setServer(s.id)}
+                        onClick={() => setAudioLanguage('hi')}
                         style={{
-                          background: server === s.id ? 'var(--netflix-red, #E50914)' : 'rgba(255,255,255,0.15)',
+                          background: audioLanguage === 'hi' ? 'var(--netflix-red, #E50914)' : 'transparent',
                           color: '#fff',
                           border: 'none',
-                          padding: '5px 12px',
-                          borderRadius: '16px',
-                          fontSize: '11px',
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
                           fontWeight: '700',
                           cursor: 'pointer',
-                          backdropFilter: 'blur(8px)',
-                          transition: 'all 0.2s ease'
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
                         }}
                       >
-                        {s.name.split('(')[0].trim()}
+                        🇮🇳 Hindi
                       </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                {/* Audio Language Switcher Pill */}
-                {video.type !== 'youtube' && video.type !== 'music-video' && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    background: 'rgba(0,0,0,0.6)',
-                    borderRadius: '24px',
-                    padding: '3px',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    backdropFilter: 'blur(10px)'
+                      <button
+                        onClick={() => setAudioLanguage('en')}
+                        style={{
+                          background: audioLanguage === 'en' ? 'var(--netflix-red, #E50914)' : 'transparent',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        🌐 English
+                      </button>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={() => {
+                      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+                      setIsMinimized(true);
+                    }}
+                    title="Minimize Video (Picture in Picture)"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(255,255,255,0.12)',
+                      color: '#fff',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      padding: '8px 14px',
+                      borderRadius: '30px',
+                      fontWeight: 'bold',
+                      backdropFilter: 'blur(10px)',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <Minimize2 size={16} /> Minimize
+                  </button>
+
+                  <button 
+                    onClick={() => setShowWatchParty(!showWatchParty)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 14px', borderRadius: '30px', fontWeight: 'bold', backdropFilter: 'blur(10px)', cursor: 'pointer', fontSize: '12px' }}
+                  >
+                    <Users size={16} /> Watch Party
+                  </button>
+                  <button className="video-modal-close" onClick={() => {
+                    if (document.fullscreenElement) document.exitFullscreen().catch(e => console.log(e));
+                    onClose();
                   }}>
-                    <button
-                      onClick={() => setAudioLanguage('hi')}
-                      style={{
-                        background: audioLanguage === 'hi' ? 'var(--netflix-red, #E50914)' : 'transparent',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      🇮🇳 Hindi
-                    </button>
-                    <button
-                      onClick={() => setAudioLanguage('en')}
-                      style={{
-                        background: audioLanguage === 'en' ? 'var(--netflix-red, #E50914)' : 'transparent',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      🌐 English
-                    </button>
-                  </div>
-                )}
-
-                <button 
-                  onClick={() => setShowWatchParty(!showWatchParty)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 14px', borderRadius: '30px', fontWeight: 'bold', backdropFilter: 'blur(10px)', cursor: 'pointer', fontSize: '12px' }}
-                >
-                  <Users size={16} /> Watch Party
-                </button>
-                <button className="video-modal-close" onClick={() => {
-                  if (document.fullscreenElement) document.exitFullscreen().catch(e => console.log(e));
-                  onClose();
-                }}>
-                  <X size={28} />
-                </button>
+                    <X size={28} />
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Floating Reactions */}
-            <div style={{ position: 'absolute', bottom: '120px', left: 0, right: 0, pointerEvents: 'none', height: '300px', overflow: 'hidden' }}>
-              {reactions.map(r => (
-                <div key={r.id} className="floating-emoji" style={{ left: `${r.left}%` }}>{r.emoji}</div>
-              ))}
-            </div>
+              {/* Floating Reactions */}
+              <div style={{ position: 'absolute', bottom: '120px', left: 0, right: 0, pointerEvents: 'none', height: '300px', overflow: 'hidden' }}>
+                {reactions.map(r => (
+                  <div key={r.id} className="floating-emoji" style={{ left: `${r.left}%` }}>{r.emoji}</div>
+                ))}
+              </div>
 
-            {/* Bottom Bar */}
+              {/* Bottom Bar */}
             <div className="video-bottom-controls">
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                 {video.type !== 'youtube' && video.type !== 'music-video' && (
@@ -530,6 +590,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
               </div>
             </div>
           </div>
+        )}
           
         </div>
 
