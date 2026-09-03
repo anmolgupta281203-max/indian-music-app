@@ -169,8 +169,14 @@ const MusicPlayer = () => {
 
   return (
     <>
-      {/* --- Mini Bottom Player Bar --- */}
+      {/* Mini Player Bar */}
       <div className="music-player">
+        <div className="mini-player-progress-bar">
+          <div 
+            className="mini-player-progress-fill"
+            style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
+          />
+        </div>
         <div className="now-playing" onClick={(e) => {
           if (e.target.closest('button')) return;
           setIsFullScreen(true);

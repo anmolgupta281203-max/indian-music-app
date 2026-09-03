@@ -82,3 +82,42 @@
   background-color: #333;
   color: #fff;
 }
+
+@media (max-width: 768px) {
+  .category-nav-list {
+    gap: 8px;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .nav-item {
+    font-size: 13px;
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .nav-item.active-red {
+    background: rgba(229, 9, 20, 0.25);
+    border-color: rgba(229, 9, 20, 0.6);
+    color: #ff3b47;
+    font-weight: 700;
+  }
+  
+  .dropdown-menu {
+    position: fixed;
+    top: auto;
+    bottom: 80px;
+    left: 16px;
+    right: 16px;
+    min-width: unset;
+    border-radius: 16px;
+    background-color: rgba(26, 26, 26, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+}

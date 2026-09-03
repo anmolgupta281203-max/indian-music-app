@@ -143,13 +143,16 @@ const Search = () => {
 
   const categories = [
     { label: 'Trending Bollywood', query: 'Bollywood Hits 2026', gradient: 'linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%)', icon: '🔥' },
+    { label: 'Coke Studio & Pakistani Hits', query: 'Coke Studio Pakistan All Seasons', gradient: 'linear-gradient(135deg, #0ba360 0%, #3cba92 100%)', icon: '🇵🇰' },
+    { label: 'Pakistani Pop & Indie', query: 'Pakistani Pop Hits Kaifi Khalil Atif Aslam', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: '🌟' },
+    { label: 'Urdu Rap & Hip-Hop', query: 'Urdu Rap Young Stunners Talha Anjum', gradient: 'linear-gradient(135deg, #141e30 0%, #243b55 100%)', icon: '🎤' },
+    { label: 'Sufi & Qawwali', query: 'Nusrat Fateh Ali Khan Rahat Qawwali', gradient: 'linear-gradient(135deg, #b92b27 0%, #1565C0 100%)', icon: '🕊️' },
     { label: 'Punjabi Pop', query: 'Punjabi Hits', gradient: 'linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%)', icon: '⚡' },
     { label: 'Lo-Fi Chill', query: 'Indian Lo-Fi Chill', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', icon: '🎧' },
     { label: 'Romantic 90s', query: '90s Romantic Bollywood', gradient: 'linear-gradient(135deg, #ee0979 0%, #ff6a00 100%)', icon: '❤️' },
     { label: 'Devotional & Bhakti', query: 'Top Bhakti Devotional', gradient: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)', icon: '🪔' },
     { label: 'Indie & Acoustic', query: 'Indian Indie Hits', gradient: 'linear-gradient(135deg, #4776E6 0%, #8E54E9 100%)', icon: '✨' },
     { label: 'South Indian Hits', query: 'South Indian Hits Telugu Tamil', gradient: 'linear-gradient(135deg, #00b09b 0%, #96c93d 100%)', icon: '🎵' },
-    { label: 'Hip-Hop / Rap', query: 'Desi Hip Hop', gradient: 'linear-gradient(135deg, #2b5876 0%, #4e4376 100%)', icon: '🎤' },
     { label: 'International Hits', query: 'Global Billboard Hits', gradient: 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)', icon: '🌍' },
     { label: 'Workout Energy', query: 'Gym Workout Hindi', gradient: 'linear-gradient(135deg, #f857a6 0%, #ff5858 100%)', icon: '💪' },
   ];

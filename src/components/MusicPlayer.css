@@ -557,47 +557,142 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   font-weight: 800;
 }
 
+/* Mini Player Top Progress Bar */
+.mini-player-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  z-index: 5;
+}
+
+.mini-player-progress-fill {
+  height: 100%;
+  background: var(--primary-color);
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: width 0.2s linear;
+}
+
 /* ─── Mobile ─── */
 @media (max-width: 768px) {
   .music-player {
-    height: 56px;
-    padding: 0 0.5rem;
-    border-radius: 10px;
-    margin: 0 0.5rem 0.25rem 0.5rem;
-    background-color: rgba(22, 27, 34, 0.92);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 -2px 12px rgba(0,0,0,0.3);
+    position: fixed;
+    bottom: 66px;
+    left: 8px;
+    right: 8px;
+    width: calc(100% - 16px);
+    height: 58px;
+    padding: 0 0.75rem;
+    border-radius: 12px;
+    margin: 0;
+    background-color: rgba(22, 27, 34, 0.95);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(37, 209, 218, 0.18);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
+    z-index: 1050;
     min-width: 0;
   }
   
-  .now-playing { width: auto; flex: 1; min-width: 0; margin-right: 0.5rem; }
-  .song-art { width: 40px; height: 40px; margin-right: 10px; border-radius: 6px; }
+  .now-playing { 
+    width: auto; 
+    flex: 1; 
+    min-width: 0; 
+    margin-right: 0.5rem; 
+    overflow: hidden;
+  }
+  .song-art { width: 42px; height: 42px; margin-right: 10px; border-radius: 8px; flex-shrink: 0; }
   
+  .song-info h4 { font-size: 13px; font-weight: 700; }
+  .song-info p { font-size: 11px; }
+
   .player-controls-container { width: auto; flex-shrink: 0; }
-  .player-buttons { margin: 0; gap: 0.15rem; }
+  .player-buttons { margin: 0; gap: 0.25rem; }
   
   .play-btn { 
-    width: 36px; 
-    height: 36px; 
-    background-color: transparent; 
-    color: var(--md-sys-color-on-surface); 
-    box-shadow: none;
+    width: 38px; 
+    height: 38px; 
+    background-color: #fff; 
+    color: #0d1117; 
+    box-shadow: 0 2px 8px rgba(255,255,255,0.2);
   }
   .play-btn:hover {
-    background-color: transparent;
-    box-shadow: none;
+    background-color: #fff;
   }
   
   .progress-container, .volume-control { display: none; }
   .hide-on-mobile { display: none !important; }
   
-  .fs-content { padding: 1.5rem; overflow-y: auto; overflow-x: hidden; }
-  .fs-art-container { margin: 1rem 0; flex: 0 0 auto; }
-  .fs-art { max-height: 35vh; width: auto; max-width: 100%; aspect-ratio: 1/1; }
-  .fs-track-info-row { margin-bottom: 1.25rem; flex-shrink: 0; }
-  .fs-track-details h2 { font-size: 22px; }
-  .fs-progress-section { flex-shrink: 0; }
-  .fs-main-controls { gap: 1rem; flex-shrink: 0; }
-  .fs-scallop-play-btn { width: 64px; height: 64px; }
-  .fs-toolbar-actions { flex-shrink: 0; display: none; }
+  .fullscreen-player {
+    height: 100dvh;
+  }
+
+  .fs-content { 
+    padding: 1.25rem 1rem 2rem 1rem; 
+    overflow-y: auto; 
+    overflow-x: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .fs-header {
+    margin-bottom: 0.5rem;
+  }
+  .fs-art-container { 
+    margin: 0.5rem 0; 
+    flex: 0 1 auto; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .fs-art { 
+    max-height: 32vh; 
+    width: auto; 
+    max-width: 85%; 
+    aspect-ratio: 1/1; 
+    border-radius: 16px;
+    box-shadow: 0 16px 36px rgba(0,0,0,0.7);
+  }
+  .fs-track-info-row { 
+    margin-bottom: 0.75rem; 
+    flex-shrink: 0; 
+  }
+  .fs-track-details h2 { 
+    font-size: 20px; 
+    font-weight: 800;
+  }
+  .fs-track-details p {
+    font-size: 13px;
+  }
+  .fs-progress-section { 
+    flex-shrink: 0; 
+    margin-bottom: 0.5rem;
+  }
+  .fs-main-controls { 
+    gap: 1.5rem; 
+    flex-shrink: 0; 
+    margin: 0.5rem 0;
+  }
+  .fs-scallop-play-btn { 
+    width: 68px; 
+    height: 68px; 
+  }
+  .fs-toolbar-actions { 
+    display: flex !important; 
+    justify-content: space-around; 
+    align-items: center;
+    width: 100%; 
+    padding: 0.5rem 0; 
+    flex-shrink: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .fs-tool-btn {
+    padding: 8px;
+  }
 }

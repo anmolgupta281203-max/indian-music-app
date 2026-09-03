@@ -1,5 +1,6 @@
 import axios from 'axios';
 import CryptoJS from 'crypto-js';
+import ytSearch from 'yt-search';
 
 const TMDB_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -42,13 +43,20 @@ function normalizeRawSong(song) {
 }
 
 async function fetchJioSaavnRaw(params) {
-  const defaultParams = { _format: 'json', _marker: 0, ctx: 'web6dot0' };
+  const defaultParams = { 
+    _format: 'json', 
+    _marker: 0, 
+    ctx: 'web6dot0', 
+    api_version: 4,
+    languages: 'urdu,hindi,punjabi,english'
+  };
   const res = await axios.get('https://www.jiosaavn.com/api.php', {
     params: { ...defaultParams, ...params },
     headers: {
       'Origin': 'https://www.jiosaavn.com',
       'Referer': 'https://www.jiosaavn.com/',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Cookie': 'L=urdu%2Chindi%2Cpunjabi%2Cenglish;'
     }
   });
   
@@ -123,7 +131,31 @@ export default async function handler(req, res) {
       const limit = searchParams.get('n') || searchParams.get('limit') || '20';
       
       const rawData = await fetchJioSaavnRaw({ __call: 'search.getResults', q, p: page, n: limit });
-      const results = (rawData.results || []).map(normalizeRawSong).filter(Boolean);
+      let results = (rawData.results || []).map(normalizeRawSong).filter(Boolean);
+
+      // If JioSaavn has 0 results (e.g. exclusive Pakistani / Coke studio / indie songs), fallback to YouTube
+      if (results.length === 0 && q.trim().length > 0) {
+        try {
+          const ytRes = await ytSearch(q.includes('song') || q.includes('music') ? q : `${q} song`);
+          const vids = (ytRes?.videos || []).filter(v => v.seconds < 600).slice(0, parseInt(limit, 10));
+          results = vids.map(v => ({
+            id: v.videoId,
+            name: v.title,
+            album: 'YouTube Music',
+            year: new Date().getFullYear().toString(),
+            duration: v.seconds || 240,
+            label: 'YouTube',
+            primaryArtists: v.author?.name || 'Artist',
+            image: [{ quality: '500x500', url: v.thumbnail || '' }],
+            downloadUrl: [],
+            youtubeId: v.videoId,
+            isYouTubeFallback: true
+          }));
+        } catch (e) {
+          console.warn('YT fallback search failed:', e.message);
+        }
+      }
+
       return res.json({ results });
     }
 
