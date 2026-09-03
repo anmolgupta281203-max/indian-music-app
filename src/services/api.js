@@ -6,11 +6,35 @@ const apiClient = axios.create({ baseURL: '/api' });
 const normalizeSong = (song) => {
   if (!song) return null;
 
-  // Normalize downloadUrl: use direct CDN link
-  const downloadUrl = (song.downloadUrl || []).map(d => ({
-    quality: d.quality,
-    url: d.link || d.url || '',
-  })).filter(d => d.url);
+  // Normalize downloadUrl: use direct CDN link and fix any legacy suffixes
+  let downloadUrl = (song.downloadUrl || []).map(d => {
+    let rawUrl = d.link || d.url || '';
+    if (rawUrl) {
+      rawUrl = rawUrl.replace('audios.saavncdn.com', 'aac.saavncdn.com');
+      rawUrl = rawUrl.replace(/(_master[^/]*|\.mpd|\.m3u8)(\?.*)?$/, '_320.mp4');
+    }
+    return {
+      quality: d.quality || '320kbps',
+      url: rawUrl,
+    };
+  }).filter(d => d.url);
+
+  // If we have at least one Saavn CDN URL, ensure all bitrate variants are available
+  const firstSaavn = downloadUrl.find(d => d.url.includes('aac.saavncdn.com'));
+  if (firstSaavn) {
+    const baseWithoutSuffix = firstSaavn.url.replace(/(_master[^/]*|_\d+\.[a-zA-Z0-9]+|\.mpd|\.m3u8)(\?.*)?$/, '');
+    const standardQualities = [
+      { quality: '320kbps', url: `${baseWithoutSuffix}_320.mp4` },
+      { quality: '160kbps', url: `${baseWithoutSuffix}_160.mp4` },
+      { quality: '96kbps', url: `${baseWithoutSuffix}_96.mp4` },
+      { quality: '48kbps', url: `${baseWithoutSuffix}_48.mp4` }
+    ];
+    standardQualities.forEach(sq => {
+      if (!downloadUrl.some(d => d.quality === sq.quality)) {
+        downloadUrl.push(sq);
+      }
+    });
+  }
 
   // Normalize image: handle both {link} and {url} formats
   let image = (song.image || []).map(img => ({

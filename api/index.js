@@ -7,38 +7,69 @@ const TMDB_BASE = 'https://api.themoviedb.org/3';
 
 // ── NATIVE JIOSAAVN WRAPPER ───────────────────────────────────────────────────
 
-function decryptUrl(encryptedUrl) {
-  if (!encryptedUrl) return '';
+function getDownloadUrls(encryptedUrl) {
+  if (!encryptedUrl) return [];
   try {
     const key = CryptoJS.enc.Utf8.parse('38346591');
     const decrypted = CryptoJS.DES.decrypt(
       { ciphertext: CryptoJS.enc.Base64.parse(encryptedUrl) },
       key,
       { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 }
-    );
-    let url = decrypted.toString(CryptoJS.enc.Utf8);
-    url = url.replace('audios.saavncdn.com', 'aac.saavncdn.com');
-    url = url.replace('_master_d.mpd', '_320.mp4');
-    url = url.replace('_96.mp4', '_320.mp4');
-    return url;
+    ).toString(CryptoJS.enc.Utf8);
+
+    if (!decrypted || !decrypted.startsWith('http')) return [];
+
+    let baseUrl = decrypted.replace('audios.saavncdn.com', 'aac.saavncdn.com');
+    // Cleanly strip any master playlist or bitrate suffixes (_master_c.m3u8, _master_d.mpd, _96.mp4, etc.)
+    const baseWithoutSuffix = baseUrl.replace(/(_master[^/]*|_\d+\.[a-zA-Z0-9]+|\.mpd|\.m3u8)(\?.*)?$/, '');
+
+    return [
+      { quality: '320kbps', url: `${baseWithoutSuffix}_320.mp4` },
+      { quality: '160kbps', url: `${baseWithoutSuffix}_160.mp4` },
+      { quality: '96kbps', url: `${baseWithoutSuffix}_96.mp4` },
+      { quality: '48kbps', url: `${baseWithoutSuffix}_48.mp4` }
+    ];
   } catch (e) {
     console.error('Decryption error:', e);
-    return '';
+    return [];
   }
 }
 
 function normalizeRawSong(song) {
   if (!song) return null;
+  const moreInfo = song.more_info || {};
+  const encUrl = song.encrypted_media_url 
+    || song.encrypted_drm_media_url 
+    || moreInfo.encrypted_media_url 
+    || moreInfo.encrypted_drm_media_url;
+
+  const downloadUrl = getDownloadUrls(encUrl);
+
+  let img = song.image || moreInfo.image || '';
+  if (Array.isArray(img) && img.length > 0) {
+    img = img[img.length - 1]?.url || img[0]?.url || '';
+  }
+  const hqImg = String(img).replace('150x150', '500x500').replace('50x50', '500x500');
+
+  const artists = song.primary_artists 
+    || song.singers 
+    || moreInfo.singers 
+    || (moreInfo.artistMap?.primary_artists?.map(a => a.name).join(', '))
+    || song.subtitle 
+    || '';
+
+  const durationSec = parseInt(song.duration || moreInfo.duration) || 0;
+
   return {
     id: song.id,
     name: song.title || song.song || '',
-    album: song.album || '',
-    year: song.year || '',
-    duration: parseInt(song.duration) || 0,
-    label: song.label || '',
-    primaryArtists: song.primary_artists || song.singers || song.subtitle || '',
-    image: [{ quality: '500x500', url: (song.image || '').replace('150x150', '500x500') }],
-    downloadUrl: [{ quality: '320kbps', url: decryptUrl(song.encrypted_media_url || song.encrypted_drm_media_url) }]
+    album: song.album || moreInfo.album || '',
+    year: song.year || moreInfo.year || '',
+    duration: durationSec,
+    label: song.label || moreInfo.label || '',
+    primaryArtists: artists,
+    image: [{ quality: '500x500', url: hqImg }],
+    downloadUrl
   };
 }
 
@@ -249,6 +280,15 @@ export default async function handler(req, res) {
 
     // ── SAAVN SONG LYRICS ───────────────────────────────────────────────────
     if (url.includes('/lyrics')) {
+       const songId = searchParams.get('id') || url.split('/songs/')[1]?.split('/lyrics')[0];
+       if (songId) {
+         try {
+           const rawData = await fetchJioSaavnRaw({ __call: 'lyrics.getLyrics', lyrics_id: songId });
+           if (rawData && rawData.lyrics) {
+             return res.json({ lyrics: rawData.lyrics });
+           }
+         } catch (e) {}
+       }
        return res.json({ lyrics: '' });
     }
 
@@ -257,10 +297,8 @@ export default async function handler(req, res) {
       const id = searchParams.get('id');
       if (id) {
         const rawData = await fetchJioSaavnRaw({ __call: 'song.getDetails', pids: id });
-        const songData = rawData[id] || rawData;
+        const songData = (rawData.songs && rawData.songs[0]) || rawData[id] || rawData;
         const normalized = normalizeRawSong(songData);
-        // api.js usually expects an array of songs or a song object. 
-        // Vercel proxy usually returns a single song array or object. We'll return the object.
         return res.json([normalized]);
       }
     }

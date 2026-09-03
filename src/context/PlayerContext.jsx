@@ -69,6 +69,11 @@ export const PlayerProvider = ({ children }) => {
   // Track whether keepalive has been started (needs user gesture on mobile)
   const keepaliveStartedRef = useRef(false);
   const playbackSessionIdRef = useRef(0);
+  const ytCandidatesRef = useRef([]);
+  const currentYtIndexRef = useRef(0);
+  const audioCandidatesRef = useRef([]);
+  const currentAudioIndexRef = useRef(0);
+  const isTransitioningTrackRef = useRef(false);
 
   useEffect(() => {
     getAllOfflineSongs().then(songs => setDownloadedSongs(songs));
@@ -209,6 +214,7 @@ export const PlayerProvider = ({ children }) => {
     };
 
     const handlePlay = () => {
+      isTransitioningTrackRef.current = false;
       setIsPlaying(true);
       if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = 'playing';
@@ -219,6 +225,7 @@ export const PlayerProvider = ({ children }) => {
     };
 
     const handlePause = () => {
+      if (isTransitioningTrackRef.current) return;
       setIsPlaying(false);
       if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = 'paused';
@@ -236,54 +243,84 @@ export const PlayerProvider = ({ children }) => {
     };
   }, [queue, currentIndex, isShuffling, isLooping]);
 
-  // MediaSession Handlers — controls YouTube player from lock screen
+  // MediaSession Handlers — controls both native audio and YouTube player from lock screen / notification
   useEffect(() => {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => {
         setIsPlaying(true);
-        startSilentKeepalive();
+        if (youtubeVideoId) {
+          startSilentKeepalive();
+        } else if (nativeAudioRef.current) {
+          nativeAudioRef.current.play().catch(e => console.warn('Lockscreen play error:', e));
+        }
         if ('mediaSession' in navigator) {
           navigator.mediaSession.playbackState = 'playing';
         }
       });
+
       navigator.mediaSession.setActionHandler('pause', () => {
         setIsPlaying(false);
+        stopSilentKeepalive();
+        if (nativeAudioRef.current) {
+          nativeAudioRef.current.pause();
+        }
         if ('mediaSession' in navigator) {
           navigator.mediaSession.playbackState = 'paused';
         }
       });
+
       navigator.mediaSession.setActionHandler('previoustrack', () => playPrev());
       navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
+
       navigator.mediaSession.setActionHandler('seekto', (details) => {
-        if (ytPlayerRef.current && details.seekTime != null) {
-          ytPlayerRef.current.seekTo(details.seekTime, 'seconds');
+        if (details.seekTime != null) {
+          if (youtubeVideoId && ytPlayerRef.current) {
+            ytPlayerRef.current.seekTo(details.seekTime, 'seconds');
+          } else if (nativeAudioRef.current) {
+            nativeAudioRef.current.currentTime = details.seekTime;
+          }
         }
       });
-    }
-  }, [queue, currentIndex, isShuffling, isLooping]);
 
-  // Sync silent keepalive with isPlaying state
-  useEffect(() => {
-    if (isPlaying && currentSong) {
-      startSilentKeepalive();
-    } else if (!isPlaying) {
-      // Don't stop keepalive immediately — let it run so background resume works
-      // It will be stopped when no song is loaded
+      try {
+        navigator.mediaSession.setActionHandler('seekforward', (details) => {
+          const offset = details.seekOffset || 10;
+          if (youtubeVideoId && ytPlayerRef.current) {
+            const cur = ytPlayerRef.current.getCurrentTime() || 0;
+            ytPlayerRef.current.seekTo(cur + offset, 'seconds');
+          } else if (nativeAudioRef.current) {
+            nativeAudioRef.current.currentTime = Math.min(nativeAudioRef.current.currentTime + offset, nativeAudioRef.current.duration || 9999);
+          }
+        });
+        navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+          const offset = details.seekOffset || 10;
+          if (youtubeVideoId && ytPlayerRef.current) {
+            const cur = ytPlayerRef.current.getCurrentTime() || 0;
+            ytPlayerRef.current.seekTo(Math.max(cur - offset, 0), 'seconds');
+          } else if (nativeAudioRef.current) {
+            nativeAudioRef.current.currentTime = Math.max(nativeAudioRef.current.currentTime - offset, 0);
+          }
+        });
+      } catch (e) {}
     }
-  }, [isPlaying, currentSong, startSilentKeepalive]);
+  }, [queue, currentIndex, isShuffling, isLooping, youtubeVideoId, startSilentKeepalive, stopSilentKeepalive]);
+
+  // Sync silent keepalive ONLY when YouTube is actively playing to prevent audio focus conflict with native audio
+  useEffect(() => {
+    if (isPlaying && currentSong && youtubeVideoId) {
+      startSilentKeepalive();
+    } else {
+      stopSilentKeepalive();
+    }
+  }, [isPlaying, currentSong, youtubeVideoId, startSilentKeepalive, stopSilentKeepalive]);
 
   const playSong = (song, newQueue = null) => {
     playbackSessionIdRef.current += 1;
     const currentSession = playbackSessionIdRef.current;
+    isTransitioningTrackRef.current = true;
 
     if (nativeAudioRef.current) {
       const audio = nativeAudioRef.current;
-      audio.pause();
-      try {
-        audio.currentTime = 0;
-      } catch (e) {}
-      audio.removeAttribute('src');
-      audio.innerHTML = '';
       audio.onerror = null;
     }
 
@@ -366,51 +403,119 @@ export const PlayerProvider = ({ children }) => {
     }
 
     const streamNetwork = () => {
-      const validDownloadUrls = (song.downloadUrl || []).filter(d => d.url && d.url.trim().length > 0);
-      
       const fallbackToYouTube = () => {
+        if (playbackSessionIdRef.current !== currentSession) return;
+
+        if (song.youtubeId) {
+          ytCandidatesRef.current = [song.youtubeId];
+          currentYtIndexRef.current = 0;
+          setYoutubeVideoId(song.youtubeId);
+          setCurrentUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
+          return;
+        }
+
         const fallbackQuery = `${songTitle} ${artistName} audio`;
-        fetch(`/api/yt-search?q=${encodeURIComponent(fallbackQuery)}&limit=1`)
+        fetch(`/api/yt-search?q=${encodeURIComponent(fallbackQuery)}&limit=5`)
           .then(res => res.json())
           .then(data => {
             if (playbackSessionIdRef.current !== currentSession) return;
-            const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
-            if (vid) {
-              setYoutubeVideoId(vid);
-              setCurrentUrl(`https://www.youtube.com/watch?v=${vid}`);
+            const vids = (data?.results || []).map(r => r.videoId).filter(Boolean);
+            if (vids.length > 0) {
+              ytCandidatesRef.current = vids;
+              currentYtIndexRef.current = 0;
+              const chosenVid = vids[0];
+              setYoutubeVideoId(chosenVid);
+              setCurrentUrl(`https://www.youtube.com/watch?v=${chosenVid}`);
             } else {
+              console.warn('No YouTube results found for fallback');
               setIsPlaying(false);
             }
           })
           .catch(e => {
             if (playbackSessionIdRef.current !== currentSession) return;
-            console.error('YT fallback failed:', e);
+            console.error('YT fallback search failed:', e);
             setIsPlaying(false);
           });
       };
 
+      const validDownloadUrls = (song.downloadUrl || [])
+        .map(d => ({ quality: d.quality || '320kbps', url: d.url || d.link || '' }))
+        .filter(d => d.url && d.url.trim().length > 0);
+
       // Stream natively from JioSaavn to enable background playback
       if (validDownloadUrls.length > 0) {
         setYoutubeVideoId(null);
-        
-        // Find highest quality (320kbps) or fallback to the first available
-        const bestAudio = validDownloadUrls.find(d => d.quality === '320kbps') || validDownloadUrls[validDownloadUrls.length - 1];
-        const rawUrl = bestAudio.url || validDownloadUrls[0].url;
-        setCurrentUrl(rawUrl);
-        
-        // Use direct URL since JioSaavn CDN allows CORS
-        if (nativeAudioRef.current) {
-          nativeAudioRef.current.crossOrigin = "anonymous";
-          nativeAudioRef.current.src = rawUrl;
-          nativeAudioRef.current.currentTime = 0;
-          nativeAudioRef.current.play().catch(e => {
-            console.log('Native play error:', e);
+
+        // Gather all bitrates in priority order
+        const candidates = [];
+        const pref = validDownloadUrls.find(d => d.quality === audioQuality);
+        if (pref && pref.url) candidates.push(pref.url);
+
+        ['320kbps', '160kbps', '96kbps', '48kbps'].forEach(q => {
+          const match = validDownloadUrls.find(d => d.quality === q);
+          if (match && match.url && !candidates.includes(match.url)) {
+            candidates.push(match.url);
+          }
+        });
+
+        validDownloadUrls.forEach(d => {
+          if (d.url && !candidates.includes(d.url)) {
+            candidates.push(d.url);
+          }
+        });
+
+        // Add clean direct URLs and proxy streaming URLs as fallbacks
+        const finalCandidates = [];
+        candidates.forEach(raw => {
+          let clean = raw.replace('audios.saavncdn.com', 'aac.saavncdn.com');
+          clean = clean.replace(/(_master[^/]*|\.mpd|\.m3u8)(\?.*)?$/, '_320.mp4');
+          if (!finalCandidates.includes(clean)) {
+            finalCandidates.push(clean);
+          }
+          const proxy = `/api/stream?url=${encodeURIComponent(clean)}`;
+          if (!finalCandidates.includes(proxy)) {
+            finalCandidates.push(proxy);
+          }
+        });
+
+        audioCandidatesRef.current = finalCandidates;
+        currentAudioIndexRef.current = 0;
+
+        const tryPlayCandidate = (idx) => {
+          if (playbackSessionIdRef.current !== currentSession) return;
+          if (idx >= finalCandidates.length) {
+            console.log('All native audio sources failed, falling back to YouTube');
+            fallbackToYouTube();
+            return;
+          }
+
+          const targetUrl = finalCandidates[idx];
+          setCurrentUrl(targetUrl);
+
+          const audio = nativeAudioRef.current;
+          if (!audio) return;
+
+          audio.onerror = () => {
+            if (playbackSessionIdRef.current !== currentSession) return;
+            console.warn('Native playback error on candidate', idx, targetUrl);
+            currentAudioIndexRef.current = idx + 1;
+            tryPlayCandidate(idx + 1);
+          };
+
+          audio.removeAttribute('crossOrigin');
+          audio.src = targetUrl;
+          audio.currentTime = 0;
+          audio.play().catch(e => {
+            if (playbackSessionIdRef.current !== currentSession) return;
+            console.log('Native play catch error:', e.name);
             if (e.name !== 'AbortError') {
-              console.log('Falling back to YouTube due to playback error');
-              fallbackToYouTube();
+              currentAudioIndexRef.current = idx + 1;
+              tryPlayCandidate(idx + 1);
             }
           });
-        }
+        };
+
+        tryPlayCandidate(0);
       } 
       // Only use YouTube player if explicitly a YouTube video (e.g. from Video tab)
       else if (song.youtubeId) {
@@ -611,6 +716,22 @@ export const PlayerProvider = ({ children }) => {
     }
   };
 
+  const handleYtPlayerError = (error) => {
+    console.warn('YouTube playback error:', error);
+    if (ytCandidatesRef.current && ytCandidatesRef.current.length > 0) {
+      currentYtIndexRef.current += 1;
+      if (currentYtIndexRef.current < ytCandidatesRef.current.length) {
+        const nextVid = ytCandidatesRef.current[currentYtIndexRef.current];
+        console.log('Attempting next fallback YouTube video:', nextVid);
+        setYoutubeVideoId(nextVid);
+        setCurrentUrl(`https://www.youtube.com/watch?v=${nextVid}`);
+        return;
+      }
+    }
+    console.warn('All playback sources exhausted for current track, advancing to next song');
+    playNext();
+  };
+
   return (
     <PlayerContext.Provider value={{ 
       currentSong, 
@@ -646,17 +767,17 @@ export const PlayerProvider = ({ children }) => {
       toggleLoop,
       toggleFavorite,
       handleDownloadToggle,
+      handleYtPlayerError,
       currentUrl,
       youtubeVideoId,
       ytPlayerRef,
       nativeAudioRef
     }}>
       {children}
-      {/* Keep native audio element for offline/downloaded songs */}
+      {/* Keep native audio element for offline/downloaded and JioSaavn songs */}
       <audio 
         ref={nativeAudioRef} 
-        preload="none"
-        crossOrigin="anonymous"
+        preload="metadata"
         playsInline
         style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }} 
       />

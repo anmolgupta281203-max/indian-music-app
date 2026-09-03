@@ -575,7 +575,7 @@ input[type=range].fs-progress-slider::-webkit-slider-thumb {
   height: 100%;
   background: var(--primary-color);
   box-shadow: 0 0 8px var(--primary-color);
-  transition: width 0.2s linear;
+  transition: width 0.05s linear;
 }
 
 /* ─── Mobile ─── */

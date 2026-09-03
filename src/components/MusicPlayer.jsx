@@ -8,7 +8,7 @@ import ReactPlayer from 'react-player/youtube';
 import './MusicPlayer.css';
 
 const formatTime = (time) => {
-  if (isNaN(time)) return '0:00';
+  if (isNaN(time) || !isFinite(time) || time < 0) return '0:00';
   const minutes = Math.floor(time / 60);
   const seconds = Math.floor(time % 60);
   return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
@@ -33,6 +33,7 @@ const MusicPlayer = () => {
     toggleFavorite, 
     downloadedSongs, 
     handleDownloadToggle, 
+    handleYtPlayerError,
     openQueueModal, 
     nativeAudioRef, 
     ytPlayerRef,
@@ -60,28 +61,89 @@ const MusicPlayer = () => {
 
   const isSeekingRef = useRef(false);
 
-  // Track progress from native audio (for offline/downloaded songs)
+  // Track progress from native audio (for offline/downloaded and JioSaavn songs)
   useEffect(() => {
     const audio = nativeAudioRef.current;
     if (!audio) return;
     const updateProgress = () => {
       if (!youtubeVideoId && !isSeekingRef.current) {
         setProgress(audio.currentTime || 0);
-        setDuration(audio.duration || 0);
+        const dur = audio.duration;
+        let activeDur = 0;
+        if (dur && isFinite(dur) && dur > 0) {
+          activeDur = dur;
+          setDuration(dur);
+        } else if (currentSong?.duration && isFinite(currentSong.duration) && currentSong.duration > 0) {
+          activeDur = currentSong.duration;
+          setDuration(currentSong.duration);
+        }
+        // Sync MediaSession position state for background & lockscreen playback
+        if ('mediaSession' in navigator && activeDur > 0) {
+          try {
+            navigator.mediaSession.setPositionState({
+              duration: activeDur,
+              playbackRate: 1,
+              position: Math.min(audio.currentTime || 0, activeDur)
+            });
+          } catch (e) {}
+        }
       }
     };
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('loadedmetadata', updateProgress);
+    audio.addEventListener('durationchange', updateProgress);
+    audio.addEventListener('canplay', updateProgress);
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('loadedmetadata', updateProgress);
+      audio.removeEventListener('durationchange', updateProgress);
+      audio.removeEventListener('canplay', updateProgress);
     };
-  }, [youtubeVideoId, nativeAudioRef]);
+  }, [youtubeVideoId, nativeAudioRef, currentSong]);
 
-  // Reset progress when song changes
+  // Continuous 60 FPS real-time timeline tracking for silky smooth playback progress
+  useEffect(() => {
+    let animFrame;
+    const tick = () => {
+      if (isPlaying && !isSeekingRef.current) {
+        if (!youtubeVideoId && nativeAudioRef.current) {
+          const cur = nativeAudioRef.current.currentTime || 0;
+          setProgress(cur);
+          const dur = nativeAudioRef.current.duration;
+          if (dur && isFinite(dur) && dur > 0) {
+            setDuration(dur);
+          }
+        } else if (youtubeVideoId && ytPlayerRef?.current) {
+          try {
+            const cur = ytPlayerRef.current.getCurrentTime();
+            if (cur != null && isFinite(cur)) {
+              setProgress(cur);
+            }
+          } catch (e) {}
+        }
+      }
+      if (isPlaying) {
+        animFrame = requestAnimationFrame(tick);
+      }
+    };
+
+    if (isPlaying) {
+      animFrame = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      if (animFrame) cancelAnimationFrame(animFrame);
+    };
+  }, [isPlaying, youtubeVideoId, nativeAudioRef, ytPlayerRef]);
+
+  // Reset progress when song changes and initialize duration immediately from metadata
   useEffect(() => {
     setProgress(0);
-    setDuration(0);
+    if (currentSong?.duration && isFinite(currentSong.duration) && currentSong.duration > 0) {
+      setDuration(currentSong.duration);
+    } else {
+      setDuration(0);
+    }
   }, [youtubeVideoId, currentSong?.id]);
 
   useEffect(() => {
@@ -106,7 +168,14 @@ const MusicPlayer = () => {
 
   const handleSeekChange = (e) => {
     isSeekingRef.current = true;
-    setProgress(Number(e.target.value));
+    const time = Number(e.target.value);
+    setProgress(time);
+    // Instant real-time audio scrubbing
+    if (!youtubeVideoId && nativeAudioRef.current) {
+      try {
+        nativeAudioRef.current.currentTime = time;
+      } catch (err) {}
+    }
   };
 
   const handleSeekMouseUp = (e) => {
@@ -115,7 +184,9 @@ const MusicPlayer = () => {
     if (youtubeVideoId && ytPlayerRef?.current) {
       ytPlayerRef.current.seekTo(time, 'seconds');
     } else if (nativeAudioRef.current) {
-      nativeAudioRef.current.currentTime = time;
+      try {
+        nativeAudioRef.current.currentTime = time;
+      } catch (err) {}
     }
   };
 
@@ -448,8 +519,10 @@ const MusicPlayer = () => {
           url={`https://www.youtube.com/watch?v=${youtubeVideoId}`}
           playing={isPlaying}
           volume={isMuted ? 0 : vol}
+          progressInterval={100}
           onPlay={() => resumePlayback()}
           onPause={() => pause()}
+          onError={(e) => handleYtPlayerError && handleYtPlayerError(e)}
           onProgress={({ playedSeconds }) => {
             if (!isSeekingRef.current) {
               setProgress(playedSeconds);
@@ -465,7 +538,11 @@ const MusicPlayer = () => {
               } catch (e) {}
             }
           }}
-          onDuration={(d) => setDuration(d)}
+          onDuration={(d) => {
+            if (d && isFinite(d) && d > 0) {
+              setDuration(d);
+            }
+          }}
           onEnded={playNext}
           width="1px"
           height="1px"

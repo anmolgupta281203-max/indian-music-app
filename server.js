@@ -32,8 +32,16 @@ app.use('/tmdb', async (req, res, next) => {
 
 // 2. JioSaavn Native Proxy
 app.use('/api', async (req, res, next) => {
-  if (req.path.startsWith('/yt-search') || req.path.startsWith('/yt-download') || req.path.startsWith('/stream')) {
+  if (req.path.startsWith('/yt-search') || req.path.startsWith('/yt-download')) {
     return next();
+  }
+
+  if (req.path.startsWith('/stream')) {
+    const actualUrl = req.query.url;
+    if (!actualUrl) {
+      return res.status(400).send('No url specified');
+    }
+    return fetchStream(actualUrl, req, res);
   }
   
   try {
@@ -154,14 +162,14 @@ const fetchStream = (targetUrl, clientReq, clientRes, maxRedirects = 5) => {
   });
 };
 
-app.options('/audio-proxy', (req, res) => {
+app.options(['/audio-proxy', '/api/stream'], (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS, HEAD');
   res.header('Access-Control-Allow-Headers', '*');
   res.sendStatus(204);
 });
 
-app.get('/audio-proxy', (req, res) => {
+app.get(['/audio-proxy', '/api/stream'], (req, res) => {
   const actualUrl = req.query.url;
   if (!actualUrl) {
     return res.status(400).send('No url specified');
