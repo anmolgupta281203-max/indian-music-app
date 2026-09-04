@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search as SearchIcon, X, Play, Music, User, Film, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Search as SearchIcon, X, Play, Music, User, Film, Tv, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { searchSongs, searchArtists } from '../services/api';
+import { searchMoviesAndSeries, getImageUrl } from '../services/tmdbApi';
 import axios from 'axios';
+import VideoPlayer from '../components/VideoPlayer';
 import SongCard from '../components/SongCard';
 import { usePlayer } from '../context/PlayerContext';
 import './Search.css';
@@ -15,11 +17,13 @@ const Search = () => {
   const initialQuery = searchParams.get('q') || '';
   
   const [query, setQuery] = useState(initialQuery);
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'songs' | 'artists' | 'videos'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'songs' | 'artists' | 'videos' | 'movies'
   const [results, setResults] = useState([]);
   const [artists, setArtists] = useState([]);
   const [ytResults, setYtResults] = useState([]);
+  const [movieResults, setMovieResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
   const inputRef = useRef(null);
 
@@ -80,12 +84,14 @@ const Search = () => {
                 }
               }
               return [];
-            })()
+            })(),
+            searchMoviesAndSeries(trimmed)
           ]);
 
           let foundSongs = songsRes.status === 'fulfilled' ? (songsRes.value || []) : [];
           let foundArtists = artistsRes.status === 'fulfilled' ? (artistsRes.value || []) : [];
           let foundVideos = ytRes.status === 'fulfilled' ? (ytRes.value || []) : [];
+          let foundMovies = moviesRes.status === 'fulfilled' ? (moviesRes.value || []) : [];
 
           // Convert official high-relevance YouTube Music tracks into audio songs
           const officialAudioFromYT = (foundVideos || []).slice(0, 8).map(v => {
@@ -164,6 +170,7 @@ const Search = () => {
         setResults([]);
         setArtists([]);
         setYtResults([]);
+        setMovieResults([]);
         setHasSearched(false);
       }
     }, 400);
@@ -191,7 +198,7 @@ const Search = () => {
     { label: 'Workout Energy', query: 'Gym Workout Hindi', gradient: 'linear-gradient(135deg, #f857a6 0%, #ff5858 100%)', icon: '💪' },
   ];
 
-  const totalFound = results.length + artists.length + ytResults.length;
+  const totalFound = results.length + artists.length + ytResults.length + movieResults.length;
 
   return (
     <div className="search-container animate-fade-in">
@@ -202,7 +209,7 @@ const Search = () => {
           <input 
             ref={inputRef}
             type="text" 
-            placeholder="Search songs, artists, albums, music videos..."
+            placeholder="Search songs, artists, albums, music videos, movies & series..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="search-input"
@@ -241,6 +248,12 @@ const Search = () => {
               onClick={() => setActiveTab('videos')}
             >
               <Film size={14} /> Music Videos ({ytResults.length})
+            </button>
+            <button 
+              className={`filter-pill ${activeTab === 'movies' ? 'active' : ''}`}
+              onClick={() => setActiveTab('movies')}
+            >
+              <Tv size={14} /> Movies & Shows ({movieResults.length})
             </button>
           </div>
         )}
@@ -355,6 +368,49 @@ const Search = () => {
             </div>
           </section>
         )}
+
+        {/* 4. MOVIES & TV SERIES (Shown in 'all' or 'movies' tab) */}
+        {!loading && (activeTab === 'all' || activeTab === 'movies') && movieResults.length > 0 && (
+          <section className="search-section movies-section">
+            <div className="section-title-row">
+              <h2>Movies & TV Series</h2>
+              {activeTab === 'all' && movieResults.length > 6 && (
+                <button className="see-more-link" onClick={() => setActiveTab('movies')}>
+                  See all ({movieResults.length}) <ChevronRight size={16} />
+                </button>
+              )}
+            </div>
+            <div className="movie-posters-grid">
+              {(activeTab === 'all' ? movieResults.slice(0, 6) : movieResults).map(item => (
+                <div 
+                  key={item.id} 
+                  className="search-movie-card"
+                  onClick={() => { pause(); setSelectedVideo({ ...item, media_type: item.media_type || 'movie', type: 'tmdb' }); }}
+                >
+                  <div className="movie-poster-box">
+                    <img 
+                      src={getImageUrl(item.poster_path, 'w500')} 
+                      alt={item.title || item.name} 
+                      loading="lazy" 
+                      onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Poster'; }}
+                    />
+                    <div className="movie-badge-tag">{item.media_type === 'tv' ? 'SERIES' : 'MOVIE'}</div>
+                    <div className="movie-hover-play">
+                      <Play size={28} fill="#fff" color="#fff" />
+                    </div>
+                  </div>
+                  <div className="movie-card-info">
+                    <h4 className="movie-title">{item.title || item.name}</h4>
+                    <span className="movie-year">
+                      {item.release_date ? new Date(item.release_date).getFullYear() : (item.first_air_date ? new Date(item.first_air_date).getFullYear() : '')}
+                      {item.vote_average ? ` • ⭐ ${item.vote_average.toFixed(1)}` : ''}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         
         {/* ZERO-STATE: BROWSE ALL GENRES & QUICK PICKS */}
         {!hasSearched && !loading && (
@@ -382,6 +438,14 @@ const Search = () => {
           </div>
         )}
       </div>
+
+      {selectedVideo && (
+        <VideoPlayer 
+          video={selectedVideo} 
+          onClose={() => setSelectedVideo(null)}
+          onEnded={() => setSelectedVideo(null)}
+        />
+      )}
     </div>
   );
 };

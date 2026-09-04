@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Search, Library, Sparkles, Heart } from 'lucide-react';
+import { Home, Search, Film, Library, Sparkles, Heart } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = ({ onOpenAiDj }) => {
@@ -14,6 +14,10 @@ const Sidebar = ({ onOpenAiDj }) => {
         <NavLink to="/search" className={({ isActive }) => isActive ? 'nav-rail-item active md-ripple' : 'nav-rail-item md-ripple'}>
           <div className="nav-rail-icon"><Search size={24} /></div>
           <span>Search</span>
+        </NavLink>
+        <NavLink to="/videos" className={({ isActive }) => isActive ? 'nav-rail-item active md-ripple' : 'nav-rail-item md-ripple'}>
+          <div className="nav-rail-icon"><Film size={24} /></div>
+          <span>Movies</span>
         </NavLink>
         <NavLink to="/library" className={({ isActive }) => isActive ? 'nav-rail-item active md-ripple' : 'nav-rail-item md-ripple'}>
           <div className="nav-rail-icon"><Library size={24} /></div>

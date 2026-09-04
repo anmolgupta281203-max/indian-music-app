@@ -10,6 +10,7 @@ import QueueModal from './components/QueueModal';
 import RetroPlayerView from './components/RetroPlayerView';
 
 const Search = React.lazy(() => import('./pages/Search'));
+const Videos = React.lazy(() => import('./pages/Videos'));
 const Artist = React.lazy(() => import('./pages/Artist'));
 const AdminPanel = React.lazy(() => import('./pages/AdminPanel'));
 const AIDjModal = React.lazy(() => import('./components/AIDjModal'));
@@ -327,6 +328,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/search" element={<Search />} />
+                <Route path="/videos" element={<Videos />} />
                 <Route path="/artist/:id" element={<Artist />} />
                 <Route path="/library" element={<Library />} />
               </Routes>
