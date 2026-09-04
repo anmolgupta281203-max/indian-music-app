@@ -47,16 +47,25 @@ export const PlayerProvider = ({ children }) => {
   const [sleepTimerMinutes, setSleepTimerMinutes] = useState(0);
 
   const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem('svar_favorites');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('svar_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
   });
 
   const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
   const [downloadedSongs, setDownloadedSongs] = useState([]);
   const [currentUrl, setCurrentUrl] = useState('');
   const [crossfadeSeconds, setCrossfadeSeconds] = useState(() => {
-    const saved = localStorage.getItem('svar_crossfade');
-    return saved ? parseInt(saved, 10) : 3;
+    try {
+      const saved = localStorage.getItem('svar_crossfade');
+      const val = saved ? parseInt(saved, 10) : 3;
+      return isNaN(val) ? 3 : val;
+    } catch (e) {
+      return 3;
+    }
   });
 
   // YouTube playback state
@@ -726,7 +735,7 @@ export const PlayerProvider = ({ children }) => {
   const handleDownloadToggle = async (song) => {
     const isDownloaded = downloadedSongs.some(s => s.id === song.id);
     if (isDownloaded) {
-      await removeOfflineSong(song.id);
+      await deleteOfflineSong(song.id);
       setDownloadedSongs(prev => prev.filter(s => s.id !== song.id));
     } else {
       let downloadUrl = song.downloadUrl?.[song.downloadUrl.length - 1]?.url || song.url;
@@ -734,7 +743,7 @@ export const PlayerProvider = ({ children }) => {
         downloadUrl = song.downloadUrl[0].url || song.downloadUrl[0].link;
       }
       if (downloadUrl) {
-        await saveOfflineSong(song, downloadUrl);
+        await downloadSongToApp(song, downloadUrl);
         setDownloadedSongs(prev => [...prev, song]);
       }
     }

@@ -166,6 +166,7 @@ function App() {
   const [subscription, setSubscription] = useState(null);
   const [isAiDjOpen, setIsAiDjOpen] = useState(false);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
   const [auraStyle, setAuraStyle] = useState(null);
   
   const location = useLocation();

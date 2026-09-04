@@ -9,7 +9,13 @@ export const AuthProvider = ({ children }) => {
 
   // Load from local storage on mount
   useEffect(() => {
-    const storedUsers = JSON.parse(localStorage.getItem('indian_music_users')) || [];
+    let storedUsers = [];
+    try {
+      const raw = localStorage.getItem('indian_music_users');
+      storedUsers = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      storedUsers = [];
+    }
     const storedCurrentUserId = localStorage.getItem('indian_music_current_user');
     
     setUsers(storedUsers);
