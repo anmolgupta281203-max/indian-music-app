@@ -4,65 +4,95 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
+  padding: 0.85rem 1.25rem;
   z-index: 100;
-  background-color: var(--md-sys-color-background);
+  background-color: rgba(13, 17, 23, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: var(--md-sys-color-on-background);
-  border-bottom: 1px solid var(--md-sys-color-outline-variant);
-  transition: background-color 0.2s ease;
-}
-
-@media (max-width: 768px) {
-  .top-nav {
-    padding: 0.65rem 1rem;
-  }
-
-  .app-name-header {
-    font-size: 1.25rem;
-  }
-
-  .retro-nav-toggle-btn {
-    padding: 5px 10px !important;
-    font-size: 11px !important;
-  }
-}
-
-.nav-arrows {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.nav-arrow {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: transparent;
-  border: none;
-  color: var(--md-sys-color-on-background);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s cubic-bezier(0.2, 0, 0, 1);
-}
-
-.nav-arrow:hover {
-  background-color: var(--md-sys-color-surface-container-highest);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .top-right-group {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 10px;
+}
+
+.app-logo-img {
+  height: 30px;
+  width: 30px;
+  border-radius: 6px;
+  object-fit: cover;
 }
 
 .app-name-header {
-  font-size: 1.5rem;
-  font-weight: 500;
+  font-size: 1.35rem;
+  font-weight: 700;
   margin: 0;
-  letter-spacing: 0;
-  color: var(--md-sys-color-on-background);
-  font-family: 'Google Sans', 'Roboto', sans-serif;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.top-nav-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retro-nav-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.retro-nav-toggle-btn.active {
+  background: linear-gradient(135deg, #7e22ce, #a855f7);
+  border-color: #c084fc;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.5);
+}
+
+.retro-nav-toggle-btn .spin-icon {
+  animation: spin 6s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .top-nav {
+    padding: 0.6rem 0.85rem;
+  }
+
+  .app-name-header {
+    font-size: 1.2rem;
+  }
+
+  .retro-nav-toggle-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 380px) {
+  .retro-btn-label {
+    display: none;
+  }
+  .retro-nav-toggle-btn {
+    padding: 6px;
+    border-radius: 50%;
+  }
 }
 
 .profile-btn {

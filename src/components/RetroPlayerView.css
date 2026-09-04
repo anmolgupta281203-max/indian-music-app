@@ -429,14 +429,18 @@ input[type=range].retro-progress-slider::-moz-range-thumb {
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border-left: 1px solid rgba(255, 255, 255, 0.1);
-    transform: translateX(110%);
-    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateX(100%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.35s ease;
     box-shadow: -10px 0 40px rgba(0, 0, 0, 0.85);
     padding: 1.25rem 1rem 6rem 1rem;
   }
 
   .retro-dock-container.open {
     transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 }
 
@@ -451,10 +455,14 @@ input[type=range].retro-progress-slider::-moz-range-thumb {
     border-left: none;
     padding: 1rem 0.85rem calc(65px + env(safe-area-inset-bottom, 0px)) 0.85rem;
     transform: translateY(105%);
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .retro-dock-container.open {
     transform: translateY(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .retro-mp3-casing {
