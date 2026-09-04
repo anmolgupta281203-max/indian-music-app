@@ -259,23 +259,6 @@ const MusicPlayer = () => {
     }
   };
 
-  if (!currentSong) return null;
-
-  const getPlayerImage = () => {
-    if (!currentSong || !currentSong.image) return 'https://via.placeholder.com/60';
-    if (typeof currentSong.image === 'string') return currentSong.image;
-    if (Array.isArray(currentSong.image) && currentSong.image.length > 0) {
-      const last = currentSong.image[currentSong.image.length - 1];
-      return typeof last === 'string' ? last : (last?.url || currentSong.image[0]?.url || 'https://via.placeholder.com/60');
-    }
-    return 'https://via.placeholder.com/60';
-  };
-  const imageUrl = getPlayerImage();
-  const hqImageUrl = imageUrl.replace('150x150', '500x500').replace('50x50', '500x500');
-  const isFavorite = favorites.some(s => s.id === currentSong.id);
-  const primaryArtist = decodeHtml(currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
-  const songTitle = decodeHtml(currentSong.name);
-
   // Time-Synced Karaoke Lyrics Parsing
   const parsedLyrics = useMemo(() => {
     if (!lyrics) return [];
@@ -336,6 +319,24 @@ const MusicPlayer = () => {
       setProgress(seekTime);
     }
   };
+
+  const getPlayerImage = () => {
+    if (!currentSong || !currentSong.image) return 'https://via.placeholder.com/60';
+    if (typeof currentSong.image === 'string') return currentSong.image;
+    if (Array.isArray(currentSong.image) && currentSong.image.length > 0) {
+      const last = currentSong.image[currentSong.image.length - 1];
+      return typeof last === 'string' ? last : (last?.url || currentSong.image[0]?.url || 'https://via.placeholder.com/60');
+    }
+    return 'https://via.placeholder.com/60';
+  };
+
+  if (!currentSong) return null;
+
+  const imageUrl = getPlayerImage();
+  const hqImageUrl = imageUrl.replace('150x150', '500x500').replace('50x50', '500x500');
+  const isFavorite = favorites.some(s => s.id === currentSong.id);
+  const primaryArtist = decodeHtml(currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
+  const songTitle = decodeHtml(currentSong.name);
 
   return (
     <>

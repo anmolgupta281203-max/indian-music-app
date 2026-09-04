@@ -49,6 +49,8 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
   const [musicVideoId, setMusicVideoId] = useState(null);
   const [controlsActive, setControlsActive] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [seasonData, setSeasonData] = useState(null);
+  const [needsFullscreen, setNeedsFullscreen] = useState(false);
   const hideControlsTimeout = useRef(null);
 
   const handleMouseMove = () => {
@@ -152,8 +154,6 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       });
     }
   }, [video]);
-
-  const [seasonData, setSeasonData] = useState(null);
   
   useEffect(() => {
     if (video?.media_type === 'tv' && season) {
@@ -238,8 +238,6 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       }
     }
   }, []);
-
-  const [needsFullscreen, setNeedsFullscreen] = useState(false);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
