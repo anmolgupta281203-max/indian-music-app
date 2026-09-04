@@ -63,11 +63,6 @@ const RetroPlayerView = ({ isOpen, onClose }) => {
   const nextTitle = nextSong ? decodeHtml(nextSong.name || nextSong.title || '') : '';
   const nextArtist = nextSong ? decodeHtml(nextSong.primaryArtists || '') : '';
 
-  const encodedQuery = encodeURIComponent(`${songTitle} ${artistName}`);
-  const spotifyUrl = `https://open.spotify.com/search/${encodedQuery}`;
-  const appleMusicUrl = `https://music.apple.com/search?term=${encodedQuery}`;
-  const ytMusicUrl = `https://music.youtube.com/search?q=${encodedQuery}`;
-
   return (
     <aside className={`retro-dock-container ${isOpen ? 'open' : ''}`}>
       {/* ═══ 3D RETRO HANDHELD MP3 PLAYER ═══ */}
@@ -118,13 +113,15 @@ const RetroPlayerView = ({ isOpen, onClose }) => {
           <input 
             type="range" 
             min="0" 
-            max={duration || 100} 
-            value={progress} 
+            max={duration > 0 ? duration : 100} 
+            value={progress || 0} 
             onChange={handleSeekChange}
             onMouseUp={handleSeekMouseUp}
             onTouchEnd={handleSeekMouseUp}
             className="retro-progress-slider"
-            style={{ '--progress': `${duration ? (progress / duration) * 100 : 0}%` }}
+            style={{ 
+              background: `linear-gradient(to right, #bef264 0%, #bef264 ${duration > 0 ? (progress / duration) * 100 : 0}%, rgba(255, 255, 255, 0.15) ${duration > 0 ? (progress / duration) * 100 : 0}%, rgba(255, 255, 255, 0.15) 100%)` 
+            }}
           />
         </div>
 
@@ -202,45 +199,6 @@ const RetroPlayerView = ({ isOpen, onClose }) => {
           </div>
         </div>
       )}
-
-      {/* ═══ STREAMING PLATFORM BADGES ═══ */}
-      <div className="retro-platforms-container">
-        <span className="platforms-header-label">STREAM ON PLATFORMS</span>
-        <div className="platforms-pill-grid">
-          <a 
-            href={spotifyUrl} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="platform-pill spotify"
-            title="Listen on Spotify"
-          >
-            <span className="platform-dot spotify-dot"></span>
-            <span>Spotify</span>
-          </a>
-
-          <a 
-            href={appleMusicUrl} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="platform-pill apple"
-            title="Listen on Apple Music"
-          >
-            <span className="platform-dot apple-dot"></span>
-            <span>Apple Music</span>
-          </a>
-
-          <a 
-            href={ytMusicUrl} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="platform-pill yt"
-            title="Listen on YouTube Music"
-          >
-            <span className="platform-dot yt-dot"></span>
-            <span>YouTube Music</span>
-          </a>
-        </div>
-      </div>
     </aside>
   );
 };
