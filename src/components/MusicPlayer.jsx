@@ -5,6 +5,7 @@ import {
   Activity, PictureInPicture2, Share2, Sparkles, CheckCircle2, Loader2, Maximize2
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
+import { useTimeline } from '../context/TimelineContext';
 import ReactPlayer from 'react-player/youtube';
 import AudioVisualizer from './AudioVisualizer';
 import { openPictureInPicture, updatePipContent, isPipActive } from '../utils/pipPlayer';
@@ -49,12 +50,15 @@ const MusicPlayer = () => {
     lyrics,
     loadingLyrics,
     sleepTimerMinutes,
-    setSleepTimer,
+    setSleepTimer
+  } = usePlayer();
+
+  const {
     progress,
     duration,
     handleSeekChange,
     handleSeekMouseUp
-  } = usePlayer();
+  } = useTimeline();
 
   const [vol, setVol] = useState(1);
   const [isMuted, setIsMuted] = useState(false);

@@ -4,6 +4,7 @@ import {
   Disc3
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
+import { useTimeline } from '../context/TimelineContext';
 import './RetroPlayerView.css';
 
 const formatTime = (time) => {
@@ -33,12 +34,15 @@ const RetroPlayerView = ({ isOpen, onClose }) => {
     isShuffling,
     isLooping,
     toggleShuffle,
-    toggleLoop,
+    toggleLoop
+  } = usePlayer();
+
+  const {
     progress,
     duration,
     handleSeekChange,
     handleSeekMouseUp
-  } = usePlayer();
+  } = useTimeline();
 
   if (!currentSong) return null;
 

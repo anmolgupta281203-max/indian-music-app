@@ -72,4 +72,4 @@ const CompactSongCard = ({ song, queueContext }) => {
   );
 };
 
-export default CompactSongCard;
+export default React.memo(CompactSongCard);

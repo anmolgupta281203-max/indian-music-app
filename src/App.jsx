@@ -4,16 +4,17 @@ import Sidebar from './components/Sidebar';
 import MusicPlayer from './components/MusicPlayer';
 import TopNav from './components/TopNav';
 import Home from './pages/Home';
-import Search from './pages/Search';
 import { usePlayer } from './context/PlayerContext';
 import SongCard from './components/SongCard';
 import QueueModal from './components/QueueModal';
-import AIDjModal from './components/AIDjModal';
-import AuthModal from './components/AuthModal';
 import RetroPlayerView from './components/RetroPlayerView';
-import Paywall from './components/Paywall';
-import AdminPanel from './pages/AdminPanel';
-import Artist from './pages/Artist';
+
+const Search = React.lazy(() => import('./pages/Search'));
+const Artist = React.lazy(() => import('./pages/Artist'));
+const AdminPanel = React.lazy(() => import('./pages/AdminPanel'));
+const AIDjModal = React.lazy(() => import('./components/AIDjModal'));
+const AuthModal = React.lazy(() => import('./components/AuthModal'));
+const Paywall = React.lazy(() => import('./components/Paywall'));
 import { useLocation } from 'react-router-dom';
 import { Download, Play, Trash2, HardDrive, WifiOff } from 'lucide-react';
 import { supabase } from './services/supabase';
@@ -322,12 +323,14 @@ function App() {
         <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
           <TopNav onToggleRetro={() => setIsRetroOpen(prev => !prev)} isRetroOpen={isRetroOpen} />
           <div style={{ flex: 1 }}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/artist/:id" element={<Artist />} />
-              <Route path="/library" element={<Library />} />
-            </Routes>
+            <React.Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>Loading...</div>}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/artist/:id" element={<Artist />} />
+                <Route path="/library" element={<Library />} />
+              </Routes>
+            </React.Suspense>
           </div>
         </main>
 
@@ -335,21 +338,23 @@ function App() {
       </div>
       <MusicPlayer />
       <QueueModal />
-      <AIDjModal isOpen={isAiDjOpen} onClose={() => setIsAiDjOpen(false)} />
-      <AuthModal />
-      {isPaywallOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}>
-          <Paywall 
-            onClose={() => setIsPaywallOpen(false)}
-            onAccessGranted={(u, sub) => {
-              setUser(u);
-              setSubscription(sub);
-              setHasAccess(true);
-              setIsPaywallOpen(false);
-            }} 
-          />
-        </div>
-      )}
+      <React.Suspense fallback={null}>
+        <AIDjModal isOpen={isAiDjOpen} onClose={() => setIsAiDjOpen(false)} />
+        <AuthModal />
+        {isPaywallOpen && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}>
+            <Paywall 
+              onClose={() => setIsPaywallOpen(false)}
+              onAccessGranted={(u, sub) => {
+                setUser(u);
+                setSubscription(sub);
+                setHasAccess(true);
+                setIsPaywallOpen(false);
+              }} 
+            />
+          </div>
+        )}
+      </React.Suspense>
     </div>
   );
 }

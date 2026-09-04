@@ -99,4 +99,4 @@ const SongCard = ({ song, queueContext }) => {
   );
 };
 
-export default SongCard;
+export default React.memo(SongCard);

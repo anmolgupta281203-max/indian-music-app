@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import App from './App.jsx'
 import { PlayerProvider } from './context/PlayerContext.jsx'
+import { TimelineProvider } from './context/TimelineContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import './index.css'
 
@@ -52,11 +53,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <AuthProvider>
         <PlayerProvider>
-          <BrowserRouter>
-            <App />
-            <Analytics />
-            <SpeedInsights />
-          </BrowserRouter>
+          <TimelineProvider>
+            <BrowserRouter>
+              <App />
+              <Analytics />
+              <SpeedInsights />
+            </BrowserRouter>
+          </TimelineProvider>
         </PlayerProvider>
       </AuthProvider>
     </ErrorBoundary>
