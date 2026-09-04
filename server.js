@@ -58,25 +58,13 @@ app.use('/api', async (req, res, next) => {
   }
 });
 
-// 2a. YouTube Search API
-app.get('/api/yt-search', async (req, res) => {
+// 2a. YouTube Search API (delegated to resilient api/yt-search.js handler)
+app.get('/api/yt-search', async (req, res, next) => {
   try {
-    const query = req.query.q;
-    if (!query) {
-      return res.status(400).json({ error: 'No query specified' });
-    }
-
-    const searchQuery = query.toLowerCase().includes('song') || query.toLowerCase().includes('music') 
-      ? query 
-      : `${query} song`;
-
-    const r = await ytSearch(searchQuery);
-    const videos = r.videos.filter(v => v.seconds < 600).slice(0, 20);
-    
-    res.json({ results: videos });
-  } catch (e) {
-    console.error('YT Search Error:', e);
-    res.status(500).json({ error: e.message });
+    const ytHandler = (await import('./api/yt-search.js')).default;
+    await ytHandler(req, res);
+  } catch (err) {
+    next(err);
   }
 });
 

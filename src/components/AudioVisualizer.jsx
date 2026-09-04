@@ -67,7 +67,11 @@ export default function AudioVisualizer({ mode = 'bars', onToggleMode, isVisible
 
           ctx.fillStyle = grad;
           ctx.beginPath();
-          ctx.roundRect(x, y, barWidth, barH, [4, 4, 0, 0]);
+          if (ctx.roundRect) {
+            ctx.roundRect(x, y, barWidth, barH, [4, 4, 0, 0]);
+          } else {
+            ctx.rect(x, y, barWidth, barH);
+          }
           ctx.fill();
 
           // Glowing cap

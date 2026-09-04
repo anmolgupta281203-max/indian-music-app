@@ -85,47 +85,79 @@ export function updatePipContent({ song, isPlaying, progress, duration, onToggle
   const container = pipWindow.document.getElementById('pip-content');
   if (!container) return;
 
+  const pct = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0;
   const imgUrl = typeof song?.image === 'string'
     ? song.image
     : (song?.image?.[2]?.url || song?.image?.[1]?.url || song?.image?.[0]?.url || 'https://via.placeholder.com/150');
-
   const title = song?.name || 'No song playing';
   const artist = song?.primaryArtists || 'Svar Music';
-  const pct = duration > 0 ? (progress / duration) * 100 : 0;
 
-  container.innerHTML = `
-    <div style="position: relative; margin-bottom: 12px; display: inline-block;">
-      <img src="${imgUrl}" style="width: 140px; height: 140px; border-radius: 12px; object-fit: cover; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
-    </div>
-    <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; margin-left: auto; margin-right: auto;">
-      ${title}
-    </div>
-    <div style="font-size: 12px; color: #a1a1aa; margin-bottom: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; margin-left: auto; margin-right: auto;">
-      ${artist}
-    </div>
+  // If DOM not built yet, construct structure once
+  if (!pipWindow.document.getElementById('pip-progress-fill')) {
+    container.innerHTML = `
+      <div style="position: relative; margin-bottom: 12px; display: inline-block;">
+        <img id="pip-art" src="${imgUrl}" style="width: 140px; height: 140px; border-radius: 12px; object-fit: cover; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
+      </div>
+      <div id="pip-title" style="font-weight: 700; font-size: 15px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; margin-left: auto; margin-right: auto;">
+        ${title}
+      </div>
+      <div id="pip-artist" style="font-size: 12px; color: #a1a1aa; margin-bottom: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; margin-left: auto; margin-right: auto;">
+        ${artist}
+      </div>
 
-    <!-- Progress Bar -->
-    <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin-bottom: 16px; overflow: hidden;">
-      <div style="width: ${pct}%; height: 100%; background: #1ed760; transition: width 0.1s linear;"></div>
-    </div>
+      <!-- Progress Bar -->
+      <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin-bottom: 16px; overflow: hidden;">
+        <div id="pip-progress-fill" style="width: ${pct}%; height: 100%; background: #1ed760; transition: width 0.05s linear;"></div>
+      </div>
 
-    <!-- Controls -->
-    <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
-      <button id="pip-prev-btn" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 18px; padding: 6px;">⏮</button>
-      <button id="pip-play-btn" style="background: #fff; color: #000; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center;">
-        ${isPlaying ? '⏸' : '▶'}
-      </button>
-      <button id="pip-next-btn" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 18px; padding: 6px;">⏭</button>
-    </div>
-  `;
+      <!-- Controls -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+        <button id="pip-prev-btn" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 18px; padding: 6px;">⏮</button>
+        <button id="pip-play-btn" style="background: #fff; color: #000; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center;">
+          ${isPlaying ? '⏸' : '▶'}
+        </button>
+        <button id="pip-next-btn" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 18px; padding: 6px;">⏭</button>
+      </div>
+    `;
+
+    const playBtn = pipWindow.document.getElementById('pip-play-btn');
+    const prevBtn = pipWindow.document.getElementById('pip-prev-btn');
+    const nextBtn = pipWindow.document.getElementById('pip-next-btn');
+
+    if (playBtn) playBtn.onclick = () => onTogglePlay && onTogglePlay();
+    if (prevBtn) prevBtn.onclick = () => onPlayPrev && onPlayPrev();
+    if (nextBtn) nextBtn.onclick = () => onPlayNext && onPlayNext();
+    return;
+  }
+
+  // High-performance direct attribute updates
+  const progressFill = pipWindow.document.getElementById('pip-progress-fill');
+  if (progressFill) {
+    progressFill.style.width = `${pct}%`;
+  }
+
+  const artEl = pipWindow.document.getElementById('pip-art');
+  if (artEl && artEl.src !== imgUrl) {
+    artEl.src = imgUrl;
+  }
+
+  const titleEl = pipWindow.document.getElementById('pip-title');
+  if (titleEl && titleEl.textContent !== title) {
+    titleEl.textContent = title;
+  }
+
+  const artistEl = pipWindow.document.getElementById('pip-artist');
+  if (artistEl && artistEl.textContent !== artist) {
+    artistEl.textContent = artist;
+  }
 
   const playBtn = pipWindow.document.getElementById('pip-play-btn');
-  const prevBtn = pipWindow.document.getElementById('pip-prev-btn');
-  const nextBtn = pipWindow.document.getElementById('pip-next-btn');
-
-  if (playBtn) playBtn.onclick = () => onTogglePlay && onTogglePlay();
-  if (prevBtn) prevBtn.onclick = () => onPlayPrev && onPlayPrev();
-  if (nextBtn) nextBtn.onclick = () => onPlayNext && onPlayNext();
+  if (playBtn) {
+    const desiredIcon = isPlaying ? '⏸' : '▶';
+    if (playBtn.textContent.trim() !== desiredIcon) {
+      playBtn.textContent = desiredIcon;
+    }
+  }
 }
 
 export function isPipActive() {
