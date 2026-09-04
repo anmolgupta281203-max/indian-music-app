@@ -9,8 +9,8 @@ import { usePlayer } from './context/PlayerContext';
 import SongCard from './components/SongCard';
 import QueueModal from './components/QueueModal';
 import AIDjModal from './components/AIDjModal';
-import Videos from './pages/Videos';
 import AuthModal from './components/AuthModal';
+import RetroPlayerView from './components/RetroPlayerView';
 import Paywall from './components/Paywall';
 import AdminPanel from './pages/AdminPanel';
 import Artist from './pages/Artist';
@@ -252,6 +252,7 @@ function App() {
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
   const [auraStyle, setAuraStyle] = useState(null);
+  const [isRetroOpen, setIsRetroOpen] = useState(true);
   
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -316,18 +317,22 @@ function App() {
       <div className="app-ambient-overlay"></div>
 
       <Sidebar onOpenAiDj={() => setIsAiDjOpen(true)} onOpenPaywall={() => setIsPaywallOpen(true)} />
-      <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
-        <TopNav />
-        <div style={{ flex: 1 }}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/videos" element={<Videos />} />
-            <Route path="/artist/:id" element={<Artist />} />
-            <Route path="/library" element={<Library />} />
-          </Routes>
-        </div>
-      </main>
+      
+      <div className="app-main-layout">
+        <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
+          <TopNav onToggleRetro={() => setIsRetroOpen(prev => !prev)} isRetroOpen={isRetroOpen} />
+          <div style={{ flex: 1 }}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/artist/:id" element={<Artist />} />
+              <Route path="/library" element={<Library />} />
+            </Routes>
+          </div>
+        </main>
+
+        <RetroPlayerView isOpen={isRetroOpen} onClose={() => setIsRetroOpen(false)} />
+      </div>
       <MusicPlayer />
       <QueueModal />
       <AIDjModal isOpen={isAiDjOpen} onClose={() => setIsAiDjOpen(false)} />

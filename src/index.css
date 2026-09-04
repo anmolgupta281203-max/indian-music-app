@@ -166,14 +166,24 @@ html, body {
   }
 }
 
-.main-content {
+.app-main-layout {
   grid-area: main;
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.main-content {
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   background-color: transparent;
   position: relative;
   min-width: 0;
-  z-index: 1;
+  height: 100%;
 }
 
 @media (max-width: 768px) {

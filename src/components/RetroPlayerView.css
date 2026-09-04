@@ -1,0 +1,452 @@
+/* ═══ RetroPlayerView.css — 3D Handheld Retro MP3 Player & Dock ═══ */
+
+.retro-dock-container {
+  width: 330px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem 1rem 0.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  height: 100%;
+}
+
+.retro-dock-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── 3D Retro MP3 Player Casing ─── */
+.retro-mp3-casing {
+  background: linear-gradient(160deg, #581c87 0%, #431407 0%, #3b0764 100%);
+  background-color: #4a154b;
+  border-radius: 28px;
+  padding: 18px;
+  /* 3D Extrusion Shadow */
+  box-shadow: 10px 14px 0px #1e0538, 0 20px 40px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  user-select: none;
+}
+
+.retro-mp3-casing:hover {
+  transform: translateY(-2px);
+  box-shadow: 12px 16px 0px #1a0430, 0 24px 48px rgba(0, 0, 0, 0.7);
+}
+
+/* Casing Header & LED */
+.retro-casing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.retro-brand-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+}
+
+.retro-led-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.retro-led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #64748b;
+  transition: all 0.3s ease;
+}
+
+.retro-led.active {
+  background-color: #bef264;
+  box-shadow: 0 0 10px #bef264, 0 0 18px #bef264;
+}
+
+.retro-led-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #bef264;
+  letter-spacing: 0.5px;
+}
+
+/* Screen Bezel & Glass */
+.retro-screen-bezel {
+  background: #0f031e;
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.retro-screen-glass {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 50%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.retro-screen-art-container {
+  width: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+}
+
+.retro-screen-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.retro-screen-art.playing {
+  transform: scale(1.02);
+}
+
+.retro-scanlines {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Track Meta Info */
+.retro-meta-section {
+  margin-top: 14px;
+  padding: 0 4px;
+}
+
+.retro-song-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
+  color: #bef264;
+  text-shadow: 0 0 12px rgba(190, 242, 100, 0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.2px;
+}
+
+.retro-song-artist {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e9d5ff;
+  margin: 3px 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+
+/* High-Contrast Neon Scrubber */
+.retro-scrubber-section {
+  margin-top: 14px;
+  padding: 0 4px;
+}
+
+.retro-time-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.retro-time {
+  font-size: 11px;
+  font-family: monospace;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.5px;
+}
+
+input[type=range].retro-progress-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+input[type=range].retro-progress-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0px; 
+  height: 0px;
+  box-shadow: -400px 0 0 400px #bef264;
+}
+
+/* Chunky Hardware Buttons */
+.retro-controls-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 18px;
+}
+
+.retro-hw-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.retro-hw-btn:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(190, 242, 100, 0.6));
+}
+
+.retro-hw-btn:active {
+  transform: scale(0.92) translateY(2px);
+}
+
+.retro-play-btn {
+  padding: 10px;
+}
+
+/* Micro Toggle Switches */
+.retro-toggles-row {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+}
+
+.retro-toggle-btn {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retro-toggle-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.retro-toggle-btn.active {
+  background: rgba(190, 242, 100, 0.2);
+  color: #bef264;
+  border-color: #bef264;
+}
+
+/* ─── Up Next Floating Pill Card (Matching Mockup) ─── */
+.retro-up-next-card {
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 20px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* 3D Extrusion Effect */
+  box-shadow: 8px 10px 0px rgba(0, 0, 0, 0.28), 0 10px 24px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.retro-up-next-card:hover {
+  transform: translateY(-2px) translateX(-1px);
+  box-shadow: 10px 12px 0px rgba(0, 0, 0, 0.32), 0 14px 28px rgba(0, 0, 0, 0.5);
+}
+
+.up-next-art-wrapper {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.up-next-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.up-next-wave-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  padding-bottom: 8px;
+}
+
+.un-bar {
+  width: 2.5px;
+  background: #fff;
+  border-radius: 2px;
+  animation: un-bounce 0.8s ease-in-out infinite alternate;
+}
+.un-bar.u1 { height: 35%; animation-delay: 0.1s; }
+.un-bar.u2 { height: 75%; animation-delay: 0.3s; }
+.un-bar.u3 { height: 50%; animation-delay: 0.2s; }
+
+@keyframes un-bounce {
+  0% { height: 20%; }
+  100% { height: 85%; }
+}
+
+.up-next-details {
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+.up-next-badge {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #6366f1;
+  text-transform: uppercase;
+}
+
+.up-next-title {
+  margin: 1px 0 0 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.up-next-artist {
+  margin: 0;
+  font-size: 11.5px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Streaming Platform Badges ─── */
+.retro-platforms-container {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  padding: 12px 14px;
+}
+
+.platforms-header-label {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.platforms-pill-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.platform-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.platform-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(3px);
+}
+
+.platform-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.spotify-dot { background-color: #1ed760; box-shadow: 0 0 6px #1ed760; }
+.apple-dot { background-color: #fa2d48; box-shadow: 0 0 6px #fa2d48; }
+.yt-dot { background-color: #ff0000; box-shadow: 0 0 6px #ff0000; }
+
+.animate-spin-slow {
+  animation: spin 10s linear infinite;
+}
+
+/* Responsive: Hide on narrow screens (< 1150px) by default unless toggled */
+@media (max-width: 1150px) {
+  .retro-dock-container {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 86px;
+    z-index: 2500;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    transform: translateX(110%);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7);
+    padding: 1.25rem;
+  }
+
+  .retro-dock-container.open {
+    transform: translateX(0);
+  }
+}
