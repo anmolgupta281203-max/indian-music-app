@@ -99,10 +99,12 @@ html, body {
   grid-template-areas: 
     "sidebar main"
     "sidebar player";
-  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   grid-template-rows: 1fr auto;
   height: 100vh;
-  width: 100%;
+  width: 100vw;
+  max-width: 100vw;
+  overflow: hidden;
   background-color: var(--md-sys-color-background);
   position: relative;
 }
@@ -159,9 +161,11 @@ html, body {
     grid-template-areas: 
       "main"
       "sidebar";
-    grid-template-columns: 100%;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 1fr calc(54px + env(safe-area-inset-bottom, 0px));
     height: 100dvh;
+    width: 100vw;
+    max-width: 100vw;
     overflow: hidden;
   }
 }
@@ -169,7 +173,10 @@ html, body {
 .app-main-layout {
   grid-area: main;
   display: flex;
+  min-width: 0;
   min-height: 0;
+  width: 100%;
+  max-width: 100vw;
   height: 100%;
   overflow: hidden;
   position: relative;
@@ -178,11 +185,13 @@ html, body {
 
 .main-content {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100vw;
   overflow-y: auto;
   overflow-x: hidden;
   background-color: transparent;
   position: relative;
-  min-width: 0;
   height: 100%;
   -webkit-overflow-scrolling: touch;
 }
