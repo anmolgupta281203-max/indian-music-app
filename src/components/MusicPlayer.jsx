@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
   Heart, Download, ChevronDown, ListMusic, Moon, MoreVertical, Check, Mic,
-  Activity, PictureInPicture2, Share2, Sparkles, CheckCircle2, Loader2
+  Activity, PictureInPicture2, Share2, Sparkles, CheckCircle2, Loader2, Maximize2
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import ReactPlayer from 'react-player/youtube';
@@ -351,65 +351,77 @@ const MusicPlayer = () => {
             style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
           />
         </div>
+
+        {/* Left: Track Information & Vinyl Animation */}
         <div className="now-playing" onClick={(e) => {
-          if (e.target.closest('button')) return;
+          if (e.target.closest('button') || e.target.closest('input')) return;
           setIsFullScreen(true);
-        }} style={{cursor: 'pointer'}}>
-          <img src={imageUrl} alt={songTitle} className={`song-art ${isPlaying ? 'playing' : ''}`} />
-          <div className="song-info">
-            <h4>{songTitle}</h4>
-            <p>{primaryArtist}</p>
+        }} title="Click to open full screen player">
+          <div className="song-art-wrapper">
+            <img src={imageUrl} alt={songTitle} className={`song-art ${isPlaying ? 'playing' : ''}`} />
+            <div className={`vinyl-ring ${isPlaying ? 'playing' : ''}`}></div>
           </div>
-          <button 
-            className="control-btn" 
-            style={{marginLeft: '1rem'}} 
-            onClick={() => toggleFavorite(currentSong)}
-            title="Save to library"
-          >
-            <Heart size={20} fill={isFavorite ? "var(--primary-color)" : "none"} color={isFavorite ? "var(--primary-color)" : "var(--text-secondary)"} />
-          </button>
-          <button 
-            className="control-btn" 
-            style={{marginLeft: '0.5rem'}} 
-            onClick={openQueueModal}
-            title="View Queue"
-          >
-            <ListMusic size={20} color="var(--primary-color)" />
-          </button>
-          <button 
-            className="control-btn" 
-            style={{marginLeft: '0.5rem'}} 
-            onClick={() => handleDownloadToggle(currentSong)}
-            title={isDownloaded ? "Downloaded offline (Tap to delete)" : isDownloading ? "Downloading offline..." : "Download offline"}
-            disabled={isDownloading}
-          >
-            {isDownloading ? (
-              <Loader2 size={20} className="animate-spin" color="var(--primary-color)" />
-            ) : isDownloaded ? (
-              <CheckCircle2 size={20} color="var(--primary-color)" />
-            ) : (
-              <Download size={20} color="var(--text-secondary)" />
-            )}
-          </button>
-          <button 
-            className="control-btn hide-on-mobile" 
-            style={{marginLeft: '0.5rem'}} 
-            onClick={handleTogglePip}
-            title="Floating Mini Player (Picture in Picture)"
-          >
-            <PictureInPicture2 size={20} color="var(--text-secondary)" />
-          </button>
+
+          <div className="song-info">
+            <div className="song-title-row">
+              <h4 title={songTitle}>{songTitle}</h4>
+              {isPlaying && (
+                <div className="live-soundwave" title="Now Playing">
+                  <span className="sw-bar b1"></span>
+                  <span className="sw-bar b2"></span>
+                  <span className="sw-bar b3"></span>
+                </div>
+              )}
+            </div>
+            <div className="song-sub-row">
+              <p title={primaryArtist}>{primaryArtist}</p>
+              <span className="hifi-badge">HQ 320k</span>
+            </div>
+          </div>
+
+          <div className="now-playing-actions">
+            <button 
+              className="control-btn mini-action-btn" 
+              onClick={(e) => { e.stopPropagation(); toggleFavorite(currentSong); }}
+              title={isFavorite ? "Remove from Liked" : "Save to Liked"}
+            >
+              <Heart size={18} fill={isFavorite ? "var(--primary-color)" : "none"} color={isFavorite ? "var(--primary-color)" : "rgba(255,255,255,0.6)"} />
+            </button>
+            <button 
+              className="control-btn mini-action-btn" 
+              onClick={(e) => { e.stopPropagation(); handleDownloadToggle(currentSong); }}
+              title={isDownloaded ? "Downloaded offline (Tap to delete)" : isDownloading ? "Downloading offline..." : "Download offline"}
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <Loader2 size={18} className="animate-spin" color="var(--primary-color)" />
+              ) : isDownloaded ? (
+                <CheckCircle2 size={18} color="var(--primary-color)" />
+              ) : (
+                <Download size={18} color="rgba(255,255,255,0.6)" />
+              )}
+            </button>
+          </div>
         </div>
 
+        {/* Center: Playback Controls & Progress Bar */}
         <div className="player-controls-container">
           <div className="player-buttons">
-            <button className="control-btn secondary hide-on-mobile" onClick={toggleShuffle}><Shuffle size={18} color={isShuffling ? "var(--primary-color)" : "currentColor"} /></button>
-            <button className="control-btn" onClick={playPrev}><SkipBack size={24} /></button>
-            <button className="control-btn play-btn" onClick={togglePlay}>
-              {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+            <button className={`control-btn secondary hide-on-mobile ${isShuffling ? 'active' : ''}`} onClick={toggleShuffle} title="Shuffle">
+              <Shuffle size={18} color={isShuffling ? "var(--primary-color)" : "rgba(255,255,255,0.6)"} />
             </button>
-            <button className="control-btn" onClick={playNext}><SkipForward size={24} /></button>
-            <button className="control-btn secondary hide-on-mobile" onClick={toggleLoop}><Repeat size={18} color={isLooping ? "var(--primary-color)" : "currentColor"} /></button>
+            <button className="control-btn nav-btn-compact" onClick={playPrev} title="Previous track">
+              <SkipBack size={20} fill="currentColor" />
+            </button>
+            <button className="control-btn play-btn-luminous" onClick={togglePlay} title={isPlaying ? "Pause" : "Play"}>
+              {isPlaying ? <Pause size={22} fill="#0d1117" /> : <Play size={22} fill="#0d1117" style={{ marginLeft: 2 }} />}
+            </button>
+            <button className="control-btn nav-btn-compact" onClick={playNext} title="Next track">
+              <SkipForward size={20} fill="currentColor" />
+            </button>
+            <button className={`control-btn secondary hide-on-mobile ${isLooping ? 'active' : ''}`} onClick={toggleLoop} title="Repeat">
+              <Repeat size={18} color={isLooping ? "var(--primary-color)" : "rgba(255,255,255,0.6)"} />
+            </button>
           </div>
           <div className="progress-container">
             <span className="time">{formatTime(progress)}</span>
@@ -421,27 +433,52 @@ const MusicPlayer = () => {
               onChange={handleSeekChange}
               onMouseUp={handleSeekMouseUp}
               onTouchEnd={handleSeekMouseUp}
-              className="progress-bar"
+              className="progress-bar-modern"
               style={{ '--progress': `${duration ? (progress / duration) * 100 : 0}%` }}
             />
             <span className="time">{formatTime(duration)}</span>
           </div>
         </div>
 
-        <div className="volume-control">
-          <button className="control-btn" onClick={toggleMute}>
-            {isMuted || vol === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        {/* Right: Utilities (Queue, PiP, Fullscreen, Volume Pill) */}
+        <div className="player-utility-group">
+          <button 
+            className="control-btn util-btn hide-on-mobile" 
+            onClick={openQueueModal}
+            title="Up Next Queue"
+          >
+            <ListMusic size={18} color="rgba(255,255,255,0.7)" />
           </button>
-          <input 
-            type="range" 
-            min="0" 
-            max="1" 
-            step="0.01" 
-            value={isMuted ? 0 : vol} 
-            onChange={handleVolumeChange}
-            className="volume-bar"
-            style={{ '--progress': `${isMuted ? 0 : vol * 100}%` }}
-          />
+          <button 
+            className="control-btn util-btn hide-on-mobile" 
+            onClick={handleTogglePip}
+            title="Floating Mini Player (Picture in Picture)"
+          >
+            <PictureInPicture2 size={18} color="rgba(255,255,255,0.7)" />
+          </button>
+          <button 
+            className="control-btn util-btn hide-on-mobile" 
+            onClick={() => setIsFullScreen(true)}
+            title="Full Screen View"
+          >
+            <Maximize2 size={18} color="rgba(255,255,255,0.7)" />
+          </button>
+          
+          <div className="volume-pill hide-on-mobile">
+            <button className="control-btn vol-icon-btn" onClick={toggleMute} title={isMuted ? "Unmute" : "Mute"}>
+              {isMuted || vol === 0 ? <VolumeX size={17} color="rgba(255,255,255,0.7)" /> : <Volume2 size={17} color="rgba(255,255,255,0.7)" />}
+            </button>
+            <input 
+              type="range" 
+              min="0" 
+              max="1" 
+              step="0.01" 
+              value={isMuted ? 0 : vol} 
+              onChange={handleVolumeChange}
+              className="volume-bar-modern"
+              style={{ '--progress': `${isMuted ? 0 : vol * 100}%` }}
+            />
+          </div>
         </div>
       </div>
 
