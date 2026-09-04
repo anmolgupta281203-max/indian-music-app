@@ -196,21 +196,232 @@
 }
 
 .mini-action-btn {
+  background: transparent !important;
+  border: none !important;
   padding: 6px;
   border-radius: 50%;
   color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
 }
 
 .mini-action-btn:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08) !important;
   transform: scale(1.1);
 }
 
+/* ─── Center Playback Controls ─── */
+.player-controls-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 44%;
+  max-width: 520px;
+}
 
+.player-buttons {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 4px;
+}
 
-/* ═══ CINEMATIC FULL SCREEN PLAYER ═══ */
+.control-btn {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+}
+
+.control-btn:hover {
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.control-btn.secondary {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.control-btn.secondary.active {
+  color: var(--primary-color);
+}
+
+.nav-btn-compact {
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent !important;
+}
+
+.nav-btn-compact:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff;
+}
+
+/* Luminous Center Play Button */
+.play-btn-luminous {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  color: #0d1117 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none !important;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3), 0 0 20px var(--aura-glow, rgba(37, 209, 218, 0.3)) !important;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.play-btn-luminous:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 22px rgba(255, 255, 255, 0.45), 0 0 28px var(--aura-glow, rgba(37, 209, 218, 0.5)) !important;
+}
+
+.play-btn-luminous:active {
+  transform: scale(0.95);
+}
+
+/* Progress Slider */
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.time {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  min-width: 36px;
+  font-variant-numeric: tabular-nums;
+}
+.time:first-child { text-align: right; }
+.time:last-child { text-align: left; }
+
+input[type=range].progress-bar-modern,
+input[type=range].progress-bar {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: height 0.15s ease;
+  border: none !important;
+}
+
+input[type=range].progress-bar-modern:hover,
+input[type=range].progress-bar:hover {
+  height: 6px;
+}
+
+input[type=range].progress-bar-modern::-webkit-slider-thumb,
+input[type=range].progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0px; 
+  height: 0px;
+  box-shadow: -400px 0 0 400px var(--primary-color);
+}
+
+/* ─── Right Utility Section & Volume Pill ─── */
+.player-utility-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  width: 28%;
+  min-width: 180px;
+}
+
+.util-btn {
+  padding: 7px;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.65);
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.util-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.volume-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.volume-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.vol-icon-btn {
+  padding: 2px;
+  background: transparent !important;
+  border: none !important;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.vol-icon-btn:hover {
+  color: #fff;
+}
+
+input[type=range].volume-bar-modern,
+.volume-bar {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 72px !important;
+  height: 4px !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-radius: 3px !important;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: none !important;
+}
+
+input[type=range].volume-bar-modern::-webkit-slider-thumb,
+.volume-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0px !important;
+  height: 0px !important;
+  box-shadow: -100px 0 0 100px var(--primary-color) !important;
+}
 .fullscreen-player {
   position: fixed;
   top: 0; left: 0;

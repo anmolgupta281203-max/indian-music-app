@@ -68,6 +68,15 @@
   padding: 0;
 }
 
+button {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
 img {
   max-width: 100%;
   height: auto;
