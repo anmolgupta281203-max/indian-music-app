@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
   Heart, Download, ChevronDown, ListMusic, Moon, MoreVertical, Check, Mic,
-  Activity, PictureInPicture2, Share2, Sparkles
+  Activity, PictureInPicture2, Share2, Sparkles, CheckCircle2, Loader2
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import ReactPlayer from 'react-player/youtube';
@@ -35,6 +35,7 @@ const MusicPlayer = () => {
     favorites, 
     toggleFavorite, 
     downloadedSongs, 
+    downloadingIds,
     handleDownloadToggle, 
     handleYtPlayerError,
     openQueueModal, 
@@ -335,6 +336,8 @@ const MusicPlayer = () => {
   const imageUrl = getPlayerImage();
   const hqImageUrl = imageUrl.replace('150x150', '500x500').replace('50x50', '500x500');
   const isFavorite = favorites.some(s => s.id === currentSong.id);
+  const isDownloaded = downloadedSongs.some(s => s.id === currentSong.id);
+  const isDownloading = downloadingIds?.has(currentSong.id);
   const primaryArtist = decodeHtml(currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
   const songTitle = decodeHtml(currentSong.name);
 
@@ -374,12 +377,19 @@ const MusicPlayer = () => {
             <ListMusic size={20} color="var(--primary-color)" />
           </button>
           <button 
-            className="control-btn hide-on-mobile" 
+            className="control-btn" 
             style={{marginLeft: '0.5rem'}} 
             onClick={() => handleDownloadToggle(currentSong)}
-            title="Download MP3"
+            title={isDownloaded ? "Downloaded offline (Tap to delete)" : isDownloading ? "Downloading offline..." : "Download offline"}
+            disabled={isDownloading}
           >
-            <Download size={20} color="var(--text-secondary)" />
+            {isDownloading ? (
+              <Loader2 size={20} className="animate-spin" color="var(--primary-color)" />
+            ) : isDownloaded ? (
+              <CheckCircle2 size={20} color="var(--primary-color)" />
+            ) : (
+              <Download size={20} color="var(--text-secondary)" />
+            )}
           </button>
           <button 
             className="control-btn hide-on-mobile" 
@@ -529,11 +539,18 @@ const MusicPlayer = () => {
                 <Share2 size={20} color="#fff" />
               </button>
               <button 
-                className="fs-action-circle"
+                className={`fs-action-circle ${isDownloaded ? 'active' : ''}`}
                 onClick={() => handleDownloadToggle(currentSong)}
-                title="Download MP3"
+                title={isDownloaded ? "Downloaded offline (Tap to delete)" : isDownloading ? "Downloading offline..." : "Download offline"}
+                disabled={isDownloading}
               >
-                <Download size={20} color="#fff" />
+                {isDownloading ? (
+                  <Loader2 size={20} className="animate-spin" color="var(--primary-color)" />
+                ) : isDownloaded ? (
+                  <CheckCircle2 size={20} color="var(--primary-color)" />
+                ) : (
+                  <Download size={20} color="#fff" />
+                )}
               </button>
               <button 
                 className={`fs-action-circle ${isFavorite ? 'active' : ''}`}

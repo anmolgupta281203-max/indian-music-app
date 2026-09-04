@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Heart, Download, ListPlus } from 'lucide-react';
+import { Play, Heart, Download, ListPlus, CheckCircle2, Loader2 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import './SongCard.css';
 
@@ -11,6 +11,7 @@ const SongCard = ({ song, queueContext }) => {
     favorites, 
     toggleFavorite, 
     downloadedSongs, 
+    downloadingIds,
     handleDownloadToggle, 
     addToQueue 
   } = usePlayer();
@@ -19,6 +20,8 @@ const SongCard = ({ song, queueContext }) => {
 
   const isCurrentSong = currentSong?.id === song.id;
   const isFavorite = favorites.some(s => s.id === song.id);
+  const isDownloaded = downloadedSongs.some(s => s.id === song.id);
+  const isDownloading = downloadingIds?.has(song.id);
 
   const handlePlay = (e) => {
     e.stopPropagation();
@@ -50,11 +53,18 @@ const SongCard = ({ song, queueContext }) => {
         <img src={imageUrl} alt={songTitle} />
         
         <button 
-          className="download-btn" 
+          className={`download-btn ${isDownloaded ? 'downloaded' : ''}`} 
           onClick={(e) => { e.stopPropagation(); handleDownloadToggle(song); }}
-          title="Download MP3"
+          title={isDownloaded ? "Downloaded offline (Tap to delete)" : isDownloading ? "Downloading..." : "Download offline"}
+          disabled={isDownloading}
         >
-          <Download size={18} color="white" />
+          {isDownloading ? (
+            <Loader2 size={18} className="animate-spin" color="var(--primary-color)" />
+          ) : isDownloaded ? (
+            <CheckCircle2 size={18} color="var(--primary-color)" />
+          ) : (
+            <Download size={18} color="white" />
+          )}
         </button>
 
         <button 

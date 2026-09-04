@@ -15,18 +15,33 @@ import Paywall from './components/Paywall';
 import AdminPanel from './pages/AdminPanel';
 import Artist from './pages/Artist';
 import { useLocation } from 'react-router-dom';
-import { Download } from 'lucide-react';
+import { Download, Play, Trash2, HardDrive, WifiOff } from 'lucide-react';
 import { supabase } from './services/supabase';
 import { extractDominantColors } from './utils/colorExtractor';
 import { getSongDetails } from './services/api';
+import { deleteOfflineSong, getAllOfflineSongs } from './utils/offlineStorage';
 
 const Library = () => {
-  const { favorites, downloadedSongs, openQueueModal, queue, handleDownloadToggle } = usePlayer();
-  const [activeTab, setActiveTab] = useState('liked');
+  const { 
+    favorites, 
+    downloadedSongs, 
+    setDownloadedSongs, 
+    playSong, 
+    openQueueModal, 
+    queue, 
+    handleDownloadToggle 
+  } = usePlayer();
+  const [activeTab, setActiveTab] = useState(() => !navigator.onLine ? 'downloaded' : 'liked');
   const [subData, setSubData] = useState(null);
   const [daysLeft, setDaysLeft] = useState(0);
   const [isSyncingOffline, setIsSyncingOffline] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
+
+  const isOffline = !navigator.onLine;
+
+  const totalSizeMb = (downloadedSongs.reduce((acc, s) => {
+    return acc + (s.blobSize || s.blob?.size || 4.2 * 1024 * 1024);
+  }, 0) / (1024 * 1024)).toFixed(1);
 
   const syncAllLikedSongs = async () => {
     if (favorites.length === 0 || isSyncingOffline) return;
@@ -45,6 +60,16 @@ const Library = () => {
       } catch (e) {}
     }
     setIsSyncingOffline(false);
+  };
+
+  const handleClearAllOffline = async () => {
+    if (window.confirm(`Delete all ${downloadedSongs.length} downloaded songs from offline storage?`)) {
+      for (const song of downloadedSongs) {
+        await deleteOfflineSong(song.id);
+      }
+      const refreshed = await getAllOfflineSongs();
+      setDownloadedSongs(refreshed);
+    }
   };
 
   React.useEffect(() => {
@@ -77,8 +102,34 @@ const Library = () => {
 
   return (
     <div style={{padding: '2rem', color: '#fff'}} className="animate-fade-in">
+      {isOffline && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.15)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          color: '#fca5a5',
+          borderRadius: '12px',
+          padding: '12px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          marginBottom: '1.5rem',
+          fontSize: '14px'
+        }}>
+          <WifiOff size={18} />
+          <span><strong>Offline Mode Active:</strong> You are currently disconnected. Enjoy all your downloaded offline music!</span>
+        </div>
+      )}
+
       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem'}}>
-        <h2>Your Music Library</h2>
+        <div>
+          <h2 style={{margin: 0}}>Your Music Library</h2>
+          {activeTab === 'downloaded' && (
+            <p style={{margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px'}}>
+              <HardDrive size={14} color="var(--primary-color)" />
+              <span>{downloadedSongs.length} tracks offline • ~{totalSizeMb} MB cached locally</span>
+            </p>
+          )}
+        </div>
 
         {subData && (
           <div style={{
@@ -103,7 +154,7 @@ const Library = () => {
         )}
       </div>
 
-      <div style={{display: 'flex', gap: '1rem', marginBottom: '2rem'}}>
+      <div style={{display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap', alignItems: 'center'}}>
         <button 
           className={`filter-pill ${activeTab === 'liked' ? 'active' : ''}`}
           onClick={() => setActiveTab('liked')}
@@ -143,12 +194,45 @@ const Library = () => {
             <span>{isSyncingOffline ? `Syncing (${syncProgress.current}/${syncProgress.total})...` : 'Download All Offline'}</span>
           </button>
         )}
+
+        {activeTab === 'downloaded' && downloadedSongs.length > 0 && (
+          <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+            <button 
+              className="filter-pill active"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--primary-color)', color: '#000', fontWeight: 'bold' }}
+              onClick={() => playSong(downloadedSongs[0], downloadedSongs)}
+              title="Play all downloaded songs"
+            >
+              <Play size={14} fill="currentColor" />
+              <span>Play All</span>
+            </button>
+            <button 
+              className="filter-pill"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff7b72', borderColor: 'rgba(255,123,114,0.3)' }}
+              onClick={handleClearAllOffline}
+              title="Clear all offline songs"
+            >
+              <Trash2 size={14} />
+              <span>Clear All</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {currentList.length === 0 ? (
-        <p style={{color: 'var(--text-secondary)'}}>
-          {activeTab === 'liked' ? "You haven't liked any songs yet." : "You haven't downloaded any songs for offline playback."}
-        </p>
+        <div style={{
+          padding: '3rem 1rem', 
+          textAlign: 'center', 
+          background: 'rgba(255,255,255,0.03)', 
+          borderRadius: '16px', 
+          border: '1px dashed rgba(255,255,255,0.1)'
+        }}>
+          <p style={{color: 'var(--text-secondary)', margin: 0, fontSize: '15px'}}>
+            {activeTab === 'liked' 
+              ? "You haven't liked any songs yet. Tap the heart on any track to save it here!" 
+              : "No songs downloaded yet. Tap the download icon on any song to save it for offline listening without internet!"}
+          </p>
+        </div>
       ) : (
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1.5rem'}}>
           {currentList.map(song => (

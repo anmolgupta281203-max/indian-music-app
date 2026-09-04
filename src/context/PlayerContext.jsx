@@ -57,6 +57,7 @@ export const PlayerProvider = ({ children }) => {
 
   const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
   const [downloadedSongs, setDownloadedSongs] = useState([]);
+  const [downloadingIds, setDownloadingIds] = useState(new Set());
   const [currentUrl, setCurrentUrl] = useState('');
   const [crossfadeSeconds, setCrossfadeSeconds] = useState(() => {
     try {
@@ -733,18 +734,29 @@ export const PlayerProvider = ({ children }) => {
   };
 
   const handleDownloadToggle = async (song) => {
+    if (!song || !song.id) return;
     const isDownloaded = downloadedSongs.some(s => s.id === song.id);
     if (isDownloaded) {
       await deleteOfflineSong(song.id);
       setDownloadedSongs(prev => prev.filter(s => s.id !== song.id));
     } else {
-      let downloadUrl = song.downloadUrl?.[song.downloadUrl.length - 1]?.url || song.url;
-      if (!downloadUrl && song.downloadUrl?.length > 0) {
-        downloadUrl = song.downloadUrl[0].url || song.downloadUrl[0].link;
-      }
-      if (downloadUrl) {
-        await downloadSongToApp(song, downloadUrl);
-        setDownloadedSongs(prev => [...prev, song]);
+      setDownloadingIds(prev => new Set(prev).add(song.id));
+      try {
+        const success = await downloadSongToApp(song);
+        if (success) {
+          const allSongs = await getAllOfflineSongs();
+          setDownloadedSongs(allSongs);
+        } else {
+          alert('Could not download this track for offline playback. Please check your network.');
+        }
+      } catch (err) {
+        console.error("Download failed:", err);
+      } finally {
+        setDownloadingIds(prev => {
+          const next = new Set(prev);
+          next.delete(song.id);
+          return next;
+        });
       }
     }
   };
@@ -771,6 +783,7 @@ export const PlayerProvider = ({ children }) => {
       currentIndex,
       favorites,
       downloadedSongs,
+      setDownloadedSongs,
       isQueueModalOpen,
       isShuffling,
       isLooping,
@@ -799,6 +812,7 @@ export const PlayerProvider = ({ children }) => {
       toggleShuffle,
       toggleLoop,
       toggleFavorite,
+      downloadingIds,
       handleDownloadToggle,
       handleYtPlayerError,
       currentUrl,

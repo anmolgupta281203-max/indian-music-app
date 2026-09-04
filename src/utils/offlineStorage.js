@@ -29,29 +29,46 @@ export const downloadSongToApp = async (song, onProgress) => {
         const bestAudio = validDownloadUrls.find(d => d.quality === '320kbps') || validDownloadUrls[validDownloadUrls.length - 1];
         downloadUrl = bestAudio.url || validDownloadUrls[0].url;
       }
-    }
-    
-    // 2. Fallback to YouTube
-    if (!downloadUrl) {
-      const searchQuery = `${song.name} ${song.primaryArtists || ''} audio`;
-      const res = await fetch(`/api/yt-search?q=${encodeURIComponent(searchQuery)}&limit=1`);
-      const data = await res.json();
-      const vid = data?.results?.[0]?.videoId || data?.videoIds?.[0];
-      
-      if (vid) {
-         downloadUrl = `/api/yt-download?id=${vid}`;
-      }
+    } else if (song.url) {
+      downloadUrl = song.url;
     }
 
     if (!downloadUrl) {
       throw new Error("No download stream available for this song.");
     }
     
-    // Fetch the audio blob directly
-    const response = await fetch(downloadUrl);
-    if (!response.ok) throw new Error("Failed to fetch audio data");
+    // Standardize URL to 320kbps MP4
+    let cleanUrl = downloadUrl.replace('audios.saavncdn.com', 'aac.saavncdn.com');
+    cleanUrl = cleanUrl.replace(/(_master[^/]*|\.mpd|\.m3u8)(\?.*)?$/, '_320.mp4');
 
-    const blob = await response.blob();
+    let blob = null;
+
+    // 1. Fetch through /api/stream proxy which has full CORS support and range handling
+    try {
+      const proxyUrl = `/api/stream?url=${encodeURIComponent(cleanUrl)}`;
+      const response = await fetch(proxyUrl);
+      if (response.ok) {
+        blob = await response.blob();
+      }
+    } catch (e) {
+      console.warn("Proxy audio download failed, attempting direct fetch:", e);
+    }
+
+    // 2. Fallback to direct fetch
+    if (!blob || blob.size === 0) {
+      try {
+        const response = await fetch(cleanUrl);
+        if (response.ok) {
+          blob = await response.blob();
+        }
+      } catch (e) {
+        console.warn("Direct audio fetch failed:", e);
+      }
+    }
+
+    if (!blob || blob.size === 0) {
+      throw new Error("Failed to fetch audio data");
+    }
     
     const db = await initDB();
     const transaction = db.transaction(STORE_NAME, 'readwrite');
@@ -61,8 +78,9 @@ export const downloadSongToApp = async (song, onProgress) => {
     const offlineSong = {
       ...song,
       blob: blob,
+      blobSize: blob.size,
       downloadedAt: Date.now(),
-      isOfflinePreview: false // Changed to false as it's the full song
+      isOffline: true
     };
     
     await new Promise((resolve, reject) => {
