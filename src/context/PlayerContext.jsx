@@ -227,7 +227,7 @@ export const PlayerProvider = ({ children }) => {
     if (!audio) return;
 
     const handleEnded = () => {
-      audio.volume = isMuted ? 0 : vol;
+      audio.volume = 1;
       playNext();
     };
 
@@ -256,7 +256,7 @@ export const PlayerProvider = ({ children }) => {
         const remaining = audio.duration - audio.currentTime;
         if (remaining <= crossfadeSeconds && remaining > 0) {
           const factor = Math.max(0.05, remaining / crossfadeSeconds);
-          audio.volume = (isMuted ? 0 : vol) * factor;
+          audio.volume = factor;
         }
       }
     };
@@ -272,7 +272,7 @@ export const PlayerProvider = ({ children }) => {
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
-  }, [queue, currentIndex, isShuffling, isLooping, crossfadeSeconds, isMuted, vol]);
+  }, [queue, currentIndex, isShuffling, isLooping, crossfadeSeconds]);
 
   // MediaSession Handlers — controls both native audio and YouTube player from lock screen / notification
   useEffect(() => {
