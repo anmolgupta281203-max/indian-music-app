@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, 
-  Disc3
+  Disc3, X
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { useTimeline } from '../context/TimelineContext';
@@ -54,14 +54,14 @@ const RetroPlayerView = ({ isOpen, onClose }) => {
     if (!song || !song.image) return 'https://via.placeholder.com/300';
     if (typeof song.image === 'string') return song.image;
     if (Array.isArray(song.image) && song.image.length > 0) {
-      const best = song.image[song.image.length - 1];
-      return typeof best === 'string' ? best : (best?.url || song.image[0]?.url || 'https://via.placeholder.com/300');
+      const last = song.image[song.image.length - 1];
+      return typeof last === 'string' ? last : (last?.url || song.image[0]?.url || 'https://via.placeholder.com/300');
     }
     return 'https://via.placeholder.com/300';
   };
 
   const currentImg = getSongImage(currentSong);
-  const nextImg = nextSong ? getSongImage(nextSong) : null;
+  const nextImg = nextSong ? getSongImage(nextSong) : '';
   const songTitle = decodeHtml(currentSong.name || currentSong.title || 'Untitled Track');
   const artistName = decodeHtml(currentSong.primaryArtists || currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist');
   const nextTitle = nextSong ? decodeHtml(nextSong.name || nextSong.title || '') : '';
@@ -80,6 +80,15 @@ const RetroPlayerView = ({ isOpen, onClose }) => {
           <div className="retro-led-container">
             <span className={`retro-led ${isPlaying ? 'active' : ''}`} title={isPlaying ? "Playing" : "Standby"}></span>
             <span className="retro-led-label">MP3 / 320K</span>
+            {onClose && (
+              <button 
+                onClick={onClose} 
+                className="retro-close-btn"
+                title="Close Retro View"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
         </div>
 

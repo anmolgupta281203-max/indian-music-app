@@ -12,6 +12,21 @@
   transition: background-color 0.2s ease;
 }
 
+@media (max-width: 768px) {
+  .top-nav {
+    padding: 0.65rem 1rem;
+  }
+
+  .app-name-header {
+    font-size: 1.25rem;
+  }
+
+  .retro-nav-toggle-btn {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+}
+
 .nav-arrows {
   display: flex;
   gap: 0.5rem;
