@@ -56,6 +56,8 @@ const MusicPlayer = () => {
   const {
     progress,
     duration,
+    setProgress,
+    setDuration,
     handleSeekChange,
     handleSeekMouseUp
   } = useTimeline();
@@ -618,10 +620,7 @@ const MusicPlayer = () => {
           onPause={() => pause()}
           onError={(e) => handleYtPlayerError && handleYtPlayerError(e)}
           onProgress={({ playedSeconds }) => {
-            if (!isSeekingRef.current) {
-              setProgress(playedSeconds);
-            }
-            // Update MediaSession position state for lock screen progress bar
+            // TimelineContext handles progress polling; only sync mediaSession here
             if ('mediaSession' in navigator && duration > 0) {
               try {
                 navigator.mediaSession.setPositionState({

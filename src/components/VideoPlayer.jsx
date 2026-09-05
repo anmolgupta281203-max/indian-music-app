@@ -294,6 +294,9 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
       window.screen.orientation.addEventListener('change', handleOrientationChange);
     }
     return () => {
+      if (window.screen?.orientation?.unlock) {
+        try { window.screen.orientation.unlock(); } catch (e) {}
+      }
       window.removeEventListener('resize', handleOrientationChange);
       window.removeEventListener('orientationchange', handleOrientationChange);
       if (window.screen && window.screen.orientation) {

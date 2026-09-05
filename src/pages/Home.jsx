@@ -53,6 +53,7 @@ const Home = () => {
     const loadData = async () => {
       setLoading(true);
       let loadedTrending = [];
+      let loadedTrendingAlbums = [];
 
       // 1. Fetch Trending Songs & Albums
       try {
@@ -63,7 +64,8 @@ const Home = () => {
             setTrendingSongs(loadedTrending);
           }
           if (trendingData.trending.albums && Array.isArray(trendingData.trending.albums) && trendingData.trending.albums.length > 0) {
-            setTrendingAlbums(filterDuplicates(trendingData.trending.albums));
+            loadedTrendingAlbums = filterDuplicates(trendingData.trending.albums);
+            setTrendingAlbums(loadedTrendingAlbums);
           }
         } else if (Array.isArray(trendingData)) {
           loadedTrending = filterDuplicates(trendingData);
@@ -83,10 +85,12 @@ const Home = () => {
       }
 
       // Trending Albums
-      try {
-        const albums = await searchSongs('Pritam');
-        setTrendingAlbums(filterDuplicates(albums || []));
-      } catch (e) {}
+      if (loadedTrendingAlbums.length === 0) {
+        try {
+          const albums = await searchSongs('Pritam');
+          setTrendingAlbums(filterDuplicates(albums || []));
+        } catch (e) {}
+      }
 
       try {
         const latest = await searchSongs('latest hindi song');
@@ -232,7 +236,20 @@ const Home = () => {
                 <div 
                   key={album.id || index} 
                   className="album-card" 
-                  onClick={() => album.type === 'album' || album.songs ? null : playSong(album, trendingAlbums)}
+                  onClick={async () => {
+                    if (album.type === 'album' || album.songs) {
+                      try {
+                        const details = await fetchAlbumDetails(album.id);
+                        if (details?.songs?.length > 0) {
+                          playSong(details.songs[0], details.songs);
+                        }
+                      } catch (e) {
+                        playSong(album, trendingAlbums);
+                      }
+                    } else {
+                      playSong(album, trendingAlbums);
+                    }
+                  }}
                 >
                   <img src={imgSrc} alt={albumName} loading="lazy" />
                   <h4>{albumName}</h4>

@@ -54,7 +54,9 @@ const QueueModal = () => {
           ) : (
             queue.map((song, index) => {
               const isPlayingNow = song.id === currentSong?.id && index === currentIndex;
-              const imageUrl = song.image?.[0]?.url || 'https://via.placeholder.com/60';
+              const imageUrl = typeof song.image === 'string'
+                ? song.image
+                : (song.image?.[0]?.url || song.image?.[0]?.link || 'https://via.placeholder.com/60');
 
               return (
                 <div 

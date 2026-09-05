@@ -89,11 +89,6 @@ export const TimelineProvider = ({ children }) => {
     isSeekingRef.current = true;
     const time = Number(e.target.value);
     setProgress(time);
-    if (!youtubeVideoId && nativeAudioRef?.current) {
-      try {
-        nativeAudioRef.current.currentTime = time;
-      } catch (err) {}
-    }
   };
 
   const handleSeekMouseUp = (e) => {

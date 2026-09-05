@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import MusicPlayer from './components/MusicPlayer';
 import TopNav from './components/TopNav';
@@ -299,7 +299,11 @@ function App() {
   }, []);
 
   if (isAdminRoute) {
-    return <AdminPanel />;
+    return (
+      <React.Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#fff' }}>Loading Admin Panel...</div>}>
+        <AdminPanel />
+      </React.Suspense>
+    );
   }
 
   return (
@@ -331,6 +335,7 @@ function App() {
                 <Route path="/videos" element={<Videos />} />
                 <Route path="/artist/:id" element={<Artist />} />
                 <Route path="/library" element={<Library />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </React.Suspense>
           </div>

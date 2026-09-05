@@ -46,8 +46,8 @@ const RetroPlayerView = ({ isOpen, onClose }) => {
 
   if (!currentSong) return null;
 
-  const nextSong = queue && queue.length > 1 
-    ? queue[(currentIndex + 1) % queue.length] 
+  const nextSong = queue && queue.length > 0 && (currentIndex < queue.length - 1 || isLooping)
+    ? queue[(currentIndex + 1) % queue.length]
     : null;
 
   const getSongImage = (song) => {

@@ -1,5 +1,15 @@
 import axios from 'axios';
 
+const decodeHtml = (html) => {
+  if (!html) return '';
+  if (typeof document !== 'undefined') {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value;
+  }
+  return html.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
 const apiClient = axios.create({ baseURL: '/api' });
 
 // jiosaavn-api-2 uses `link` field (not `url`) in downloadUrl and image arrays
@@ -297,7 +307,8 @@ export const getSongDetails = async (songId) => {
   try {
     const res = await apiClient.get('/songs', { params: { id: songId } });
     if (res.data) {
-      return normalizeSong(res.data);
+      const songData = Array.isArray(res.data) ? res.data[0] : res.data;
+      return normalizeSong(songData);
     }
   } catch (e) {
     console.warn('Error fetching song details:', e);

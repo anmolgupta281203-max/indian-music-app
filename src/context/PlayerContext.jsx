@@ -73,6 +73,7 @@ export const PlayerProvider = ({ children }) => {
   const [youtubeVideoId, setYoutubeVideoId] = useState(null);
   const ytPlayerRef = useRef(null);
 
+  const prevBlobUrlRef = useRef(null);
   const nativeAudioRef = useRef(null);
   const audioCtxRef = useRef(null);
   const sourceNodeRef = useRef(null);
@@ -654,7 +655,11 @@ export const PlayerProvider = ({ children }) => {
         if (playbackSessionIdRef.current !== currentSession) return;
         
         if (offlineSong && offlineSong.blob && nativeAudioRef.current) {
+          if (prevBlobUrlRef.current) {
+            URL.revokeObjectURL(prevBlobUrlRef.current);
+          }
           const blobUrl = URL.createObjectURL(offlineSong.blob);
+          prevBlobUrlRef.current = blobUrl;
           setYoutubeVideoId(null); // Disable YouTube player
           setCurrentUrl(blobUrl);
           
@@ -700,19 +705,26 @@ export const PlayerProvider = ({ children }) => {
     }
   };
 
-  const removeFromQueue = (index) => {
-    setQueue(prev => {
-      const updated = prev.filter((_, i) => i !== index);
-      if (index < currentIndex) {
-        setCurrentIndex(currentIndex - 1);
-      } else if (index === currentIndex && updated.length > 0) {
-        const nextIdx = Math.min(index, updated.length - 1);
-        setCurrentIndex(nextIdx);
-        playSong(updated[nextIdx]);
+  const removeFromQueue = useCallback((index) => {
+    if (index < 0 || index >= queue.length) return;
+    const updated = queue.filter((_, i) => i !== index);
+    setQueue(updated);
+    if (updated.length === 0) {
+      setCurrentIndex(-1);
+      setCurrentSong(null);
+      setIsPlaying(false);
+      if (nativeAudioRef.current) {
+        nativeAudioRef.current.pause();
+        nativeAudioRef.current.src = '';
       }
-      return updated;
-    });
-  };
+    } else if (index < currentIndex) {
+      setCurrentIndex(prev => prev - 1);
+    } else if (index === currentIndex) {
+      const nextIdx = Math.min(index, updated.length - 1);
+      setCurrentIndex(nextIdx);
+      playSong(updated[nextIdx], updated);
+    }
+  }, [queue, currentIndex, playSong]);
 
   const clearQueue = () => {
     setQueue([]);
@@ -781,9 +793,21 @@ export const PlayerProvider = ({ children }) => {
           const fresh = related.filter(s => !queueIds.has(s.id)).slice(0, 6);
           if (fresh.length > 0) {
             const nextTrack = fresh[0];
-            setQueue(prev => [...prev, ...fresh]);
-            setCurrentIndex(queue.length);
-            playSong(nextTrack);
+            const updatedQueue = [...queue, ...fresh];
+            const nextIndex = queue.length;
+            setQueue(updatedQueue);
+            setCurrentIndex(nextIndex);
+            setCurrentSong(nextTrack);
+            setIsPlaying(true);
+            
+            // Trigger playback via existing effects
+            if (nextTrack.downloadUrl && Array.isArray(nextTrack.downloadUrl) && nextTrack.downloadUrl.length > 0) {
+              const streamUrl = nextTrack.downloadUrl[nextTrack.downloadUrl.length - 1]?.url || nextTrack.downloadUrl[0]?.url;
+              if (streamUrl && nativeAudioRef.current) {
+                nativeAudioRef.current.src = streamUrl;
+                nativeAudioRef.current.play().catch(() => {});
+              }
+            }
           }
         }
       } catch (e) {
@@ -855,10 +879,13 @@ export const PlayerProvider = ({ children }) => {
     const candidates = ytCandidatesRef.current;
     if (currentYtIndexRef.current < candidates.length) {
       const nextCandidate = candidates[currentYtIndexRef.current];
-      setYoutubeVideoId(nextCandidate.videoId);
-      setCurrentUrl(`https://www.youtube.com/watch?v=${nextCandidate.videoId}`);
-      setIsPlaying(true);
-      return;
+      const nextId = typeof nextCandidate === 'string' ? nextCandidate : nextCandidate?.videoId;
+      if (nextId) {
+        setYoutubeVideoId(nextId);
+        setCurrentUrl(`https://www.youtube.com/watch?v=${nextId}`);
+        setIsPlaying(true);
+        return;
+      }
     }
     playNext();
   };

@@ -36,14 +36,10 @@ const Search = () => {
 
   useEffect(() => {
     const trimmed = query.trim();
-    if (trimmed) {
-      setSearchParams({ q: trimmed }, { replace: true });
-    } else {
-      setSearchParams({}, { replace: true });
-    }
     
     const delayDebounceFn = setTimeout(async () => {
       if (trimmed) {
+        setSearchParams({ q: trimmed }, { replace: true });
         setLoading(true);
         setHasSearched(true);
 
@@ -124,7 +120,7 @@ const Search = () => {
           });
 
           // Prepend official YT tracks before generic covers so genuine official hits appear #1!
-          foundSongs = [...officialAudioFromYT, ...foundSongs];
+          foundSongs = [...foundSongs, ...officialAudioFromYT];
 
           // Deduplicate songs by unique ID
           if (Array.isArray(foundSongs)) {
@@ -167,6 +163,7 @@ const Search = () => {
           setLoading(false);
         }
       } else {
+        setSearchParams({}, { replace: true });
         setResults([]);
         setArtists([]);
         setYtResults([]);
@@ -179,7 +176,7 @@ const Search = () => {
   }, [query]);
 
   const handlePlayArtistTop = (artist) => {
-    navigate(`/artist/${artist.id}`);
+    navigate(`/artist/${artist.id}?name=${encodeURIComponent(artist.name || artist.title || 'Artist')}`);
   };
 
   const categories = [
