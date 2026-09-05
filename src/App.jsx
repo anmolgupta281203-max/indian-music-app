@@ -236,7 +236,7 @@ const Library = () => {
           </p>
         </div>
       ) : (
-        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1.5rem'}}>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '1.25rem'}}>
           {currentList.map(song => (
             <SongCard key={song.id} song={song} queueContext={currentList} />
           ))}

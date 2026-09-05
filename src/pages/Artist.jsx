@@ -67,10 +67,18 @@ const Artist = () => {
     }
   };
 
-  // Assume the first song's image is a good representation if we don't have a direct artist image
-  const artistImage = topSongs.length > 0 && topSongs[0].image 
-    ? topSongs[0].image[topSongs[0].image.length - 1].url 
-    : 'https://via.placeholder.com/500';
+  // Safely extract artist hero background image
+  const getArtistImage = () => {
+    if (!topSongs || topSongs.length === 0 || !topSongs[0].image) return 'https://via.placeholder.com/500';
+    const img = topSongs[0].image;
+    if (typeof img === 'string') return img;
+    if (Array.isArray(img) && img.length > 0) {
+      const last = img[img.length - 1];
+      return typeof last === 'string' ? last : (last?.url || img[0]?.url || 'https://via.placeholder.com/500');
+    }
+    return 'https://via.placeholder.com/500';
+  };
+  const artistImage = getArtistImage();
 
   return (
     <div className="artist-container animate-fade-in">
