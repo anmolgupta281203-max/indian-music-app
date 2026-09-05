@@ -10,7 +10,7 @@ const decodeHtml = (html) => {
   return html.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-const apiClient = axios.create({ baseURL: '/api' });
+const apiClient = axios.create({ baseURL: '/api', timeout: 3500 });
 
 // jiosaavn-api-2 uses `link` field (not `url`) in downloadUrl and image arrays
 const normalizeSong = (song) => {

@@ -52,13 +52,23 @@ const Home = () => {
 
     const loadData = async () => {
       setLoading(true);
+      
+      // Fetch all home sections in parallel to eliminate waterfall latency
+      const [trendingRes, albumsRes, latestRes, hindiRes, punjabiRes] = await Promise.allSettled([
+        fetchTrending(),
+        searchSongs('Pritam'),
+        searchSongs('latest hindi song'),
+        searchSongs('Hindi'),
+        searchSongs('Punjabi')
+      ]);
+
       let loadedTrending = [];
       let loadedTrendingAlbums = [];
 
-      // 1. Fetch Trending Songs & Albums
-      try {
-        const trendingData = await fetchTrending();
-        if (trendingData && trendingData.trending) {
+      // Process Trending Songs & Albums
+      if (trendingRes.status === 'fulfilled' && trendingRes.value) {
+        const trendingData = trendingRes.value;
+        if (trendingData.trending) {
           if (trendingData.trending.songs && Array.isArray(trendingData.trending.songs)) {
             loadedTrending = filterDuplicates(trendingData.trending.songs);
             setTrendingSongs(loadedTrending);
@@ -71,46 +81,34 @@ const Home = () => {
           loadedTrending = filterDuplicates(trendingData);
           setTrendingSongs(loadedTrending);
         }
-      } catch (e) {
-        console.warn("Trending fetch error:", e);
+      }
+
+      // Process Trending Albums fallback
+      if (loadedTrendingAlbums.length === 0 && albumsRes.status === 'fulfilled' && Array.isArray(albumsRes.value)) {
+        setTrendingAlbums(filterDuplicates(albumsRes.value));
+      }
+
+      // Process Latest Releases
+      if (latestRes.status === 'fulfilled' && Array.isArray(latestRes.value)) {
+        setLatestAlbums(filterDuplicates(latestRes.value));
+      }
+
+      // Process Hindi Hits
+      if (hindiRes.status === 'fulfilled' && Array.isArray(hindiRes.value)) {
+        setHindiHits(filterDuplicates(hindiRes.value));
+      }
+
+      // Process Punjabi Hits
+      if (punjabiRes.status === 'fulfilled' && Array.isArray(punjabiRes.value)) {
+        setPunjabiHits(filterDuplicates(punjabiRes.value));
       }
 
       // Fallback if no trending songs loaded
       if (loadedTrending.length === 0) {
         try {
           const fallback = await searchSongs('Arijit Singh');
-          loadedTrending = filterDuplicates(fallback || []);
-          setTrendingSongs(loadedTrending);
+          setTrendingSongs(filterDuplicates(fallback || []));
         } catch (e) {}
-      }
-
-      // Trending Albums
-      if (loadedTrendingAlbums.length === 0) {
-        try {
-          const albums = await searchSongs('Pritam');
-          setTrendingAlbums(filterDuplicates(albums || []));
-        } catch (e) {}
-      }
-
-      try {
-        const latest = await searchSongs('latest hindi song');
-        setLatestAlbums(filterDuplicates(latest || []));
-      } catch (e) {
-        console.warn("Latest releases error:", e);
-      }
-
-      try {
-        const hindi = await searchSongs('Hindi');
-        setHindiHits(filterDuplicates(hindi || []));
-      } catch (e) {
-        console.warn("Hindi hits error:", e);
-      }
-
-      try {
-        const punjabi = await searchSongs('Punjabi');
-        setPunjabiHits(filterDuplicates(punjabi || []));
-      } catch (e) {
-        console.warn("Punjabi hits error:", e);
       }
 
       setLoading(false);
