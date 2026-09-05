@@ -20,54 +20,78 @@ const initDB = () => {
 
 export const downloadSongToApp = async (song, onProgress) => {
   try {
-    let downloadUrl = '';
+    const rawCandidates = [];
     
-    // 1. Try JioSaavn native URL
-    if (song.downloadUrl && song.downloadUrl.length > 0) {
-      const validDownloadUrls = song.downloadUrl.filter(d => d.url && d.url.trim().length > 0);
-      if (validDownloadUrls.length > 0) {
-        const bestAudio = validDownloadUrls.find(d => d.quality === '320kbps') || validDownloadUrls[validDownloadUrls.length - 1];
-        downloadUrl = bestAudio.url || validDownloadUrls[0].url;
-      }
-    } else if (song.url) {
-      downloadUrl = song.url;
+    // Collect all available audio URLs from song metadata
+    if (song.downloadUrl && Array.isArray(song.downloadUrl) && song.downloadUrl.length > 0) {
+      song.downloadUrl.forEach(d => {
+        if (d.url && typeof d.url === 'string' && d.url.trim().length > 0) {
+          rawCandidates.push(d.url.trim());
+        }
+      });
+    }
+    if (song.url && typeof song.url === 'string' && song.url.trim().length > 0) {
+      rawCandidates.push(song.url.trim());
     }
 
-    if (!downloadUrl) {
+    if (rawCandidates.length === 0) {
       throw new Error("No download stream available for this song.");
     }
     
-    // Standardize URL to 320kbps MP4
-    let cleanUrl = downloadUrl.replace('audios.saavncdn.com', 'aac.saavncdn.com');
-    cleanUrl = cleanUrl.replace(/(_master[^/]*|\.mpd|\.m3u8)(\?.*)?$/, '_320.mp4');
+    // Build clean HTTPS candidates (try 320kbps, 160kbps, 96kbps variants)
+    const candidates = [];
+    rawCandidates.forEach(rawUrl => {
+      let httpsUrl = rawUrl.replace(/^http:\/\//i, 'https://');
+      httpsUrl = httpsUrl.replace('audios.saavncdn.com', 'aac.saavncdn.com');
+      
+      // Derived 320kbps variant
+      const clean320 = httpsUrl.replace(/(_master[^/]*|_\d+\.[a-zA-Z0-9]+|\.mpd|\.m3u8)(\?.*)?$/, '_320.mp4');
+      if (!candidates.includes(clean320)) candidates.push(clean320);
+
+      // Original clean HTTPS URL
+      if (!candidates.includes(httpsUrl)) candidates.push(httpsUrl);
+
+      // Derived 160kbps variant fallback
+      const clean160 = httpsUrl.replace(/(_master[^/]*|_\d+\.[a-zA-Z0-9]+|\.mpd|\.m3u8)(\?.*)?$/, '_160.mp4');
+      if (!candidates.includes(clean160)) candidates.push(clean160);
+    });
 
     let blob = null;
 
-    // 1. Fetch through /api/stream proxy which has full CORS support and range handling
-    try {
-      const proxyUrl = `/api/stream?url=${encodeURIComponent(cleanUrl)}`;
-      const response = await fetch(proxyUrl);
-      if (response.ok) {
-        blob = await response.blob();
-      }
-    } catch (e) {
-      console.warn("Proxy audio download failed, attempting direct fetch:", e);
-    }
-
-    // 2. Fallback to direct fetch
-    if (!blob || blob.size === 0) {
+    // Try candidates sequentially: Direct HTTPS fetch first (bypasses Vercel 4.5MB serverless payload limit)
+    for (const url of candidates) {
+      // 1. Direct HTTPS fetch
       try {
-        const response = await fetch(cleanUrl);
+        const response = await fetch(url, { mode: 'cors' });
         if (response.ok) {
-          blob = await response.blob();
+          const testBlob = await response.blob();
+          if (testBlob && testBlob.size > 100000) { // Valid audio > 100KB
+            blob = testBlob;
+            break;
+          }
         }
       } catch (e) {
-        console.warn("Direct audio fetch failed:", e);
+        console.warn("Direct fetch failed for URL:", url, e);
+      }
+
+      // 2. Fallback via /api/stream proxy
+      try {
+        const proxyUrl = `/api/stream?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        if (response.ok) {
+          const testBlob = await response.blob();
+          if (testBlob && testBlob.size > 100000) {
+            blob = testBlob;
+            break;
+          }
+        }
+      } catch (e) {
+        console.warn("Proxy download failed for URL:", url, e);
       }
     }
 
-    if (!blob || blob.size === 0) {
-      throw new Error("Failed to fetch audio data");
+    if (!blob || blob.size < 100000) {
+      throw new Error("Failed to fetch complete audio data from all candidates");
     }
     
     const db = await initDB();

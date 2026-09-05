@@ -410,14 +410,14 @@ export const PlayerProvider = ({ children }) => {
     };
   }, [isPlaying, currentSong]);
 
-  // Sync silent keepalive ONLY when YouTube is actively playing to prevent audio focus conflict with native audio
+  // Sync silent keepalive whenever any song is playing to keep mobile JS context awake in background
   useEffect(() => {
-    if (isPlaying && currentSong && youtubeVideoId) {
+    if (isPlaying && currentSong) {
       startSilentKeepalive();
     } else {
       stopSilentKeepalive();
     }
-  }, [isPlaying, currentSong, youtubeVideoId, startSilentKeepalive, stopSilentKeepalive]);
+  }, [isPlaying, currentSong, startSilentKeepalive, stopSilentKeepalive]);
 
   // Warm up audio session on first user interaction
   useEffect(() => {
@@ -588,7 +588,8 @@ export const PlayerProvider = ({ children }) => {
         // Add clean direct URLs and proxy streaming URLs as fallbacks
         const finalCandidates = [];
         candidates.forEach(raw => {
-          let clean = raw.replace('audios.saavncdn.com', 'aac.saavncdn.com');
+          let clean = raw.replace(/^http:\/\//i, 'https://');
+          clean = clean.replace('audios.saavncdn.com', 'aac.saavncdn.com');
           clean = clean.replace(/(_master[^/]*|\.mpd|\.m3u8)(\?.*)?$/, '_320.mp4');
           if (!finalCandidates.includes(clean)) {
             finalCandidates.push(clean);
@@ -939,7 +940,7 @@ export const PlayerProvider = ({ children }) => {
       {/* Keep native audio element for offline/downloaded and JioSaavn songs */}
       <audio 
         ref={nativeAudioRef} 
-        preload="metadata"
+        preload="auto"
         playsInline
         style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }} 
       />
