@@ -9,13 +9,35 @@ import SongCard from './components/SongCard';
 import QueueModal from './components/QueueModal';
 import RetroPlayerView from './components/RetroPlayerView';
 
-const Search = React.lazy(() => import('./pages/Search'));
-const Videos = React.lazy(() => import('./pages/Videos'));
-const Artist = React.lazy(() => import('./pages/Artist'));
-const AdminPanel = React.lazy(() => import('./pages/AdminPanel'));
-const AIDjModal = React.lazy(() => import('./components/AIDjModal'));
-const AuthModal = React.lazy(() => import('./components/AuthModal'));
-const Paywall = React.lazy(() => import('./components/Paywall'));
+const safeLazy = (importFn) => {
+  return React.lazy(async () => {
+    try {
+      return await importFn();
+    } catch (error) {
+      if (
+        error?.name === 'TypeError' ||
+        error?.message?.includes('Failed to fetch dynamically imported module') ||
+        error?.message?.includes('Importing a module script failed')
+      ) {
+        const hasReloaded = sessionStorage.getItem('svar_chunk_reload');
+        if (!hasReloaded) {
+          sessionStorage.setItem('svar_chunk_reload', 'true');
+          window.location.reload();
+          return new Promise(() => {});
+        }
+      }
+      throw error;
+    }
+  });
+};
+
+const Search = safeLazy(() => import('./pages/Search'));
+const Videos = safeLazy(() => import('./pages/Videos'));
+const Artist = safeLazy(() => import('./pages/Artist'));
+const AdminPanel = safeLazy(() => import('./pages/AdminPanel'));
+const AIDjModal = safeLazy(() => import('./components/AIDjModal'));
+const AuthModal = safeLazy(() => import('./components/AuthModal'));
+const Paywall = safeLazy(() => import('./components/Paywall'));
 import { useLocation } from 'react-router-dom';
 import { Download, Play, Trash2, HardDrive, WifiOff } from 'lucide-react';
 import { supabase } from './services/supabase';
@@ -258,6 +280,11 @@ function App() {
   
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+
+  // Clear chunk reload guard when App successfully mounts
+  React.useEffect(() => {
+    sessionStorage.removeItem('svar_chunk_reload');
+  }, []);
 
   // Dynamic Color Aura from Album Art
   React.useEffect(() => {

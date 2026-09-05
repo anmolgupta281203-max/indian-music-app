@@ -26,20 +26,40 @@ class ErrorBoundary extends React.Component {
   }
   componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary caught error:", error, errorInfo);
+    if (
+      error?.name === 'TypeError' ||
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Importing a module script failed')
+    ) {
+      const hasReloaded = sessionStorage.getItem('svar_chunk_reload');
+      if (!hasReloaded) {
+        sessionStorage.setItem('svar_chunk_reload', 'true');
+        window.location.reload();
+      }
+    }
   }
   render() {
     if (this.state.hasError) {
+      const isChunkError = 
+        this.state.error?.name === 'TypeError' ||
+        this.state.error?.message?.includes('Failed to fetch dynamically imported module') ||
+        this.state.error?.message?.includes('Importing a module script failed');
+
       return (
-        <div style={{ padding: '2rem', color: '#ff6b6b', background: '#09090b', minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
-          <h2 style={{ color: '#fff' }}>Something went wrong loading Svar</h2>
-          <pre style={{ background: 'rgba(255,255,255,0.06)', padding: '1rem', borderRadius: '8px', overflowX: 'auto', color: '#ff7b72' }}>
-            {this.state.error?.toString()}
-          </pre>
+        <div style={{ padding: '2rem', color: '#ff6b6b', background: '#09090b', minHeight: '100vh', fontFamily: 'system-ui, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+          <h2 style={{ color: '#fff', marginBottom: '0.5rem' }}>{isChunkError ? 'New Version Available' : 'Something went wrong loading Svar'}</h2>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', maxWidth: '450px', margin: '0 0 1.5rem' }}>
+            {isChunkError ? 'A new update was deployed to Svar Music. Tap below to reload and access the latest features!' : 'An unexpected error occurred.'}
+          </p>
           <button 
-            onClick={() => { localStorage.clear(); window.location.reload(); }}
-            style={{ marginTop: '1.5rem', padding: '12px 24px', background: '#25D1DA', color: '#000', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+            onClick={() => { 
+              sessionStorage.removeItem('svar_chunk_reload');
+              localStorage.removeItem('svar_chunk_reload');
+              window.location.reload(); 
+            }}
+            style={{ padding: '12px 28px', background: '#25D1DA', color: '#000', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' }}
           >
-            Reset Cache & Reload App
+            {isChunkError ? 'Update & Reload App' : 'Reset & Reload App'}
           </button>
         </div>
       );
