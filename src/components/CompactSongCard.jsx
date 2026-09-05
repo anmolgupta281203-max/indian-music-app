@@ -28,8 +28,9 @@ const CompactSongCard = ({ song, queueContext }) => {
     if (!song || !song.image) return 'https://via.placeholder.com/150';
     if (typeof song.image === 'string') return song.image;
     if (Array.isArray(song.image) && song.image.length > 0) {
-      const last = song.image[song.image.length - 1];
-      return typeof last === 'string' ? last : (last?.url || song.image[0]?.url || 'https://via.placeholder.com/150');
+      // Use smallest image (50x50) for compact cards
+      const small = song.image.length > 0 ? song.image[0] : song.image[song.image.length - 1];
+      return typeof small === 'string' ? small : (small?.url || song.image[0]?.url || 'https://via.placeholder.com/150');
     }
     return 'https://via.placeholder.com/150';
   };
@@ -39,7 +40,7 @@ const CompactSongCard = ({ song, queueContext }) => {
 
   return (
     <div className={`compact-song-card ${isCurrentSong ? 'active' : ''}`} onClick={handlePlay}>
-      <img src={imageUrl} alt={songTitle} className="compact-img" />
+      <img src={imageUrl} alt={songTitle} className="compact-img" loading="lazy" decoding="async" />
       <div className="compact-info">
         <h4 dangerouslySetInnerHTML={{ __html: songTitle }}></h4>
       </div>

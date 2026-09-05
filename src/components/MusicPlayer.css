@@ -43,7 +43,6 @@
   background: linear-gradient(90deg, #ff4757, #ff6b81);
   box-shadow: 0 0 10px rgba(255, 71, 87, 0.6);
   border-radius: 4px;
-  transition: width 0.05s linear;
 }
 
 /* ─── Now Playing (Left Section) ─── */
@@ -334,9 +333,8 @@ input[type=range].progress-bar-modern::-webkit-slider-thumb,
 input[type=range].progress-bar::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 0px; 
-  height: 0px;
-  box-shadow: -400px 0 0 400px var(--primary-color);
+  box-shadow: none;
+  background: var(--primary-color); width: 12px; height: 12px; border-radius: 50%; cursor: pointer;
 }
 
 /* ─── Right Utility Section & Volume Pill ─── */
@@ -900,9 +898,9 @@ input[type=range].volume-bar-modern::-webkit-slider-thumb,
     padding: 0 0.85rem;
     border-radius: 16px;
     margin: 0;
-    background: rgba(20, 24, 33, 0.95);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
+    background: #141821;
+    /* backdrop-filter removed for performance */
+    /* backdrop-filter removed for performance */
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85);
     z-index: 1050;

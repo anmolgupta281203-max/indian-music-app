@@ -163,7 +163,7 @@ const Videos = () => {
             {searchResults.map(item => (
               <div key={item.id} className="video-card" onClick={() => handlePlay(item)}>
                 <div className="video-thumb">
-                  <img src={getImageUrl(item.poster_path)} alt={item.title || item.name} />
+                  <img src={getImageUrl(item.poster_path)} alt={item.title || item.name} loading="lazy" />
                   <div className="play-overlay">
                     <Play fill="white" size={32} />
                   </div>
@@ -189,7 +189,7 @@ const Videos = () => {
               {filteredContent.map(item => (
                 <div key={item.id} className="video-card" onClick={() => handlePlay(item)}>
                   <div className="video-thumb">
-                    <img src={getImageUrl(item.poster_path)} alt={item.title || item.name} />
+                    <img src={getImageUrl(item.poster_path)} alt={item.title || item.name} loading="lazy" />
                     <div className="play-overlay">
                       <Play fill="white" size={32} />
                     </div>
@@ -213,7 +213,7 @@ const Videos = () => {
           {hindiMovies.length > 0 && (
             <div className="video-hero" onClick={() => handlePlay(hindiMovies[0], 'movie')}>
               <div className="hero-backdrop">
-                <img src={`https://image.tmdb.org/t/p/original${hindiMovies[0].backdrop_path}`} alt={hindiMovies[0].title} />
+                <img src={`https://image.tmdb.org/t/p/w780${hindiMovies[0].backdrop_path}`} alt={hindiMovies[0].title} loading="lazy" />
                 <div className="hero-gradient"></div>
               </div>
               <div className="hero-content">

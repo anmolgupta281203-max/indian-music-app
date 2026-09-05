@@ -37,8 +37,9 @@ const SongCard = ({ song, queueContext }) => {
     if (!song || !song.image) return 'https://via.placeholder.com/150';
     if (typeof song.image === 'string') return song.image;
     if (Array.isArray(song.image) && song.image.length > 0) {
-      const last = song.image[song.image.length - 1];
-      return typeof last === 'string' ? last : (last?.url || song.image[0]?.url || 'https://via.placeholder.com/150');
+      // Use 150x150 (index 1) instead of 500x500 (last) for performance
+      const mid = song.image.length > 1 ? song.image[1] : song.image[0];
+      return typeof mid === 'string' ? mid : (mid?.url || song.image[0]?.url || 'https://via.placeholder.com/150');
     }
     return 'https://via.placeholder.com/150';
   };
@@ -50,7 +51,7 @@ const SongCard = ({ song, queueContext }) => {
   return (
     <div className={`song-card ${isCurrentSong ? 'active' : ''}`} onClick={handlePlay}>
       <div className="img-container">
-        <img src={imageUrl} alt={songTitle} />
+        <img src={imageUrl} alt={songTitle} loading="lazy" decoding="async" />
         
         <button 
           className={`download-btn ${isDownloaded ? 'downloaded' : ''}`} 

@@ -57,43 +57,23 @@ export const TimelineProvider = ({ children }) => {
     };
   }, [youtubeVideoId, currentSong, nativeAudioRef]);
 
-  // Real-time timeline synchronization (smooth 60fps & YouTube/native tracking)
+  // YouTube specific synchronization (4Hz)
   useEffect(() => {
-    let animFrame;
-    const tick = () => {
-      if (isPlaying && !isSeekingRef.current) {
-        if (!youtubeVideoId && nativeAudioRef?.current) {
-          const cur = nativeAudioRef.current.currentTime || 0;
-          setProgress(cur);
-          const audioDur = nativeAudioRef.current.duration;
-          if (audioDur && isFinite(audioDur) && audioDur > 0) {
-            setDuration(audioDur);
-          }
-        } else if (youtubeVideoId && ytPlayerRef?.current) {
+    let ytInterval;
+    if (isPlaying && youtubeVideoId && ytPlayerRef?.current) {
+      ytInterval = setInterval(() => {
+        if (!isSeekingRef.current) {
           try {
             const ytCur = ytPlayerRef.current.getCurrentTime();
-            if (ytCur != null && isFinite(ytCur)) {
-              setProgress(ytCur);
-            }
+            if (ytCur != null && isFinite(ytCur)) setProgress(ytCur);
             const ytDur = ytPlayerRef.current.getDuration();
-            if (ytDur != null && isFinite(ytDur) && ytDur > 0) {
-              setDuration(ytDur);
-            }
+            if (ytDur != null && isFinite(ytDur) && ytDur > 0) setDuration(ytDur);
           } catch (e) {}
         }
-      }
-      if (isPlaying) {
-        animFrame = requestAnimationFrame(tick);
-      }
-    };
-
-    if (isPlaying) {
-      animFrame = requestAnimationFrame(tick);
+      }, 250);
     }
-    return () => {
-      if (animFrame) cancelAnimationFrame(animFrame);
-    };
-  }, [isPlaying, youtubeVideoId, nativeAudioRef, ytPlayerRef]);
+    return () => { if (ytInterval) clearInterval(ytInterval); };
+  }, [isPlaying, youtubeVideoId, ytPlayerRef]);
 
   // Reset progress when currentSong changes
   useEffect(() => {

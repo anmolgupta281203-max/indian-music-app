@@ -178,7 +178,7 @@ const Home = () => {
             const artist = String(song.primaryArtists || '');
             return (
               <div key={song.id || idx} className={`hero-carousel-slide ${idx === heroIndex ? 'active' : ''}`}>
-                <img src={img} alt={title} />
+                <img src={img} alt={title} loading="lazy" />
                 <div className="hero-carousel-gradient" />
                 <div className="hero-carousel-content">
                   <span className="hero-carousel-badge">Trending Now</span>
@@ -234,7 +234,7 @@ const Home = () => {
                   className="album-card" 
                   onClick={() => album.type === 'album' || album.songs ? null : playSong(album, trendingAlbums)}
                 >
-                  <img src={imgSrc} alt={albumName} />
+                  <img src={imgSrc} alt={albumName} loading="lazy" />
                   <h4>{albumName}</h4>
                   <p>{album.artist || album.primaryArtists || 'Various Artists'}</p>
                 </div>

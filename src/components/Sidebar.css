@@ -85,9 +85,9 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
     border-right: none;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-    background-color: rgba(13, 17, 23, 0.98);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background-color: #0d1117;
+    /* backdrop-filter removed for mobile performance */
+    /* backdrop-filter removed for mobile performance */
     z-index: 1000;
     box-sizing: border-box;
     overflow: hidden;

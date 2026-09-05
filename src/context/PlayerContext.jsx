@@ -359,6 +359,56 @@ export const PlayerProvider = ({ children }) => {
     }
   }, [queue, currentIndex, isShuffling, isLooping, youtubeVideoId, startSilentKeepalive, stopSilentKeepalive]);
 
+  // Re-trigger audio when returning from background/lock screen
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isPlaying && currentSong) {
+        // Re-sync media session state
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'playing';
+        }
+        // If native audio got paused by OS, resume it
+        if (!youtubeVideoId && nativeAudioRef.current && nativeAudioRef.current.paused) {
+          nativeAudioRef.current.play().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isPlaying, currentSong, youtubeVideoId]);
+
+  // Wake Lock to prevent OS from suspending audio
+  useEffect(() => {
+    let wakeLock = null;
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator && isPlaying && currentSong) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+        } catch (e) {}
+      }
+    };
+    
+    const handleVisChange = () => {
+      if (document.visibilityState === 'visible' && isPlaying && currentSong) {
+        requestWakeLock();
+      }
+    };
+    
+    if (isPlaying && currentSong) {
+      requestWakeLock();
+    }
+    
+    document.addEventListener('visibilitychange', handleVisChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisChange);
+      if (wakeLock) {
+        wakeLock.release().catch(() => {});
+        wakeLock = null;
+      }
+    };
+  }, [isPlaying, currentSong]);
+
   // Sync silent keepalive ONLY when YouTube is actively playing to prevent audio focus conflict with native audio
   useEffect(() => {
     if (isPlaying && currentSong && youtubeVideoId) {
@@ -367,6 +417,22 @@ export const PlayerProvider = ({ children }) => {
       stopSilentKeepalive();
     }
   }, [isPlaying, currentSong, youtubeVideoId, startSilentKeepalive, stopSilentKeepalive]);
+
+  // Warm up audio session on first user interaction
+  useEffect(() => {
+    const warmUp = () => {
+      startSilentKeepalive();
+      // Remove listeners after first interaction
+      document.removeEventListener('touchstart', warmUp);
+      document.removeEventListener('click', warmUp);
+    };
+    document.addEventListener('touchstart', warmUp, { once: true, passive: true });
+    document.addEventListener('click', warmUp, { once: true });
+    return () => {
+      document.removeEventListener('touchstart', warmUp);
+      document.removeEventListener('click', warmUp);
+    };
+  }, [startSilentKeepalive]);
 
   const playSong = (song, newQueue = null) => {
     playbackSessionIdRef.current += 1;

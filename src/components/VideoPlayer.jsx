@@ -143,6 +143,9 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
 
   useEffect(() => {
     pauseMusic();
+    return () => {
+      if (hideControlsTimeout.current) clearTimeout(hideControlsTimeout.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -388,7 +391,7 @@ const VideoPlayer = ({ video, onClose, onEnded }) => {
             </div>
           </div>
         )}
-        <div className="video-main-content" style={{ paddingRight: !isMinimized && showSidebar && video.media_type === 'tv' ? '380px' : '0' }}>
+        <div className="video-main-content" style={{ paddingRight: !isMinimized && showSidebar && video.media_type === 'tv' && window.innerWidth > 768 ? '380px' : '0' }}>
           
           <div className="video-iframe-container" ref={containerRef}>
             {/* The actual video player */}
